@@ -1,0 +1,141 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ユーザー
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  role         String?
+  organization String?
+  bio          String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  plates     Plate[]
+  plateTypes PlateType[]
+  settings   UserSettings?
+}
+
+// ユーザー設定
+model UserSettings {
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  language      String  @default("en")
+  appearance    String  @default("light")
+  notifNewPlate Boolean @default(true)
+  notifStatus   Boolean @default(true)
+  notifReminder Boolean @default(false)
+}
+
+// プレート種別（ユーザーがカスタム追加可能）
+model PlateType {
+  id          String  @id @default(uuid())
+  name        String
+  wellCount   Int
+  description String?
+  isDefault   Boolean @default(false)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  plates Plate[]
+}
+
+// プレートステータス
+enum PlateStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// プレート本体
+model Plate {
+  id        String      @id @default(uuid())
+  name      String
+  status    PlateStatus @default(ACTIVE)
+  notes     String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  plateTypeId String
+  plateType   PlateType @relation(fields: [plateTypeId], references: [id])
+
+  sampleName           String?
+  reservoirTemplateId  Int?
+  reservoirTemplate    ConditionTemplate? @relation("ReservoirTemplate", fields: [reservoirTemplateId], references: [id])
+  screeningTemplateId  Int?
+  screeningTemplate    ConditionTemplate? @relation("ScreeningTemplate", fields: [screeningTemplateId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  wells Well[]
+}
+
+// 実際のウェルデータ（プレートごと）
+model Well {
+  id            String     @id @default(uuid())
+  position      String
+  row           Int
+  col           Int
+  status        WellStatus @default(EMPTY)
+  protein       String?
+  concentration String?
+  buffer        String?
+  ph            String?
+  precipitant   String?
+  notes         String?    @db.Text
+
+  plateId String
+  plate   Plate  @relation(fields: [plateId], references: [id], onDelete: Cascade)
+
+  @@unique([plateId, position])
+}
+
+enum WellStatus {
+  FILLED
+  EMPTY
+  CRYSTAL
+  PRECIPITATE
+  CLEAR
+}
+
+// 条件セット（Reservoir + Screening テンプレートのペア）
+model ConditionSet {
+  id                  Int               @id @default(autoincrement())
+  name                String
+  isDefault           Boolean           @default(false)
+  reservoirTemplateId Int
+  reservoirTemplate   ConditionTemplate @relation("SetReservoir", fields: [reservoirTemplateId], references: [id])
+  screeningTemplateId Int
+  screeningTemplate   ConditionTemplate @relation("SetScreening", fields: [screeningTemplateId], references: [id])
+}
+
+// 条件テンプレート
+model ConditionTemplate {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String?
+  reservoirPlates Plate[] @relation("ReservoirTemplate")
+  screeningPlates Plate[] @relation("ScreeningTemplate")
+  reservoirSets   ConditionSet[] @relation("SetReservoir")
+  screeningSets   ConditionSet[] @relation("SetScreening")
+  wells       TemplateWell[]
+}
+
+// テンプレート内の各ウェル条件
+model TemplateWell {
+  id          Int               @id @default(autoincrement())
+  templateId  Int
+  template    ConditionTemplate @relation(fields: [templateId], references: [id])
+  position    String
+  composition String
+}

@@ -1,5 +1,3 @@
-import { TabBar } from "@/components/tab-bar";
-
 export default function AppLayout({
   children,
 }: {
@@ -7,8 +5,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="relative min-h-dvh">
-      <main className="pb-[88px]">{children}</main>
-      <TabBar />
+      <main>{children}</main>
     </div>
   );
 }

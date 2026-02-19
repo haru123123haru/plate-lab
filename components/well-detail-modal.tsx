@@ -10,28 +10,34 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/components/locale-provider";
 import type { WellData, WellStatus } from "@/types";
+
+export type WellCondition = {
+  salt: string;
+  precipitant: string;
+  polyamine: string;
+  buffer: string;
+};
 
 interface WellDetailModalProps {
   well: WellData | null;
+  reservoirCondition?: WellCondition;
+  screeningCondition?: WellCondition;
+  sampleName?: string;
   open: boolean;
   onClose: () => void;
 }
 
-const statusVariant: Record<WellStatus, "default" | "secondary" | "outline"> = {
+const statusVariant: Record<
+  WellStatus,
+  "default" | "secondary" | "outline"
+> = {
   filled: "default",
   empty: "secondary",
   crystal: "default",
   precipitate: "secondary",
   clear: "outline",
-};
-
-const statusLabel: Record<WellStatus, string> = {
-  filled: "Filled",
-  empty: "Empty",
-  crystal: "Crystal",
-  precipitate: "Precipitate",
-  clear: "Clear",
 };
 
 const ROW_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -47,15 +53,38 @@ function DetailField({ label, value }: DetailFieldProps) {
       <div className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
         {label}
       </div>
-      <div className="mt-1 text-[15px] text-text-primary">
-        {value || "-"}
-      </div>
+      <div className="mt-1 text-[15px] text-text-primary">{value || "-"}</div>
     </div>
   );
 }
 
-export function WellDetailModal({ well, open, onClose }: WellDetailModalProps) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[11px] uppercase tracking-[2px] text-text-tertiary font-semibold">
+      {children}
+    </div>
+  );
+}
+
+export function WellDetailModal({
+  well,
+  reservoirCondition,
+  screeningCondition,
+  sampleName,
+  open,
+  onClose,
+}: WellDetailModalProps) {
+  const { t } = useTranslation();
+
   if (!well) return null;
+
+  const statusLabel: Record<WellStatus, string> = {
+    filled: t("filled"),
+    empty: t("empty"),
+    crystal: t("crystal"),
+    precipitate: t("precipitate"),
+    clear: t("clearStatus"),
+  };
 
   const rowLabel = ROW_LABELS[well.row] ?? String(well.row);
 
@@ -72,13 +101,14 @@ export function WellDetailModal({ well, open, onClose }: WellDetailModalProps) {
         <SheetHeader className="flex-row items-center justify-between p-0">
           <div>
             <SheetTitle className="text-[17px]">
-              Row {rowLabel} · Column {well.col + 1}
+              Well {rowLabel}
+              {well.col + 1}
             </SheetTitle>
             <SheetDescription className="sr-only">
               Well detail information
             </SheetDescription>
           </div>
-          <button onClick={onClose} className="cursor-pointer">
+          <button type="button" onClick={onClose} className="cursor-pointer">
             <X className="size-5 text-text-secondary" />
           </button>
         </SheetHeader>
@@ -89,19 +119,72 @@ export function WellDetailModal({ well, open, onClose }: WellDetailModalProps) {
           </Badge>
         </div>
 
+        {/* Sample Section */}
         <Separator className="my-4" />
-
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-          <DetailField label="Protein" value={well.protein} />
-          <DetailField label="Concentration" value={well.concentration} />
-          <DetailField label="Buffer" value={well.buffer} />
-          <DetailField label="pH" value={well.ph} />
-          <DetailField label="Precipitant" value={well.precipitant} />
+        <SectionLabel>{t("sample")}</SectionLabel>
+        <div className="mt-3">
+          <DetailField label={t("sampleName")} value={sampleName} />
         </div>
 
-        <Separator className="my-4" />
+        {/* Reservoir */}
+        {reservoirCondition && (
+          <>
+            <Separator className="my-4" />
+            <SectionLabel>{t("reservoir")}</SectionLabel>
+            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+              <DetailField
+                label={t("precipitant")}
+                value={reservoirCondition.precipitant}
+              />
+              <DetailField
+                label={t("salt")}
+                value={reservoirCondition.salt}
+              />
+              <DetailField
+                label={t("polyamine")}
+                value={reservoirCondition.polyamine}
+              />
+              <DetailField
+                label={t("buffer")}
+                value={reservoirCondition.buffer}
+              />
+            </div>
+          </>
+        )}
 
-        <DetailField label="Notes" value={well.notes} />
+        {/* Screening */}
+        {screeningCondition && (
+          <>
+            <Separator className="my-4" />
+            <SectionLabel>{t("screening")}</SectionLabel>
+            <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-4">
+              <DetailField
+                label={t("precipitant")}
+                value={screeningCondition.precipitant}
+              />
+              <DetailField
+                label={t("salt")}
+                value={screeningCondition.salt}
+              />
+              <DetailField
+                label={t("polyamine")}
+                value={screeningCondition.polyamine}
+              />
+              <DetailField
+                label={t("buffer")}
+                value={screeningCondition.buffer}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Notes */}
+        {well.notes && (
+          <>
+            <Separator className="my-4" />
+            <DetailField label={t("notes")} value={well.notes} />
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );

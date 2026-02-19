@@ -1,17 +1,16 @@
-export type PlateTypeId = "96well-sitting" | "24well-hanging" | "sitting-manual";
-
 export type PlateType = {
-  id: PlateTypeId;
+  id: string;
   name: string;
   wellCount: number;
   description?: string;
 };
 
-export type PlateStatus = "active" | "completed" | "archived";
+export type PlateStatus = "active" | "archived";
 
 export type WellStatus = "filled" | "empty" | "crystal" | "precipitate" | "clear";
 
 export type WellData = {
+  id?: string;
   position: string;
   row: number;
   col: number;
@@ -35,11 +34,13 @@ export type Plate = {
   createdAt: string;
   updatedAt: string;
   notes?: string;
-  conditionTemplate?: string;
+  sampleName?: string;
+  reservoirTemplate?: string;
+  screeningTemplate?: string;
 };
 
 export type ConditionTemplate = {
-  id: string;
+  id: number;
   name: string;
   description: string;
 };
@@ -51,10 +52,4 @@ export type User = {
   role: string;
   organization: string;
   bio?: string;
-};
-
-export type TabRoute = {
-  label: string;
-  href: string;
-  icon: string;
 };

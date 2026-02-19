@@ -1,92 +1,58 @@
-"use client";
+import { getPlates } from "@/lib/actions/plates";
+import { getPlateTypes } from "@/lib/actions/plate-types";
+import { getConditionTemplates, getConditionSets } from "@/lib/actions/condition-templates";
+import { SamplesClient } from "./samples-client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
-import { SearchBar } from "@/components/search-bar";
-import { PlateCard } from "@/components/plate-card";
-import { FabButton } from "@/components/fab-button";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { plates } from "@/lib/mock-data";
+export default async function SamplesPage() {
+  const [plates, plateTypes, conditionTemplates, conditionSets] = await Promise.all([
+    getPlates(),
+    getPlateTypes(),
+    getConditionTemplates(),
+    getConditionSets(),
+  ]);
 
-export default function SamplesPage() {
-  const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("all");
+  const uiPlates = plates.map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status.toLowerCase() as "active" | "archived",
+    plateType: {
+      name: p.plateType.name,
+      wellCount: p.plateType.wellCount,
+    },
+    filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+    totalWells: p.wells.length,
+    createdAt: p.createdAt.toISOString().split("T")[0],
+  }));
 
-  const filteredPlates = plates.filter((plate) => {
-    const matchesTab =
-      tab === "all" ||
-      (tab === "active" && plate.status === "active") ||
-      (tab === "archived" && plate.status === "archived");
-    const matchesSearch = plate.name
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+  const uiPlateTypes = plateTypes.map((pt) => ({
+    id: pt.id,
+    name: pt.name,
+    wellCount: pt.wellCount,
+    description: pt.description ?? undefined,
+  }));
+
+  const uiConditionTemplates = conditionTemplates.map((ct) => ({
+    id: ct.id,
+    name: ct.name,
+    description: ct.description,
+  }));
+
+  const uiConditionSets = conditionSets.map((cs) => ({
+    id: cs.id,
+    name: cs.name,
+    isDefault: cs.isDefault,
+    reservoirTemplateId: cs.reservoirTemplateId,
+    screeningTemplateId: cs.screeningTemplateId,
+    reservoirTemplateName: cs.reservoirTemplate.name,
+    screeningTemplateName: cs.screeningTemplate.name,
+  }));
 
   return (
-    <div className="bg-bg-primary min-h-screen">
-      <PageHeader title="Samples" />
-
-      <div className="px-6">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList
-            variant="line"
-            className="w-full justify-start gap-0 bg-transparent p-0"
-          >
-            <TabsTrigger
-              value="all"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              All
-            </TabsTrigger>
-            <TabsTrigger
-              value="active"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              Active
-            </TabsTrigger>
-            <TabsTrigger
-              value="archived"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              Archived
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="mt-4">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              placeholder="Search plates..."
-            />
-          </div>
-
-        </Tabs>
-
-        <div className="mt-4 space-y-3">
-          {filteredPlates.length > 0 ? (
-            filteredPlates.map((plate) => (
-              <PlateCard
-                key={plate.id}
-                plate={plate}
-                onEdit={() => router.push(`/plates/${plate.id}`)}
-              />
-            ))
-          ) : (
-            <p className="py-8 text-center text-[14px] text-text-secondary">
-              No plates found
-            </p>
-          )}
-        </div>
-      </div>
-
-      <FabButton onClick={() => router.push("/plates/new")} />
-    </div>
+    <SamplesClient
+      plates={uiPlates}
+      plateTypes={uiPlateTypes}
+      conditionTemplates={uiConditionTemplates}
+      conditionSets={uiConditionSets}
+    />
   );
 }

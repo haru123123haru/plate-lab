@@ -10,12 +10,8 @@ interface ListRowProps {
 }
 
 export function ListRow({ icon: Icon, title, description, onClick }: ListRowProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 border-b border-border-subtle py-3 text-left"
-    >
+  const content = (
+    <>
       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">
         <Icon className="size-5 text-text-primary" />
       </div>
@@ -25,7 +21,27 @@ export function ListRow({ icon: Icon, title, description, onClick }: ListRowProp
           <div className="text-[13px] text-text-secondary">{description}</div>
         )}
       </div>
-      <ChevronRight className="size-5 shrink-0 text-text-tertiary" />
-    </button>
+      {onClick && (
+        <ChevronRight className="size-5 shrink-0 text-text-tertiary" />
+      )}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex w-full cursor-pointer items-center gap-3 border-b border-border-subtle py-3 text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex w-full items-center gap-3 border-b border-border-subtle py-3">
+      {content}
+    </div>
   );
 }
