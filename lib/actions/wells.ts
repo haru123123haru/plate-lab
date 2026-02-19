@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
-import type { WellStatus } from "@prisma/client";
+import type { WellStatus } from "../../generated/prisma/client";
 
 export async function updateWell(
   id: string,

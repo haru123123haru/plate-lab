@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
 import { createPlateSchema } from "@/lib/validations";
-import type { PlateStatus, WellStatus } from "@prisma/client";
+import type { PlateStatus, WellStatus } from "../../generated/prisma/client";
 
 export async function getPlates() {
   const userId = await getCurrentUserId();
