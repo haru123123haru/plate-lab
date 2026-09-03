@@ -27,31 +27,44 @@ export function NewPlateTypeDialog({
   const [wellCount, setWellCount] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open) {
       setName("");
       setWellCount("");
       setDescription("");
+      setError("");
     }
   }, [open]);
 
   const handleAdd = async () => {
-    if (!name.trim() || !wellCount.trim()) return;
+    if (submitting || !name.trim() || !wellCount.trim()) return;
+    const parsedWellCount = Number(wellCount);
+    if (![24, 96].includes(parsedWellCount)) {
+      setError("Well count must be 24 or 96.");
+      return;
+    }
     setSubmitting(true);
-    const result = await createPlateType({
-      name: name.trim(),
-      wellCount: Number(wellCount),
-      description: description.trim() || undefined,
-    });
-    onAdd({
-      id: result.id,
-      name: result.name,
-      wellCount: result.wellCount,
-      description: result.description ?? undefined,
-    });
-    setSubmitting(false);
-    onOpenChange(false);
+    setError("");
+    try {
+      const result = await createPlateType({
+        name: name.trim(),
+        wellCount: parsedWellCount,
+        description: description.trim() || undefined,
+      });
+      onAdd({
+        id: result.id,
+        name: result.name,
+        wellCount: result.wellCount,
+        description: result.description ?? undefined,
+      });
+      onOpenChange(false);
+    } catch {
+      setError("Unable to add plate type.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -83,11 +96,17 @@ export function NewPlateTypeDialog({
             </label>
             <Input
               type="number"
+              min={24}
+              max={96}
+              step={72}
               value={wellCount}
               onChange={(e) => setWellCount(e.target.value)}
               placeholder="e.g. 96"
               className="h-12 rounded-xl"
             />
+            <p className="mt-2 text-[13px] text-text-secondary">
+              Allowed values: 24 or 96.
+            </p>
           </div>
 
           <div>
@@ -106,6 +125,11 @@ export function NewPlateTypeDialog({
 
         {/* Submit */}
         <div className="mt-3">
+          {error && (
+            <div className="mb-3 rounded-xl bg-accent-negative/10 px-4 py-3 text-[13px] text-accent-negative">
+              {error}
+            </div>
+          )}
           <Button
             className="h-12 w-full rounded-xl"
             onClick={handleAdd}

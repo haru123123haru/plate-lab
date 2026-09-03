@@ -74,36 +74,72 @@ export function NewPlateSheet({
   const [notes, setNotes] = useState("");
   const [newTemplateName, setNewTemplateName] = useState("");
   const [addingTemplate, setAddingTemplate] = useState(false);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<number | null>(
+    null
+  );
+  const [deletingSetId, setDeletingSetId] = useState<number | null>(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
   const handleAddTemplate = async () => {
     const name = newTemplateName.trim();
-    if (!name) return;
+    if (!name || addingTemplate) return;
     setAddingTemplate(true);
-    const created = await createConditionTemplate({ name });
-    setAllTemplates((prev) => [...prev, created]);
-    setNewTemplateName("");
-    setAddingTemplate(false);
+    setError("");
+    try {
+      const created = await createConditionTemplate({ name });
+      setAllTemplates((prev) => [...prev, created]);
+      setNewTemplateName("");
+    } catch {
+      setError("Unable to add template.");
+    } finally {
+      setAddingTemplate(false);
+    }
   };
 
   const handleDeleteTemplate = async (id: number) => {
-    await deleteConditionTemplate(id);
-    setAllTemplates((prev) => prev.filter((t) => t.id !== id));
-    if (customReservoirId === id) setCustomReservoirId(null);
-    if (customScreeningId === id) setCustomScreeningId(null);
-    setAllSets((prev) =>
-      prev.filter(
-        (s) => s.reservoirTemplateId !== id && s.screeningTemplateId !== id
-      )
-    );
+    if (deletingTemplateId !== null) return;
+    setDeletingTemplateId(id);
+    setError("");
+    try {
+      const result = await deleteConditionTemplate(id);
+      if ("error" in result) {
+        setError("Unable to delete template.");
+        return;
+      }
+      setAllTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (customReservoirId === id) setCustomReservoirId(null);
+      if (customScreeningId === id) setCustomScreeningId(null);
+      setAllSets((prev) =>
+        prev.filter(
+          (s) => s.reservoirTemplateId !== id && s.screeningTemplateId !== id
+        )
+      );
+    } catch {
+      setError("Unable to delete template.");
+    } finally {
+      setDeletingTemplateId(null);
+    }
   };
 
   const handleDeleteSet = async (id: number) => {
-    await deleteConditionSet(id);
-    setAllSets((prev) => prev.filter((s) => s.id !== id));
-    if (selectedSetId === id) setSelectedSetId(null);
+    if (deletingSetId !== null) return;
+    setDeletingSetId(id);
+    setError("");
+    try {
+      const result = await deleteConditionSet(id);
+      if ("error" in result) {
+        setError("Unable to delete condition set.");
+        return;
+      }
+      setAllSets((prev) => prev.filter((s) => s.id !== id));
+      if (selectedSetId === id) setSelectedSetId(null);
+    } catch {
+      setError("Unable to delete condition set.");
+    } finally {
+      setDeletingSetId(null);
+    }
   };
 
   const selectedPlateType = useMemo(
@@ -128,28 +164,39 @@ export function NewPlateSheet({
   };
 
   const handleRegisterSet = async () => {
-    if (!customSetName.trim() || !customReservoirId || !customScreeningId)
+    if (
+      savingSet ||
+      !customSetName.trim() ||
+      !customReservoirId ||
+      !customScreeningId
+    )
       return;
     setSavingSet(true);
-    const created = await createConditionSet({
-      name: customSetName.trim(),
-      reservoirTemplateId: customReservoirId,
-      screeningTemplateId: customScreeningId,
-    });
-    const newSet: UiConditionSet = {
-      id: created.id,
-      name: created.name,
-      isDefault: false,
-      reservoirTemplateId: created.reservoirTemplateId,
-      screeningTemplateId: created.screeningTemplateId,
-      reservoirTemplateName: created.reservoirTemplate.name,
-      screeningTemplateName: created.screeningTemplate.name,
-    };
-    setAllSets((prev) => [...prev, newSet]);
-    setSelectedSetId(created.id);
-    setConditionMode("sets");
-    setCustomSetName("");
-    setSavingSet(false);
+    setError("");
+    try {
+      const created = await createConditionSet({
+        name: customSetName.trim(),
+        reservoirTemplateId: customReservoirId,
+        screeningTemplateId: customScreeningId,
+      });
+      const newSet: UiConditionSet = {
+        id: created.id,
+        name: created.name,
+        isDefault: false,
+        reservoirTemplateId: created.reservoirTemplateId,
+        screeningTemplateId: created.screeningTemplateId,
+        reservoirTemplateName: created.reservoirTemplate.name,
+        screeningTemplateName: created.screeningTemplate.name,
+      };
+      setAllSets((prev) => [...prev, newSet]);
+      setSelectedSetId(created.id);
+      setConditionMode("sets");
+      setCustomSetName("");
+    } catch {
+      setError("Unable to register condition set.");
+    } finally {
+      setSavingSet(false);
+    }
   };
 
   const handleToggleWell = (key: string) => {
@@ -204,7 +251,7 @@ export function NewPlateSheet({
   }, [open, plateTypes, conditionTemplates, conditionSets]);
 
   const handleCreate = async () => {
-    if (!plateName.trim() || !selectedType) return;
+    if (creating || !plateName.trim() || !selectedType) return;
     setCreating(true);
     setError("");
 
@@ -222,22 +269,27 @@ export function NewPlateSheet({
       scrId = customScreeningId;
     }
 
-    const result = await createPlate({
-      name: plateName.trim(),
-      plateTypeId: selectedType,
-      sampleName: sampleName.trim() || undefined,
-      reservoirTemplateId: resId,
-      screeningTemplateId: scrId,
-      notes: notes.trim() || undefined,
-      filledPositions: Array.from(filledPositions),
-    });
-    setCreating(false);
-    if (result && "error" in result) {
-      setError(result.error);
-      return;
+    try {
+      const result = await createPlate({
+        name: plateName.trim(),
+        plateTypeId: selectedType,
+        sampleName: sampleName.trim() || undefined,
+        reservoirTemplateId: resId,
+        screeningTemplateId: scrId,
+        notes: notes.trim() || undefined,
+        filledPositions: Array.from(filledPositions),
+      });
+      if (result && "error" in result) {
+        setError("Unable to create plate.");
+        return;
+      }
+      onOpenChange(false);
+      router.refresh();
+    } catch {
+      setError("Unable to create plate.");
+    } finally {
+      setCreating(false);
     }
-    onOpenChange(false);
-    router.refresh();
   };
 
   return (
@@ -459,10 +511,11 @@ export function NewPlateSheet({
                           </div>
                         </button>
                         {!s.isDefault && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSet(s.id)}
-                            className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:text-accent-negative"
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSet(s.id)}
+                              disabled={deletingSetId !== null}
+                              className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:text-accent-negative"
                           >
                             <X className="size-4" />
                           </button>
@@ -548,6 +601,7 @@ export function NewPlateSheet({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteTemplate(ct.id)}
+                                disabled={deletingTemplateId !== null}
                                 className={cn(
                                   "cursor-pointer rounded-r-lg border-l-0 px-1.5 py-1.5 text-[11px] transition-colors",
                                   customReservoirId === ct.id
@@ -588,6 +642,7 @@ export function NewPlateSheet({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteTemplate(ct.id)}
+                                disabled={deletingTemplateId !== null}
                                 className={cn(
                                   "cursor-pointer rounded-r-lg border-l-0 px-1.5 py-1.5 text-[11px] transition-colors",
                                   customScreeningId === ct.id

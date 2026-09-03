@@ -82,6 +82,7 @@ export function PlateDetailClient({
   const [selectedWell, setSelectedWell] = useState<WellData | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const qrRef = useRef<HTMLDivElement>(null);
   const [qrUrl, setQrUrl] = useState(`/plates/${plate.id}`);
 
@@ -131,26 +132,38 @@ export function PlateDetailClient({
     setEditSampleName(plate.sampleName ?? "");
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
+    setError("");
     setEditMode(false);
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
-    const statusChanged = editStatus !== plate.status;
-    await updatePlate(plate.id, {
-      name: editName,
-      status: editStatus.toUpperCase() as "ACTIVE" | "ARCHIVED",
-      notes: editNotes || undefined,
-      sampleName: editSampleName || null,
-      reservoirTemplateId: editReservoirTemplateId,
-      screeningTemplateId: editScreeningTemplateId,
-    });
-    setSaving(false);
-    setEditMode(false);
-    if (statusChanged) {
-      router.push("/samples");
-    } else {
-      router.refresh();
+    setError("");
+    try {
+      const statusChanged = editStatus !== plate.status;
+      const result = await updatePlate(plate.id, {
+        name: editName,
+        status: editStatus.toUpperCase() as "ACTIVE" | "ARCHIVED",
+        notes: editNotes || undefined,
+        sampleName: editSampleName || null,
+        reservoirTemplateId: editReservoirTemplateId,
+        screeningTemplateId: editScreeningTemplateId,
+      });
+      if (result && "error" in result) {
+        setError(t("saveChanges") + ": Unable to save changes.");
+        return;
+      }
+      setEditMode(false);
+      if (statusChanged) {
+        router.push("/samples");
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError(t("saveChanges") + ": Unable to save changes.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -201,6 +214,11 @@ export function PlateDetailClient({
         {/* Edit Mode */}
         {editMode && (
           <div className="space-y-4 rounded-xl bg-bg-surface p-4">
+            {error && (
+              <div className="rounded-xl bg-accent-negative/10 px-4 py-3 text-[13px] text-accent-negative">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
                 {t("plateName")}
