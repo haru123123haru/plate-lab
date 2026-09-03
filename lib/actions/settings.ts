@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserId } from "@/lib/auth";
+import { updateUserSettingsSchema } from "@/lib/validations";
 
 export async function getUserSettings() {
   // RootLayout から呼ばれるため、未認証時は redirect せず null を返す
@@ -25,13 +26,17 @@ export async function updateUserSettings(data: {
   notifReminder?: boolean;
 }) {
   const userId = await getCurrentUserId();
+  const parsed = updateUserSettingsSchema.safeParse(data);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
 
   return prisma.userSettings.upsert({
     where: { userId },
-    update: data,
+    update: parsed.data,
     create: {
       userId,
-      ...data,
+      ...parsed.data,
     },
   });
 }

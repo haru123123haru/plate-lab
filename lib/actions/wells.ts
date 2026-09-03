@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
+import { resourceIdSchema, updateWellSchema } from "@/lib/validations";
 import type { WellStatus } from "../../generated/prisma/client";
 
 export async function updateWell(
@@ -17,8 +18,15 @@ export async function updateWell(
   }
 ) {
   const userId = await getCurrentUserId();
+  const parsedId = resourceIdSchema.safeParse(id);
+  const parsed = updateWellSchema.safeParse(data);
+  if (!parsedId.success) return { error: "Not found" };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
   const well = await prisma.well.findUnique({
-    where: { id },
+    where: { id: parsedId.data },
     include: { plate: { select: { userId: true } } },
   });
 
@@ -27,7 +35,7 @@ export async function updateWell(
   }
 
   return prisma.well.update({
-    where: { id },
-    data,
+    where: { id: parsedId.data },
+    data: parsed.data,
   });
 }
