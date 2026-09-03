@@ -147,6 +147,8 @@ async function main() {
       name: "PEG",
       description:
         "96-well screen — 10% PEG3350, Salt gradient (LiCl→BaCl₂) × Polyamine (Spermine / [Co(NH₃)₆]Cl₃)",
+      isDefault: true,
+      createdById: null,
       wells: {
         create: pegWells.map((w) => ({
           position: w.position,
@@ -162,6 +164,8 @@ async function main() {
       name: "MPD",
       description:
         "96-well screen — 10% MPD, Salt gradient (LiCl→BaCl₂) × Polyamine (Spermine / [Co(NH₃)₆]Cl₃)",
+      isDefault: true,
+      createdById: null,
       wells: {
         create: mpdWells.map((w) => ({
           position: w.position,
@@ -176,6 +180,7 @@ async function main() {
     data: {
       name: "PEG Set",
       isDefault: true,
+      createdById: null,
       reservoirTemplateId: ctPeg.id,
       screeningTemplateId: ctPeg.id,
     },
@@ -184,6 +189,7 @@ async function main() {
     data: {
       name: "MPD Set",
       isDefault: true,
+      createdById: null,
       reservoirTemplateId: ctMpd.id,
       screeningTemplateId: ctMpd.id,
     },

@@ -20,6 +20,8 @@ model User {
 
   plates     Plate[]
   plateTypes PlateType[]
+  conditionTemplates ConditionTemplate[]
+  conditionSets      ConditionSet[]
   settings   UserSettings?
 }
 
@@ -112,10 +114,15 @@ model ConditionSet {
   id                  Int               @id @default(autoincrement())
   name                String
   isDefault           Boolean           @default(false)
+  createdById         String?
+  createdBy           User?             @relation(fields: [createdById], references: [id])
   reservoirTemplateId Int
   reservoirTemplate   ConditionTemplate @relation("SetReservoir", fields: [reservoirTemplateId], references: [id])
   screeningTemplateId Int
   screeningTemplate   ConditionTemplate @relation("SetScreening", fields: [screeningTemplateId], references: [id])
+
+  @@index([isDefault])
+  @@index([createdById])
 }
 
 // 条件テンプレート
@@ -123,11 +130,18 @@ model ConditionTemplate {
   id          Int    @id @default(autoincrement())
   name        String
   description String?
+  isDefault   Boolean @default(false)
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
   reservoirPlates Plate[] @relation("ReservoirTemplate")
   screeningPlates Plate[] @relation("ScreeningTemplate")
   reservoirSets   ConditionSet[] @relation("SetReservoir")
   screeningSets   ConditionSet[] @relation("SetScreening")
   wells       TemplateWell[]
+
+  @@index([isDefault])
+  @@index([createdById])
 }
 
 // テンプレート内の各ウェル条件
