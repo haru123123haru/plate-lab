@@ -1,0 +1,17 @@
+{
+  "description": "Require one final delivery pass when a repository subagent stops.",
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -File .codex/hooks/subagent-stop.ps1",
+            "timeout": 30,
+            "statusMessage": "Checking subagent delivery completion"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -49,6 +49,8 @@ model PlateType {
   createdBy   User?   @relation(fields: [createdById], references: [id])
 
   plates Plate[]
+
+  @@index([createdById])
 }
 
 // プレートステータス

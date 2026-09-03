@@ -12,6 +12,10 @@ UPDATE "ConditionTemplate" SET "isDefault" = true;
 UPDATE "ConditionSet" SET "isDefault" = true;
 
 -- CreateIndex
+CREATE INDEX "PlateType_createdById_idx"
+ON "PlateType"("createdById");
+
+-- CreateIndex
 CREATE INDEX "ConditionTemplate_isDefault_idx"
 ON "ConditionTemplate"("isDefault");
 
