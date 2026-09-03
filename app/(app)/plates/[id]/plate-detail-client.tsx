@@ -46,8 +46,8 @@ interface PlateDetailClientProps {
     status: PlateStatus;
     notes?: string;
     sampleName?: string;
-    reservoirTemplate?: string;
-    screeningTemplate?: string;
+    reservoirTemplateId: number | null;
+    screeningTemplateId: number | null;
     plateType: { name: string; wellCount: number };
     wells: WellData[];
     createdAt: string;
@@ -73,11 +73,11 @@ export function PlateDetailClient({
   const [editSampleName, setEditSampleName] = useState(
     plate.sampleName ?? ""
   );
-  const [editReservoirTemplate, setEditReservoirTemplate] = useState(
-    plate.reservoirTemplate ?? ""
+  const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<number | null>(
+    plate.reservoirTemplateId
   );
-  const [editScreeningTemplate, setEditScreeningTemplate] = useState(
-    plate.screeningTemplate ?? ""
+  const [editScreeningTemplateId, setEditScreeningTemplateId] = useState<number | null>(
+    plate.screeningTemplateId
   );
   const [selectedWell, setSelectedWell] = useState<WellData | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -129,27 +129,21 @@ export function PlateDetailClient({
     setEditNotes(plate.notes ?? "");
     setEditStatus(plate.status);
     setEditSampleName(plate.sampleName ?? "");
-    setEditReservoirTemplate(plate.reservoirTemplate ?? "");
-    setEditScreeningTemplate(plate.screeningTemplate ?? "");
+    setEditReservoirTemplateId(plate.reservoirTemplateId);
+    setEditScreeningTemplateId(plate.screeningTemplateId);
     setEditMode(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    const matchingReservoir = conditionTemplates.find(
-      (ct) => ct.name === editReservoirTemplate
-    );
-    const matchingScreening = conditionTemplates.find(
-      (ct) => ct.name === editScreeningTemplate
-    );
     const statusChanged = editStatus !== plate.status;
     await updatePlate(plate.id, {
       name: editName,
       status: editStatus.toUpperCase() as "ACTIVE" | "ARCHIVED",
       notes: editNotes || undefined,
       sampleName: editSampleName || null,
-      reservoirTemplateId: matchingReservoir?.id ?? null,
-      screeningTemplateId: matchingScreening?.id ?? null,
+      reservoirTemplateId: editReservoirTemplateId,
+      screeningTemplateId: editScreeningTemplateId,
     });
     setSaving(false);
     setEditMode(false);
@@ -265,18 +259,18 @@ export function PlateDetailClient({
                   <button
                     type="button"
                     key={ct.id}
-                    onClick={() => setEditReservoirTemplate(ct.name)}
+                    onClick={() => setEditReservoirTemplateId(ct.id)}
                     className="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-bg-primary p-3 text-left"
                   >
                     <div
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded-full",
-                        editReservoirTemplate === ct.name
+                        editReservoirTemplateId === ct.id
                           ? "bg-text-primary"
                           : "border-2 border-border-default"
                       )}
                     >
-                      {editReservoirTemplate === ct.name && (
+                      {editReservoirTemplateId === ct.id && (
                         <div className="size-2 rounded-full bg-white" />
                       )}
                     </div>
@@ -300,18 +294,18 @@ export function PlateDetailClient({
                   <button
                     type="button"
                     key={ct.id}
-                    onClick={() => setEditScreeningTemplate(ct.name)}
+                    onClick={() => setEditScreeningTemplateId(ct.id)}
                     className="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-bg-primary p-3 text-left"
                   >
                     <div
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center rounded-full",
-                        editScreeningTemplate === ct.name
+                        editScreeningTemplateId === ct.id
                           ? "bg-text-primary"
                           : "border-2 border-border-default"
                       )}
                     >
-                      {editScreeningTemplate === ct.name && (
+                      {editScreeningTemplateId === ct.id && (
                         <div className="size-2 rounded-full bg-white" />
                       )}
                     </div>
@@ -393,12 +387,18 @@ export function PlateDetailClient({
             <ListRow
               icon={Beaker}
               title={t("reservoir")}
-              description={plate.reservoirTemplate ?? "-"}
+              description={
+                conditionTemplates.find((ct) => ct.id === plate.reservoirTemplateId)
+                  ?.name ?? "-"
+              }
             />
             <ListRow
               icon={Beaker}
               title={t("screening")}
-              description={plate.screeningTemplate ?? "-"}
+              description={
+                conditionTemplates.find((ct) => ct.id === plate.screeningTemplateId)
+                  ?.name ?? "-"
+              }
             />
             <ListRow
               icon={Calendar}

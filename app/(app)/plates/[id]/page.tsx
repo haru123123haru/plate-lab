@@ -71,8 +71,8 @@ export default async function PlateDetailPage({
     status: plate.status.toLowerCase() as PlateStatus,
     notes: plate.notes ?? undefined,
     sampleName: plate.sampleName ?? undefined,
-    reservoirTemplate: plate.reservoirTemplate?.name ?? undefined,
-    screeningTemplate: plate.screeningTemplate?.name ?? undefined,
+    reservoirTemplateId: plate.reservoirTemplate?.id ?? null,
+    screeningTemplateId: plate.screeningTemplate?.id ?? null,
     plateType: {
       name: plate.plateType.name,
       wellCount: plate.plateType.wellCount,
