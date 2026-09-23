@@ -70,15 +70,13 @@ export function PlateDetailClient({
   const [editName, setEditName] = useState(plate.name);
   const [editNotes, setEditNotes] = useState(plate.notes ?? "");
   const [editStatus, setEditStatus] = useState<PlateStatus>(plate.status);
-  const [editSampleName, setEditSampleName] = useState(
-    plate.sampleName ?? ""
-  );
-  const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<number | null>(
-    plate.reservoirTemplateId
-  );
-  const [editScreeningTemplateId, setEditScreeningTemplateId] = useState<number | null>(
-    plate.screeningTemplateId
-  );
+  const [editSampleName, setEditSampleName] = useState(plate.sampleName ?? "");
+  const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
+    number | null
+  >(plate.reservoirTemplateId);
+  const [editScreeningTemplateId, setEditScreeningTemplateId] = useState<
+    number | null
+  >(plate.screeningTemplateId);
   const [selectedWell, setSelectedWell] = useState<WellData | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -112,7 +110,9 @@ export function PlateDetailClient({
       link.href = canvas.toDataURL("image/png");
       link.click();
     };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgData)));
   }, [plate.name]);
 
   const statusLabel: Record<string, string> = {
@@ -198,15 +198,9 @@ export function PlateDetailClient({
           <SectionHeader label={t("wellMap")} />
           <div className="mt-3 rounded-xl bg-bg-surface">
             {plate.plateType.wellCount === 24 ? (
-              <WellGrid24
-                wells={plate.wells}
-                onWellClick={handleWellClick}
-              />
+              <WellGrid24 wells={plate.wells} onWellClick={handleWellClick} />
             ) : (
-              <WellGrid
-                wells={plate.wells}
-                onWellClick={handleWellClick}
-              />
+              <WellGrid wells={plate.wells} onWellClick={handleWellClick} />
             )}
           </div>
         </div>
@@ -406,16 +400,18 @@ export function PlateDetailClient({
               icon={Beaker}
               title={t("reservoir")}
               description={
-                conditionTemplates.find((ct) => ct.id === plate.reservoirTemplateId)
-                  ?.name ?? "-"
+                conditionTemplates.find(
+                  (ct) => ct.id === plate.reservoirTemplateId
+                )?.name ?? "-"
               }
             />
             <ListRow
               icon={Beaker}
               title={t("screening")}
               description={
-                conditionTemplates.find((ct) => ct.id === plate.screeningTemplateId)
-                  ?.name ?? "-"
+                conditionTemplates.find(
+                  (ct) => ct.id === plate.screeningTemplateId
+                )?.name ?? "-"
               }
             />
             <ListRow

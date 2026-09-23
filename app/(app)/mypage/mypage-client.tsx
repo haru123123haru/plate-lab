@@ -33,11 +33,7 @@ export function MyPageClient({ user, stats }: MyPageClientProps) {
       <PageHeader
         title={t("myPage")}
         rightAction={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMenuOpen(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)}>
             <Menu className="size-6 text-text-primary" />
           </Button>
         }
@@ -55,9 +51,7 @@ export function MyPageClient({ user, stats }: MyPageClientProps) {
           <p className="mt-1 text-[14px] text-text-secondary">
             {user.role ?? ""}
           </p>
-          <p className="mt-0.5 text-[13px] text-text-secondary">
-            {user.email}
-          </p>
+          <p className="mt-0.5 text-[13px] text-text-secondary">{user.email}</p>
           <p className="mt-0.5 text-[13px] text-text-secondary">
             {user.organization ?? ""}
           </p>
