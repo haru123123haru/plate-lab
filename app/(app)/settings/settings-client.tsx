@@ -70,11 +70,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       <PageHeader
         title={t("settings")}
         rightAction={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMenuOpen(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)}>
             <Menu className="size-6 text-text-primary" />
           </Button>
         }

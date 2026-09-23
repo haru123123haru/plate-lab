@@ -59,9 +59,7 @@ export function NewPlateSheet({
   const [filledPositions, setFilledPositions] = useState<Set<string>>(
     new Set()
   );
-  const [conditionMode, setConditionMode] = useState<"sets" | "custom">(
-    "sets"
-  );
+  const [conditionMode, setConditionMode] = useState<"sets" | "custom">("sets");
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
   const [customReservoirId, setCustomReservoirId] = useState<number | null>(
     null
@@ -376,9 +374,7 @@ export function NewPlateSheet({
                           : "border border-border-default bg-bg-surface text-text-primary"
                       )}
                     >
-                      <div className="text-[15px] font-semibold">
-                        {pt.name}
-                      </div>
+                      <div className="text-[15px] font-semibold">{pt.name}</div>
                       <div
                         className={cn(
                           "mt-1 text-[13px]",
@@ -511,11 +507,11 @@ export function NewPlateSheet({
                           </div>
                         </button>
                         {!s.isDefault && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteSet(s.id)}
-                              disabled={deletingSetId !== null}
-                              className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:text-accent-negative"
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSet(s.id)}
+                            disabled={deletingSetId !== null}
+                            className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:text-accent-negative"
                           >
                             <X className="size-4" />
                           </button>

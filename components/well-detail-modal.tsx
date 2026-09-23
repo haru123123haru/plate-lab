@@ -29,10 +29,7 @@ interface WellDetailModalProps {
   onClose: () => void;
 }
 
-const statusVariant: Record<
-  WellStatus,
-  "default" | "secondary" | "outline"
-> = {
+const statusVariant: Record<WellStatus, "default" | "secondary" | "outline"> = {
   filled: "default",
   empty: "secondary",
   crystal: "default",
@@ -136,10 +133,7 @@ export function WellDetailModal({
                 label={t("precipitant")}
                 value={reservoirCondition.precipitant}
               />
-              <DetailField
-                label={t("salt")}
-                value={reservoirCondition.salt}
-              />
+              <DetailField label={t("salt")} value={reservoirCondition.salt} />
               <DetailField
                 label={t("polyamine")}
                 value={reservoirCondition.polyamine}
@@ -162,10 +156,7 @@ export function WellDetailModal({
                 label={t("precipitant")}
                 value={screeningCondition.precipitant}
               />
-              <DetailField
-                label={t("salt")}
-                value={screeningCondition.salt}
-              />
+              <DetailField label={t("salt")} value={screeningCondition.salt} />
               <DetailField
                 label={t("polyamine")}
                 value={screeningCondition.polyamine}

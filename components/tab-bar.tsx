@@ -19,9 +19,7 @@ export function TabBar() {
     <nav className="absolute inset-x-0 bottom-0 z-50 flex h-[72px] items-start border-t border-border-default bg-bg-surface pb-[env(safe-area-inset-bottom)]">
       {tabs.map((tab) => {
         const isActive =
-          tab.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(tab.href);
+          tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
 
         return (
           <Link

@@ -9,7 +9,12 @@ interface ListRowProps {
   onClick?: () => void;
 }
 
-export function ListRow({ icon: Icon, title, description, onClick }: ListRowProps) {
+export function ListRow({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: ListRowProps) {
   const content = (
     <>
       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">

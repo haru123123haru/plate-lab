@@ -90,7 +90,9 @@ export async function deleteConditionTemplate(id: number) {
       },
     });
     if (blockingSets > 0) {
-      return { error: "Cannot delete while it is used by another condition set" };
+      return {
+        error: "Cannot delete while it is used by another condition set",
+      };
     }
 
     const otherPlateReferences = await tx.plate.count({
