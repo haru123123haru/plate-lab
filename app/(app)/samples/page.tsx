@@ -1,15 +1,19 @@
 import { getPlates } from "@/lib/actions/plates";
 import { getPlateTypes } from "@/lib/actions/plate-types";
-import { getConditionTemplates, getConditionSets } from "@/lib/actions/condition-templates";
+import {
+  getConditionTemplates,
+  getConditionSets,
+} from "@/lib/actions/condition-templates";
 import { SamplesClient } from "./samples-client";
 
 export default async function SamplesPage() {
-  const [plates, plateTypes, conditionTemplates, conditionSets] = await Promise.all([
-    getPlates(),
-    getPlateTypes(),
-    getConditionTemplates(),
-    getConditionSets(),
-  ]);
+  const [plates, plateTypes, conditionTemplates, conditionSets] =
+    await Promise.all([
+      getPlates(),
+      getPlateTypes(),
+      getConditionTemplates(),
+      getConditionSets(),
+    ]);
 
   const uiPlates = plates.map((p) => ({
     id: p.id,

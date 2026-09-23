@@ -71,7 +71,10 @@ export function DashboardClient({
           id: p.id,
           name: p.name,
           status: p.status.toLowerCase() as "active" | "archived",
-          plateType: { name: p.plateType.name, wellCount: p.plateType.wellCount },
+          plateType: {
+            name: p.plateType.name,
+            wellCount: p.plateType.wellCount,
+          },
           filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
           totalWells: p.wells.length,
         }))
@@ -98,11 +101,7 @@ export function DashboardClient({
       <PageHeader
         title={t("dashboard")}
         rightAction={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMenuOpen(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)}>
             <Menu className="size-6 text-text-primary" />
           </Button>
         }

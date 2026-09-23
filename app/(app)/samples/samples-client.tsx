@@ -12,11 +12,7 @@ import { MenuSheet } from "@/components/menu-sheet";
 import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { searchPlates } from "@/lib/actions/plates";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PlateType } from "@/types";
 
 interface UiPlate {
@@ -69,7 +65,10 @@ export function SamplesClient({
           id: p.id,
           name: p.name,
           status: p.status.toLowerCase() as "active" | "archived",
-          plateType: { name: p.plateType.name, wellCount: p.plateType.wellCount },
+          plateType: {
+            name: p.plateType.name,
+            wellCount: p.plateType.wellCount,
+          },
           filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
           totalWells: p.wells.length,
           createdAt: new Date(p.createdAt).toLocaleDateString(),
@@ -104,11 +103,7 @@ export function SamplesClient({
       <PageHeader
         title={t("samples")}
         rightAction={
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMenuOpen(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)}>
             <Menu className="size-6 text-text-primary" />
           </Button>
         }

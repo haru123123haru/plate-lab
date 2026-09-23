@@ -88,7 +88,10 @@ export const updateUserSettingsSchema = z
   })
   .strict();
 
-export const searchPlatesSchema = z.string().max(200).transform((query) => query.trim());
+export const searchPlatesSchema = z
+  .string()
+  .max(200)
+  .transform((query) => query.trim());
 
 export const resourceIdSchema = z.string().trim().min(1).max(100);
 

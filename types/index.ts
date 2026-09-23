@@ -7,7 +7,8 @@ export type PlateType = {
 
 export type PlateStatus = "active" | "archived";
 
-export type WellStatus = "filled" | "empty" | "crystal" | "precipitate" | "clear";
+export type WellStatus =
+  "filled" | "empty" | "crystal" | "precipitate" | "clear";
 
 export type WellData = {
   id?: string;
