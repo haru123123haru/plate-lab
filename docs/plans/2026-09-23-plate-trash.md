@@ -49,26 +49,26 @@
 
 ### タスク
 
-- [ ] `prisma/schema.prisma` の `Plate` に `deletedAt DateTime?` と `@@index([userId, deletedAt])` を追加
-- [ ] `prisma/migrations/20260923000000_add_plate_soft_delete/migration.sql` を手で作成する。中身は `ALTER TABLE "Plate" ADD COLUMN "deletedAt" TIMESTAMP(3);` と `CREATE INDEX "Plate_userId_deletedAt_idx" ON "Plate"("userId", "deletedAt");` の2文だけ
-- [ ] `npx prisma migrate deploy` でローカルに適用し、`npx prisma generate` でクライアントを更新
-- [ ] `lib/access-control.ts` に追加
+- [x] `prisma/schema.prisma` の `Plate` に `deletedAt DateTime?` と `@@index([userId, deletedAt])` を追加
+- [x] `prisma/migrations/20260923000000_add_plate_soft_delete/migration.sql` を手で作成する。中身は `ALTER TABLE "Plate" ADD COLUMN "deletedAt" TIMESTAMP(3);` と `CREATE INDEX "Plate_userId_deletedAt_idx" ON "Plate"("userId", "deletedAt");` の2文だけ
+- [x] `npx prisma migrate deploy` でローカルに適用し、`npx prisma generate` でクライアントを更新
+- [x] `lib/access-control.ts` に追加
   - `activePlateWhere(userId)` → `{ userId, deletedAt: null }`
   - `trashedPlateWhere(userId)` → `{ userId, deletedAt: { not: null } }`
-- [ ] `lib/actions/plates.ts` の既存 Action を修正
+- [x] `lib/actions/plates.ts` の既存 Action を修正
   - `getPlates`、`searchPlates`（空クエリ時と検索時の2か所）の `where` に `activePlateWhere` を使う
   - `getPlateById` はゴミ箱も返す（条件は変えない）。`deletedAt` は `include` しなくても結果に含まれる
   - `updatePlate` の存在確認を `activePlateWhere(userId)` に変え、見つからなければ `{ error: "Not found" }` を返す（今は `throw`）。テンプレートにアクセスできない場合の `throw`（213行目）も `{ error: "Not found" }` に揃える。最後の `update` の `where` にも `deletedAt: null` を足し、確認と更新の間にゴミ箱へ移された場合は更新しない
   - `deletePlate` を `updateMany({ where: { id, ...activePlateWhere(userId) }, data: { deletedAt: new Date() } })` に置き換える。更新0件なら `{ error: "Not found" }`、成功なら `{ success: true }`
-- [ ] `lib/actions/plates.ts` に新規 Action を追加（すべて `getCurrentUserId()` と `resourceIdSchema` を通す）
+- [x] `lib/actions/plates.ts` に新規 Action を追加（すべて `getCurrentUserId()` と `resourceIdSchema` を通す）
   - `getTrashedPlates()` — `where` は `{ ...trashedPlateWhere(userId), plateType: accessiblePlateTypeWhere(userId) }`。`getPlates` と条件を揃え、一覧に出るのに詳細が開けないプレートを作らない。`deletedAt` の降順、`plateType` を include
   - `restorePlate(id)` — `updateMany({ where: { id, ...trashedPlateWhere(userId) }, data: { deletedAt: null } })`。更新0件なら `{ error: "Not found" }`
   - `purgePlate(id)` — `deleteMany({ where: { id, ...trashedPlateWhere(userId) } })`。削除0件なら `{ error: "Not found" }`。ウェルは `onDelete: Cascade` で DB 側が消す
-- [ ] `lib/actions/wells.ts` の `updateWell` で、親プレートの `deletedAt` が入っていれば `{ error: "Not found" }` を返す。今の `throw` も `{ error }` に揃える
-- [ ] `tests/validation-access-control.test.ts` にヘルパーのテストを追加
+- [x] `lib/actions/wells.ts` の `updateWell` で、親プレートの `deletedAt` が入っていれば `{ error: "Not found" }` を返す。今の `throw` も `{ error }` に揃える
+- [x] `tests/validation-access-control.test.ts` にヘルパーのテストを追加
   - `activePlateWhere` が `userId` と `deletedAt: null` を返す
   - `trashedPlateWhere` が `userId` と `deletedAt: { not: null }` を返す
-- [ ] `tests/plate-trash-actions.test.ts` を新設し、Action が渡す条件を検査する。`@/lib/prisma` を `vi.fn()` のモックに、`@/lib/auth` の `getCurrentUserId` を固定値を返すモックに差し替える
+- [x] `tests/plate-trash-actions.test.ts` を新設し、Action が渡す条件を検査する。`@/lib/prisma` を `vi.fn()` のモックに、`@/lib/auth` の `getCurrentUserId` を固定値を返すモックに差し替える
   - `purgePlate` の `deleteMany` の `where` に、`id`・`userId`・`deletedAt: { not: null }` が入っている
   - `restorePlate` の `updateMany` の `where` に、`id`・`userId`・`deletedAt: { not: null }` が入っている
   - `deletePlate` の `updateMany` の `where` に、`id`・`userId`・`deletedAt: null` が入っている
@@ -107,19 +107,19 @@ grep の結果が、import 行を除いて `getPlates`・`searchPlates`×2・`up
 
 ### タスク
 
-- [ ] `lib/i18n.ts` に en/ja のキーを追加（`moveToTrash`、`trash`、`restore`、`deletePermanently`、`trashConfirmTitle`、`trashConfirmBody`、`purgeConfirmTitle`、`purgeConfirmBody`、`inTrashBanner`、`trashEmpty` など）
-- [ ] `app/(app)/plates/[id]/page.tsx` で `uiPlate` に `deletedAt`（ISO 文字列か `null`）を渡す
-- [ ] `app/(app)/plates/[id]/plate-detail-client.tsx`
+- [x] `lib/i18n.ts` に en/ja のキーを追加（`moveToTrash`、`trash`、`restore`、`deletePermanently`、`trashConfirmTitle`、`trashConfirmBody`、`purgeConfirmTitle`、`purgeConfirmBody`、`inTrashBanner`、`trashEmpty` など）
+- [x] `app/(app)/plates/[id]/page.tsx` で `uiPlate` に `deletedAt`（ISO 文字列か `null`）を渡す
+- [x] `app/(app)/plates/[id]/plate-detail-client.tsx`
   - 編集モードの保存・キャンセルボタンの下に、赤い「ゴミ箱に移動」ボタンを追加
   - `components/ui/dialog.tsx` で確認ダイアログを出し、確定で `deletePlate` を呼ぶ。成功したら `router.push("/")`、失敗したら既存の `error` 表示に出す
   - `plate.deletedAt` があるときは、上部に「このプレートはゴミ箱にあります」の帯と「復元」ボタンを出し、編集ボタン（鉛筆）を隠す。復元成功で `router.refresh()`
-- [ ] `app/(app)/trash/page.tsx`（Server）と `app/(app)/trash/trash-client.tsx`（Client）を新設
+- [x] `app/(app)/trash/page.tsx`（Server）と `app/(app)/trash/trash-client.tsx`（Client）を新設
   - 行ごとにプレート名・種別・ゴミ箱へ移した日付、「復元」「完全に削除」ボタン
   - 行の本体をタップすると詳細画面（帯つきの閲覧モード）へ遷移する
   - 完全削除は確認ダイアログで「元に戻せません」と明示
   - 空のときは `trashEmpty` を表示
   - 戻るボタンでマイページへ
-- [ ] `app/(app)/mypage/mypage-client.tsx` に「ゴミ箱」の `ListRow` を追加し、`/trash` へ遷移
+- [x] `app/(app)/mypage/mypage-client.tsx` に「ゴミ箱」の `ListRow` を追加し、`/trash` へ遷移
 
 ### 完了条件
 
@@ -167,16 +167,16 @@ Phase 2 を触ってみて、アーカイブとゴミ箱の役割が重なって
 
 ### Phase 3a: コードを status から切り離す
 
-- [ ] `prisma/migrations/20260923010000_archive_to_trash/migration.sql` を手書きする。中身は `UPDATE "Plate" SET "deletedAt" = "updatedAt" WHERE "status" = 'ARCHIVED' AND "deletedAt" IS NULL;` の1文だけ。カラムはまだ残す（デフォルト値 `ACTIVE` があるので新規作成も動く）
-- [ ] `app/(app)/plates/[id]/plate-detail-client.tsx` から、ステータスの切り替え UI、表示行、`statusChanged` による `/samples` への遷移を削除
-- [ ] `app/(app)/plates/[id]/page.tsx`、`app/(app)/page.tsx`、`app/(app)/samples/page.tsx`、`app/(app)/dashboard-client.tsx` から `status` の受け渡しを削除
-- [ ] `app/(app)/samples/samples-client.tsx` のアクティブ/アーカイブのタブを削除し、全件を表示
-- [ ] `components/plate-card.tsx` のステータスのドットを削除
-- [ ] `app/(app)/mypage/page.tsx` と `mypage-client.tsx`: 統計を「プレート数」1行にし、ゴミ箱の行に件数を出す
-- [ ] `lib/actions/plates.ts` の `updatePlate` の引数と、`lib/validations.ts` の `updatePlateSchema` から `status` を削除
-- [ ] `types/index.ts` の `PlateStatus` と、使わなくなった i18n キーを削除
-- [ ] `prisma/seed.ts` のアーカイブ2件を、`deletedAt` を入れた状態で作る（`status` 指定は削除）
-- [ ] `tests/validation-access-control.test.ts` を修正し、`updatePlateSchema` が `status` を未知のキーとして拒否することを確かめる
+- [x] `prisma/migrations/20260923010000_archive_to_trash/migration.sql` を手書きする。中身は `UPDATE "Plate" SET "deletedAt" = "updatedAt" WHERE "status" = 'ARCHIVED' AND "deletedAt" IS NULL;` の1文だけ。カラムはまだ残す（デフォルト値 `ACTIVE` があるので新規作成も動く）
+- [x] `app/(app)/plates/[id]/plate-detail-client.tsx` から、ステータスの切り替え UI、表示行、`statusChanged` による `/samples` への遷移を削除
+- [x] `app/(app)/plates/[id]/page.tsx`、`app/(app)/page.tsx`、`app/(app)/samples/page.tsx`、`app/(app)/dashboard-client.tsx` から `status` の受け渡しを削除
+- [x] `app/(app)/samples/samples-client.tsx` のアクティブ/アーカイブのタブを削除し、全件を表示
+- [x] `components/plate-card.tsx` のステータスのドットを削除
+- [x] `app/(app)/mypage/page.tsx` と `mypage-client.tsx`: 統計を「プレート数」1行にし、ゴミ箱の行に件数を出す
+- [x] `lib/actions/plates.ts` の `updatePlate` の引数と、`lib/validations.ts` の `updatePlateSchema` から `status` を削除
+- [x] `types/index.ts` の `PlateStatus` と、使わなくなった i18n キーを削除
+- [x] `prisma/seed.ts` のアーカイブ2件を、`deletedAt` を入れた状態で作る（`status` 指定は削除）
+- [x] `tests/validation-access-control.test.ts` を修正し、`updatePlateSchema` が `status` を未知のキーとして拒否することを確かめる
 
 完了条件:
 
@@ -199,18 +199,24 @@ grep は、`prisma/` と生成コード以外で0件になること。手動で�
 
 ### Phase 3b: status カラムを削除する
 
-- [ ] `prisma/schema.prisma` から `Plate.status` と `enum PlateStatus` を削除
-- [ ] `prisma/migrations/<日時>_drop_plate_status/migration.sql` を手書きする。`ALTER TABLE "Plate" DROP COLUMN "status";` と `DROP TYPE "PlateStatus";`
-- [ ] 適用後、`prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` が空になることを確認
+- [x] `prisma/schema.prisma` から `Plate.status` と `enum PlateStatus` を削除
+- [x] `prisma/migrations/<日時>_drop_plate_status/migration.sql` を手書きする。`ALTER TABLE "Plate" DROP COLUMN "status";` と `DROP TYPE "PlateStatus";`
+- [x] 適用後、`prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` が空になることを確認
 
-#### 実測（2026-09-23 ローカル完了）
+#### 実測（2026-09-23 本番反映済み、コミット `2b3920a`）
 
 3a を本番に出し（`bbf21f8`）、マイグレーション2本の適用とゴミ箱・サンプル一覧の動作を確かめてから着手した。
 
 DROP の前に、ローカル DB で「`status = 'ARCHIVED'` なのにゴミ箱に移っていない行」が0件であることを確認した。適用後の `migrate diff` は空。typecheck・test・format・build はすべて通過し、生成コード以外に `PlateStatus` の参照は残っていない。3a で全体を整形したので、今回は整形の切り出しが要らなかった。
 
+本番のデプロイ（`dpl_FHv5ps8L2cpspbQfcVV5nL4d88PX`）は READY になった。ビルドログに `Applying migration 20260923020000_drop_plate_status` が出ており、そのあとの `next build` も通っている。心配していた「DROP だけ済んでビルドが落ちる」事態は起きなかった。直近24時間のランタイムエラーは0件で、ダッシュボード・サンプル一覧・ゴミ箱が本番で開けることも画面で確かめた。
+
+計画との差として、3b は「ローカル完了」と書いた時点ですでに push 済みだった。記録が実際より遅れていたので、ここで追いつかせた。
+
 ---
 
 ## 本番への反映
 
-`main` にマージして push すれば、ビルド時の `prisma migrate deploy` で本番 DB にもマイグレーションが適用される。Phase 1 と 3a のマイグレーションは、カラム追加と UPDATE だけなので既存データは失われない。3b だけはカラムを削除するので、3a が本番で動いているのを確認してから出す。
+2026-09-23 に、マイグレーション3本（`add_plate_soft_delete`・`archive_to_trash`・`drop_plate_status`）がすべて本番 DB に適用された。この計画はこれで完了。
+
+仕組みとしては、`main` に push するとビルド時の `prisma migrate deploy` で本番 DB にもマイグレーションが適用される。Phase 1 と 3a はカラム追加と UPDATE だけなので既存データを失わない。カラムを削除する 3b だけは、3a が本番で動くのを確かめてから出した。
