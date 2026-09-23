@@ -15,9 +15,9 @@
 - ゴミ箱へ移すボタンは詳細画面の編集モード最下部に置き、確認ダイアログを挟む
 - ゴミ箱の一覧は `/trash`。マイページから遷移する
 - ゴミ箱のプレートを詳細画面で開いた場合（QR 経由を想定）は、帯と復元ボタンを出して閲覧のみ許す
-- アーカイブ（`status = ARCHIVED`）はそのまま残す。アーカイブは終わった実験の保管、ゴミ箱は要らないもの、と役割が違う
+- ~~アーカイブ（`status = ARCHIVED`）はそのまま残す~~ → Phase 2 完了後に方針を変更し、アーカイブは廃止してゴミ箱に一本化する（Phase 3）
 
-やらないこと: 自動削除、一覧画面からの一括削除、アーカイブとの統合。
+やらないこと: 自動削除、一覧画面からの一括削除。
 
 ## 設計上の要点
 
@@ -140,8 +140,65 @@ npm run build
 7. DB でそのプレートのウェルも消えていることを確認（`docker exec supabase_db_plate-manage-app psql -U postgres -c 'SELECT count(*) FROM "Well" WHERE "plateId" = ...'`）
 8. 自作のテンプレートを設定したプレートをゴミ箱へ移す → そのテンプレートを削除 → プレートを復元 → 詳細画面が壊れず、リザーバー/スクリーニングが「-」表示になる
 
+### 実測（2026-09-23 完了、コミット `4496025`）
+
+手動確認は一通り問題なし。手順7は DB で確認し、完全削除した96穴プレートのウェルが96件減って、親のいないウェルは0件だった。
+
+別コンテキストのレビューで中1件・低8件の指摘があり、6件を取り込んだ。中の1件は「ゴミ箱→詳細で復元→戻る、とすると Router Cache の古い一覧が出る」という推測で、失敗時にも一覧を再取得する対策を入れた。`text-white` の使用と UTC 日付の表示は既存コードと同じ書き方なので揃えたまま見送った。
+
+計画になかった作業として、`mypage-client.tsx` と `plate-detail-client.tsx` に既存の整形崩れがあり、Phase 1 と同じく整形だけを `e470443` に切り出した。また前のセッションで起動した `next dev` が、メモリ不足で止められたと通知された後も2日間動き続けていた。
+
+---
+
+## Phase 3: アーカイブの廃止
+
+Phase 2 を触ってみて、アーカイブとゴミ箱の役割が重なっていると分かった。どちらも「一覧から外したいが消したくはない」ためのもので、ゴミ箱が復元できる以上アーカイブは要らない。`status` の値は ACTIVE だけになり意味を持たなくなるので、カラムと enum ごと削除する。
+
+既存のアーカイブ済みプレートはゴミ箱へ移す。`deletedAt` には `updatedAt` を入れる。SQL の `UPDATE` は Prisma の `@updatedAt` を通らないので更新日は変わらず、ゴミ箱の「移動日」が最後に触った日になる。
+
+### 2段階に分ける理由
+
+ビルドは `prisma migrate deploy` のあとに `next build` を実行する。そのため、同じデプロイで `status` を DROP すると問題が2つ起きる。
+
+- マイグレーションからデプロイ完了までの約1分間、まだ動いている旧コードが `status` を読んでエラーになる
+- マイグレーションのあとに `next build` が失敗すると、カラムが消えたまま旧コードが本番に残る。DROP は取り消せない
+
+そこで、コードを先に `status` から切り離し（3a）、それが本番で動くのを確かめてからカラムを消す（3b）。
+
+### Phase 3a: コードを status から切り離す
+
+- [ ] `prisma/migrations/20260923010000_archive_to_trash/migration.sql` を手書きする。中身は `UPDATE "Plate" SET "deletedAt" = "updatedAt" WHERE "status" = 'ARCHIVED' AND "deletedAt" IS NULL;` の1文だけ。カラムはまだ残す（デフォルト値 `ACTIVE` があるので新規作成も動く）
+- [ ] `app/(app)/plates/[id]/plate-detail-client.tsx` から、ステータスの切り替え UI、表示行、`statusChanged` による `/samples` への遷移を削除
+- [ ] `app/(app)/plates/[id]/page.tsx`、`app/(app)/page.tsx`、`app/(app)/samples/page.tsx`、`app/(app)/dashboard-client.tsx` から `status` の受け渡しを削除
+- [ ] `app/(app)/samples/samples-client.tsx` のアクティブ/アーカイブのタブを削除し、全件を表示
+- [ ] `components/plate-card.tsx` のステータスのドットを削除
+- [ ] `app/(app)/mypage/page.tsx` と `mypage-client.tsx`: 統計を「プレート数」1行にし、ゴミ箱の行に件数を出す
+- [ ] `lib/actions/plates.ts` の `updatePlate` の引数と、`lib/validations.ts` の `updatePlateSchema` から `status` を削除
+- [ ] `types/index.ts` の `PlateStatus` と、使わなくなった i18n キーを削除
+- [ ] `prisma/seed.ts` のアーカイブ2件を、`deletedAt` を入れた状態で作る（`status` 指定は削除）
+- [ ] `tests/validation-access-control.test.ts` を修正し、`updatePlateSchema` が `status` を未知のキーとして拒否することを確かめる
+
+完了条件:
+
+```bash
+npm run typecheck
+npm run test
+npm run build
+grep -rn "ARCHIVED\|PlateStatus\|archived" app components lib types tests
+```
+
+grep は、`prisma/` と生成コード以外で0件になること。手動では、ローカルのアーカイブ2件がゴミ箱に出ている、サンプル一覧にタブが無い、詳細の編集にステータスが無い、の3点を見る。
+
+本番には 3a の時点で push し、動作を確認してから 3b に進む。
+
+### Phase 3b: status カラムを削除する
+
+- [ ] `prisma/schema.prisma` から `Plate.status` と `enum PlateStatus` を削除
+- [ ] `prisma/migrations/<日時>_drop_plate_status/migration.sql` を手書きする。`ALTER TABLE "Plate" DROP COLUMN "status";` と `DROP TYPE "PlateStatus";`
+- [ ] 適用後、`prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` が空になることを確認
+
 ---
 
 ## 本番への反映
 
-`main` にマージして push すれば、ビルド時の `prisma migrate deploy` で本番 DB にもカラムが追加される。追加のみのマイグレーションなので既存データへの影響はない。
+`main` にマージして push すれば、ビルド時の `prisma migrate deploy` で本番 DB にもマイグレーションが適用される。Phase 1 と 3a のマイグレーションは、カラム追加と UPDATE だけなので既存データは失われない。3b だけはカラムを削除するので、3a が本番で動いているのを確認してから出す。
