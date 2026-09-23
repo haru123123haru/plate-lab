@@ -3,12 +3,10 @@
 import { TestTubes, Calendar, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface PlateCardPlate {
   id: string;
   name: string;
-  status: "active" | "archived";
   plateType: { name: string };
   filledWells: number;
   totalWells: number;
@@ -19,11 +17,6 @@ interface PlateCardProps {
   plate: PlateCardPlate;
   onClick?: () => void;
 }
-
-const statusDotColor: Record<PlateCardPlate["status"], string> = {
-  active: "bg-accent-positive",
-  archived: "bg-text-tertiary",
-};
 
 export function PlateCard({ plate, onClick }: PlateCardProps) {
   const dateStr = new Date(plate.createdAt).toLocaleDateString("ja-JP", {
@@ -59,12 +52,6 @@ export function PlateCard({ plate, onClick }: PlateCardProps) {
           <Calendar className="size-4" />
           <span>{dateStr}</span>
         </div>
-        <div
-          className={cn(
-            "ml-auto size-2 rounded-full",
-            statusDotColor[plate.status]
-          )}
-        />
       </div>
     </Card>
   );

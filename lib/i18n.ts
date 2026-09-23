@@ -23,16 +23,10 @@ const translations = {
     recentPlates: "RECENT PLATES",
     viewAll: "View All",
 
-    // Samples
-    all: "All",
-    active: "Active",
-    archived: "Archived",
-
     // Plate Detail
     wellMap: "WELL MAP",
     plateDetails: "PLATE DETAILS",
     plateName: "PLATE NAME",
-    status: "STATUS",
     sampleNameLabel: "SAMPLE NAME",
     type: "Type",
     sample: "Sample",
@@ -91,9 +85,7 @@ const translations = {
 
     // My Page
     statistics: "STATISTICS",
-    totalPlates: "Total Plates",
-    activePlates: "Active Plates",
-    archivedCount: "Archived",
+    totalPlates: "Plates",
     editProfile: "Edit Profile",
 
     // Edit Profile
@@ -165,16 +157,10 @@ const translations = {
     recentPlates: "最近のプレート",
     viewAll: "すべて表示",
 
-    // Samples
-    all: "すべて",
-    active: "アクティブ",
-    archived: "アーカイブ",
-
     // Plate Detail
     wellMap: "ウェルマップ",
     plateDetails: "プレート詳細",
     plateName: "プレート名",
-    status: "ステータス",
     sampleNameLabel: "サンプル名",
     type: "タイプ",
     sample: "サンプル",
@@ -234,9 +220,7 @@ const translations = {
 
     // My Page
     statistics: "統計",
-    totalPlates: "プレート合計",
-    activePlates: "アクティブプレート",
-    archivedCount: "アーカイブ",
+    totalPlates: "プレート数",
     editProfile: "プロフィール編集",
 
     // Edit Profile

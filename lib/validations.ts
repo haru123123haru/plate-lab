@@ -56,7 +56,6 @@ export const createConditionSetSchema = z.object({
 export const updatePlateSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
-    status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
     notes: z.string().max(2000).nullable().optional(),
     sampleName: z.string().max(200).nullable().optional(),
     reservoirTemplateId: z.number().int().positive().nullable().optional(),

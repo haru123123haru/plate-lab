@@ -5,8 +5,6 @@ export type PlateType = {
   description?: string;
 };
 
-export type PlateStatus = "active" | "archived";
-
 export type WellStatus =
   "filled" | "empty" | "crystal" | "precipitate" | "clear";
 
@@ -28,7 +26,6 @@ export type Plate = {
   id: string;
   name: string;
   plateType: PlateType;
-  status: PlateStatus;
   wells: WellData[];
   filledWells: number;
   totalWells: number;

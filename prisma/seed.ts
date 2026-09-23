@@ -1,4 +1,4 @@
-import { PrismaClient, PlateStatus, WellStatus } from "../generated/prisma/client";
+import { PrismaClient, WellStatus } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import fs from "fs";
 import path from "path";
@@ -200,7 +200,6 @@ async function main() {
     {
       name: "Plate A-001",
       plateTypeId: pt96Sitting.id,
-      status: PlateStatus.ACTIVE,
       notes: "Initial PEG screening plate",
       sampleName: "Lysozyme",
       reservoirTemplateId: ctPeg.id,
@@ -213,7 +212,6 @@ async function main() {
     {
       name: "Plate B-024",
       plateTypeId: pt96Sitting.id,
-      status: PlateStatus.ACTIVE,
       notes: "MPD optimization plate",
       sampleName: "Thaumatin",
       reservoirTemplateId: ctMpd.id,
@@ -226,7 +224,6 @@ async function main() {
     {
       name: "Plate C-012",
       plateTypeId: pt24Hanging.id,
-      status: PlateStatus.ACTIVE,
       sampleName: "Lysozyme",
       reservoirTemplateId: ctPeg.id,
       screeningTemplateId: ctPeg.id,
@@ -238,7 +235,8 @@ async function main() {
     {
       name: "Plate D-003",
       plateTypeId: pt96Sitting.id,
-      status: PlateStatus.ARCHIVED,
+      // ゴミ箱に入った状態のサンプル
+      deletedAt: new Date("2025-10-20"),
       sampleName: "Catalase",
       reservoirTemplateId: ctMpd.id,
       screeningTemplateId: ctMpd.id,
@@ -250,7 +248,7 @@ async function main() {
     {
       name: "Plate E-007",
       plateTypeId: pt24Hanging.id,
-      status: PlateStatus.ARCHIVED,
+      deletedAt: new Date("2025-11-15"),
       sampleName: "Insulin",
       reservoirTemplateId: ctPeg.id,
       screeningTemplateId: ctPeg.id,

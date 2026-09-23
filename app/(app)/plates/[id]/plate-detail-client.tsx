@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Pencil,
   FlaskConical,
-  Activity,
   Beaker,
   Calendar,
   Clock,
@@ -25,14 +24,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/components/locale-provider";
-import type { WellData, PlateStatus } from "@/types";
-
-const statusOptions: PlateStatus[] = ["active", "archived"];
-
-const statusColor: Record<string, string> = {
-  active: "bg-accent-positive",
-  archived: "bg-text-tertiary",
-};
+import type { WellData } from "@/types";
 
 export type WellCondition = {
   salt: string;
@@ -45,7 +37,6 @@ interface PlateDetailClientProps {
   plate: {
     id: string;
     name: string;
-    status: PlateStatus;
     notes?: string;
     sampleName?: string;
     reservoirTemplateId: number | null;
@@ -72,7 +63,6 @@ export function PlateDetailClient({
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(plate.name);
   const [editNotes, setEditNotes] = useState(plate.notes ?? "");
-  const [editStatus, setEditStatus] = useState<PlateStatus>(plate.status);
   const [editSampleName, setEditSampleName] = useState(plate.sampleName ?? "");
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
@@ -123,11 +113,6 @@ export function PlateDetailClient({
       btoa(unescape(encodeURIComponent(svgData)));
   }, [plate.name]);
 
-  const statusLabel: Record<string, string> = {
-    active: t("active"),
-    archived: t("archived"),
-  };
-
   const handleWellClick = (well: WellData) => {
     setSelectedWell(well);
     setModalOpen(true);
@@ -136,7 +121,6 @@ export function PlateDetailClient({
   const handleCancelEdit = () => {
     setEditName(plate.name);
     setEditNotes(plate.notes ?? "");
-    setEditStatus(plate.status);
     setEditSampleName(plate.sampleName ?? "");
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
@@ -149,10 +133,8 @@ export function PlateDetailClient({
     setSaving(true);
     setError("");
     try {
-      const statusChanged = editStatus !== plate.status;
       const result = await updatePlate(plate.id, {
         name: editName,
-        status: editStatus.toUpperCase() as "ACTIVE" | "ARCHIVED",
         notes: editNotes || undefined,
         sampleName: editSampleName || null,
         reservoirTemplateId: editReservoirTemplateId,
@@ -163,11 +145,7 @@ export function PlateDetailClient({
         return;
       }
       setEditMode(false);
-      if (statusChanged) {
-        router.push("/samples");
-      } else {
-        router.refresh();
-      }
+      router.refresh();
     } catch {
       setError(t("saveChanges") + ": Unable to save changes.");
     } finally {
@@ -298,30 +276,6 @@ export function PlateDetailClient({
                 onChange={(e) => setEditName(e.target.value)}
                 className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
               />
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                {t("status")}
-              </label>
-              <div className="flex gap-2">
-                {statusOptions.map((s) => (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => setEditStatus(s)}
-                    className={cn(
-                      "flex-1 cursor-pointer rounded-xl py-2.5 text-[14px] font-medium transition-colors",
-                      editStatus === s
-                        ? "bg-text-primary text-white"
-                        : "border border-border-default bg-bg-primary text-text-secondary"
-                    )}
-                  >
-                    {statusLabel[s]}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Sample Name */}
@@ -457,25 +411,6 @@ export function PlateDetailClient({
               title={t("type")}
               description={plate.plateType.name}
             />
-            <div className="flex w-full items-center gap-3 border-b border-border-subtle py-3 text-left">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">
-                <Activity className="size-5 text-text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-medium text-text-primary">
-                  {statusLabel[plate.status] ?? plate.status}
-                </div>
-                <div className="flex items-center gap-2 text-[13px] text-text-secondary">
-                  <span
-                    className={cn(
-                      "inline-block size-2 rounded-full",
-                      statusColor[plate.status]
-                    )}
-                  />
-                  <span>{statusLabel[plate.status]}</span>
-                </div>
-              </div>
-            </div>
             <ListRow
               icon={FlaskConical}
               title={t("sample")}

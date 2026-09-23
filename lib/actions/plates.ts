@@ -15,7 +15,7 @@ import {
   getAccessibleConditionTemplate,
   trashedPlateWhere,
 } from "@/lib/access-control";
-import type { PlateStatus, WellStatus } from "../../generated/prisma/client";
+import type { WellStatus } from "../../generated/prisma/client";
 
 export async function getPlates() {
   const userId = await getCurrentUserId();
@@ -172,7 +172,6 @@ export async function updatePlate(
   id: string,
   data: {
     name?: string;
-    status?: PlateStatus;
     notes?: string | null;
     sampleName?: string | null;
     reservoirTemplateId?: number | null;

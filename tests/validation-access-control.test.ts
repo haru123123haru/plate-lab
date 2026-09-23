@@ -51,13 +51,16 @@ describe("validation schemas", () => {
   });
 
   it("rejects unknown keys and invalid enum values for plate and well updates", () => {
-    expect(updatePlateSchema.safeParse({ status: "INVALID" }).success).toBe(
+    expect(
+      updatePlateSchema.safeParse({ name: "plate", unexpected: true }).success
+    ).toBe(false);
+    // アーカイブ廃止で status は受け付けない（ゴミ箱に一本化）
+    expect(updatePlateSchema.safeParse({ status: "ACTIVE" }).success).toBe(
       false
     );
-    expect(
-      updatePlateSchema.safeParse({ status: "ACTIVE", unexpected: true })
-        .success
-    ).toBe(false);
+    expect(updatePlateSchema.safeParse({ status: "ARCHIVED" }).success).toBe(
+      false
+    );
     expect(updateWellSchema.safeParse({ status: "INVALID" }).success).toBe(
       false
     );

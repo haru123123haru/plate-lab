@@ -3,14 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  User,
-  FlaskConical,
-  Activity,
-  Archive,
-  Menu,
-  Trash2,
-} from "lucide-react";
+import { User, FlaskConical, Menu, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -27,8 +20,7 @@ interface MyPageClientProps {
   };
   stats: {
     totalPlates: number;
-    activePlates: number;
-    archivedPlates: number;
+    trashedPlates: number;
   };
 }
 
@@ -85,16 +77,6 @@ export function MyPageClient({ user, stats }: MyPageClientProps) {
               title={t("totalPlates")}
               description={`${stats.totalPlates}`}
             />
-            <ListRow
-              icon={Activity}
-              title={t("activePlates")}
-              description={`${stats.activePlates}`}
-            />
-            <ListRow
-              icon={Archive}
-              title={t("archivedCount")}
-              description={`${stats.archivedPlates}`}
-            />
           </div>
         </div>
 
@@ -102,6 +84,7 @@ export function MyPageClient({ user, stats }: MyPageClientProps) {
           <ListRow
             icon={Trash2}
             title={t("trash")}
+            description={`${stats.trashedPlates}`}
             onClick={() => router.push("/trash")}
           />
         </div>

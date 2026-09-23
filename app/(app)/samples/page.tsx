@@ -18,7 +18,6 @@ export default async function SamplesPage() {
   const uiPlates = plates.map((p) => ({
     id: p.id,
     name: p.name,
-    status: p.status.toLowerCase() as "active" | "archived",
     plateType: {
       name: p.plateType.name,
       wellCount: p.plateType.wellCount,

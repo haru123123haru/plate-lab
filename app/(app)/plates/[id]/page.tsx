@@ -1,7 +1,7 @@
 import { getPlateById } from "@/lib/actions/plates";
 import { getConditionTemplates } from "@/lib/actions/condition-templates";
 import { PlateDetailClient } from "./plate-detail-client";
-import type { WellData, WellStatus, PlateStatus } from "@/types";
+import type { WellData, WellStatus } from "@/types";
 
 export type WellCondition = {
   salt: string;
@@ -68,7 +68,6 @@ export default async function PlateDetailPage({
   const uiPlate = {
     id: plate.id,
     name: plate.name,
-    status: plate.status.toLowerCase() as PlateStatus,
     notes: plate.notes ?? undefined,
     sampleName: plate.sampleName ?? undefined,
     reservoirTemplateId: plate.reservoirTemplate?.id ?? null,

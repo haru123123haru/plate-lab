@@ -18,7 +18,6 @@ import type { PlateType } from "@/types";
 interface UiPlate {
   id: string;
   name: string;
-  status: "active" | "archived";
   plateType: { name: string; wellCount: number };
   filledWells: number;
   totalWells: number;
@@ -70,7 +69,6 @@ export function DashboardClient({
         results.map((p) => ({
           id: p.id,
           name: p.name,
-          status: p.status.toLowerCase() as "active" | "archived",
           plateType: {
             name: p.plateType.name,
             wellCount: p.plateType.wellCount,

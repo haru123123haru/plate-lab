@@ -12,13 +12,11 @@ import { MenuSheet } from "@/components/menu-sheet";
 import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { searchPlates } from "@/lib/actions/plates";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PlateType } from "@/types";
 
 interface UiPlate {
   id: string;
   name: string;
-  status: "active" | "archived";
   plateType: { name: string; wellCount: number };
   filledWells: number;
   totalWells: number;
@@ -48,7 +46,6 @@ export function SamplesClient({
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<UiPlate[]>(plates);
-  const [tab, setTab] = useState("all");
   const [menuOpen, setMenuOpen] = useState(false);
   const [newPlateOpen, setNewPlateOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,7 +61,6 @@ export function SamplesClient({
         results.map((p) => ({
           id: p.id,
           name: p.name,
-          status: p.status.toLowerCase() as "active" | "archived",
           plateType: {
             name: p.plateType.name,
             wellCount: p.plateType.wellCount,
@@ -90,14 +86,6 @@ export function SamplesClient({
     if (!search.trim()) setSearchResults(plates);
   }, [plates, search]);
 
-  const filteredPlates = searchResults.filter((plate) => {
-    return (
-      tab === "all" ||
-      (tab === "active" && plate.status === "active") ||
-      (tab === "archived" && plate.status === "archived")
-    );
-  });
-
   return (
     <div className="bg-bg-primary min-h-screen">
       <PageHeader
@@ -110,43 +98,15 @@ export function SamplesClient({
       />
 
       <div className="px-6">
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList
-            variant="line"
-            className="w-full justify-start gap-0 bg-transparent p-0"
-          >
-            <TabsTrigger
-              value="all"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              {t("all")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="active"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              {t("active")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="archived"
-              className="rounded-none bg-transparent text-text-tertiary data-[state=active]:border-b-2 data-[state=active]:border-border-strong data-[state=active]:text-text-primary data-[state=active]:shadow-none"
-            >
-              {t("archived")}
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="mt-4">
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              placeholder={t("searchPlates")}
-            />
-          </div>
-        </Tabs>
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder={t("searchPlates")}
+        />
 
         <div className="mt-4 space-y-3">
-          {filteredPlates.length > 0 ? (
-            filteredPlates.map((plate) => (
+          {searchResults.length > 0 ? (
+            searchResults.map((plate) => (
               <PlateCard
                 key={plate.id}
                 plate={plate}
