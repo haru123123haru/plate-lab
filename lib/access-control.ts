@@ -25,10 +25,7 @@ export function accessibleConditionSetWhere(
   };
 }
 
-export function getAccessibleConditionTemplate(
-  id: number,
-  userId: string
-) {
+export function getAccessibleConditionTemplate(id: number, userId: string) {
   return prisma.conditionTemplate.findFirst({
     where: {
       AND: [{ id }, accessibleConditionTemplateWhere(userId)],

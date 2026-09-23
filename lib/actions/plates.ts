@@ -96,10 +96,7 @@ export async function createPlate(data: {
   // プレートタイプから wellCount を取得してウェルを自動生成
   const plateType = await prisma.plateType.findFirst({
     where: {
-      AND: [
-        { id: parsed.data.plateTypeId },
-        accessiblePlateTypeWhere(userId),
-      ],
+      AND: [{ id: parsed.data.plateTypeId }, accessiblePlateTypeWhere(userId)],
     },
   });
   if (!plateType) return { error: "Not found" };
@@ -201,8 +198,9 @@ export async function updatePlate(
   const templateIds = [
     parsed.data.reservoirTemplateId,
     parsed.data.screeningTemplateId,
-  ].filter((templateId): templateId is number =>
-    templateId !== null && templateId !== undefined
+  ].filter(
+    (templateId): templateId is number =>
+      templateId !== null && templateId !== undefined
   );
   const accessibleTemplates = await Promise.all(
     templateIds.map((templateId) =>
