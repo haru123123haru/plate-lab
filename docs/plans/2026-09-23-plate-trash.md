@@ -203,6 +203,12 @@ grep は、`prisma/` と生成コード以外で0件になること。手動で�
 - [ ] `prisma/migrations/<日時>_drop_plate_status/migration.sql` を手書きする。`ALTER TABLE "Plate" DROP COLUMN "status";` と `DROP TYPE "PlateStatus";`
 - [ ] 適用後、`prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` が空になることを確認
 
+#### 実測（2026-09-23 ローカル完了）
+
+3a を本番に出し（`bbf21f8`）、マイグレーション2本の適用とゴミ箱・サンプル一覧の動作を確かめてから着手した。
+
+DROP の前に、ローカル DB で「`status = 'ARCHIVED'` なのにゴミ箱に移っていない行」が0件であることを確認した。適用後の `migrate diff` は空。typecheck・test・format・build はすべて通過し、生成コード以外に `PlateStatus` の参照は残っていない。3a で全体を整形したので、今回は整形の切り出しが要らなかった。
+
 ---
 
 ## 本番への反映

@@ -53,17 +53,10 @@ model PlateType {
   @@index([createdById])
 }
 
-// プレートステータス
-enum PlateStatus {
-  ACTIVE
-  ARCHIVED
-}
-
 // プレート本体
 model Plate {
   id        String      @id @default(uuid())
   name      String
-  status    PlateStatus @default(ACTIVE)
   notes     String?     @db.Text
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
