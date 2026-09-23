@@ -191,6 +191,12 @@ grep は、`prisma/` と生成コード以外で0件になること。手動で�
 
 本番には 3a の時点で push し、動作を確認してから 3b に進む。
 
+#### 実測（2026-09-23 ローカル完了、コミット `01cf08a`）
+
+ローカルではアーカイブ2件がゴミ箱に移り、`deletedAt` が `updatedAt` と一致することを DB で確かめた。typecheck・test（17件）・build は通過。完了条件の grep は1件残ったが、それは `status: "ARCHIVED"` を送ると拒否されることを確かめるテスト自身なので、残るのが正しい。
+
+計画外の作業として、既存の整形崩れを切り出すコミットが3回目になった（`3a42de8`）。根本原因を直すため、`.prettierrc.json` に `"endOfLine": "auto"` を足してリポジトリ全体を一度整形した（`63b1aed`）。これで `npm run format` が初めて通り、以後は切り出しが要らない。
+
 ### Phase 3b: status カラムを削除する
 
 - [ ] `prisma/schema.prisma` から `Plate.status` と `enum PlateStatus` を削除

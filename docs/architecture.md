@@ -28,6 +28,7 @@
 | `/plates/[id]` | `app/(app)/plates/[id]/page.tsx` | プレート詳細。QR コードの表示先 |
 | `/samples` | `app/(app)/samples/page.tsx` | サンプル一覧と検索 |
 | `/mypage`, `/mypage/edit` | `app/(app)/mypage/` | ユーザー情報と編集 |
+| `/trash` | `app/(app)/trash/page.tsx` | ゴミ箱。復元と完全削除 |
 | `/settings` | `app/(app)/settings/page.tsx` | 言語と外観の設定 |
 | `/login`, `/register` | `app/(auth)/` | 認証フォーム |
 | `/auth/callback` | `app/auth/callback/route.ts` | OAuth のコード交換 |
@@ -36,7 +37,7 @@
 
 セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。
 
-コンポーネントは `components/` 直下にカスタム15個、`components/ui/` に shadcn 由来が10個。ウェルのグリッドだけは3実装に分かれていて、96穴の `well-grid.tsx`、24穴の `well-grid-24.tsx`、新規作成時の選択用 `well-grid-selector.tsx` がある。
+コンポーネントは `components/` 直下にカスタム16個、`components/ui/` に shadcn 由来が10個。ウェルのグリッドだけは3実装に分かれていて、96穴の `well-grid.tsx`、24穴の `well-grid-24.tsx`、新規作成時の選択用 `well-grid-selector.tsx` がある。
 
 サイズで目立つのは `components/new-plate-sheet.tsx` の716行。2番目に大きい `plate-detail-client.tsx`（477行）の1.5倍あり、プレート作成フォームとウェル選択とテンプレート選択が一つのファイルに同居している。手を入れるときは分割から考えたほうがいい。
 
@@ -51,7 +52,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 - `User` — 認証ユーザー。`id` は Supabase Auth のユーザーIDをそのまま使う
 - `UserSettings` — `User` と1対1。言語・外観・通知の設定
 - `PlateType` — プレートの種別。穴数を持つ
-- `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意
+- `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意。`deletedAt` に日時が入っていればゴミ箱にある
 - `Well` — 1ウェル分の記録。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
 - `ConditionTemplate` — 条件テンプレート。`TemplateWell` を持つ
 - `TemplateWell` — テンプレート内の1ウェル分の組成。検索の対象になる実データ
@@ -61,7 +62,11 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、条件を足すときは Markdown の表に行を足す。
 
-マイグレーションは5本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。
+プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェルは cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` が各 Action の渡す条件を検査している。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
+
+以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移してある。`status` カラムと `PlateStatus` enum は、本番の切り替えを安全にするためまだ DB に残っており、コードからは参照していない（削除は計画書の Phase 3b）。
+
+マイグレーションは7本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移した。
 
 ---
 
@@ -185,7 +190,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 もうひとつは、DB を伴う結合テストが無いこと。テストは純粋関数だけで、「他人のデータが実際に取得できないこと」は検証されていない。認可ロジックの `where` 句が正しい形を返すことは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。
 
-残りは軽い。`app/(app)/samples/samples-client.tsx` の91行目付近に lint エラーが2件（`react-hooks/set-state-in-effect`。`useEffect` の中で同期的に `setState` を呼んでいる）残っていて、`npm run check` はここで止まる。`components/new-plate-sheet.tsx` は716行あり、分割の候補。
+残りは軽い。lint エラーが2件、`app/(app)/dashboard-client.tsx` と `app/(app)/samples/samples-client.tsx` の検索まわりに残っている。どちらも `react-hooks/set-state-in-effect` で、`useEffect` の中で同期的に `setState` を呼んでいる。`npm run check` は format を通過したあと、この lint で止まる（format は 2026-09-23 に全体を整形し、`endOfLine: "auto"` で Windows の CRLF も許容したので通るようになった）。`components/new-plate-sheet.tsx` は700行を超えており、分割の候補。
 
 運用面では、Supabase Free が7日間アクセスの無いプロジェクトを一時停止する点に注意がいる。復帰は自動ではなく、ダッシュボードから手動で Resume する。ビルドが本番DBに接続するようになったため、停止中はデプロイもできない。
 
