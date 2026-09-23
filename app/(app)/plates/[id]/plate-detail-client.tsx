@@ -11,6 +11,7 @@ import {
   Calendar,
   Clock,
   Download,
+  Trash2,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,8 @@ import { ListRow } from "@/components/list-row";
 import { WellGrid } from "@/components/well-grid";
 import { WellGrid24 } from "@/components/well-grid-24";
 import { WellDetailModal } from "@/components/well-detail-modal";
-import { updatePlate } from "@/lib/actions/plates";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/components/locale-provider";
 import type { WellData, PlateStatus } from "@/types";
@@ -52,6 +54,7 @@ interface PlateDetailClientProps {
     wells: WellData[];
     createdAt: string;
     updatedAt: string;
+    deletedAt: string | null;
   };
   conditionTemplates: { id: number; name: string; description: string }[];
   reservoirConditionMap?: Record<string, WellCondition>;
@@ -81,6 +84,11 @@ export function PlateDetailClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
+  const [trashing, setTrashing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreError, setRestoreError] = useState("");
+  const isTrashed = plate.deletedAt !== null;
   const qrRef = useRef<HTMLDivElement>(null);
   const [qrUrl, setQrUrl] = useState(`/plates/${plate.id}`);
 
@@ -167,6 +175,45 @@ export function PlateDetailClient({
     }
   };
 
+  const handleMoveToTrash = async () => {
+    if (trashing) return;
+    setTrashing(true);
+    setError("");
+    try {
+      const result = await deletePlate(plate.id);
+      if ("error" in result) {
+        setError(t("actionFailed"));
+        setTrashConfirmOpen(false);
+        setTrashing(false);
+        return;
+      }
+      // 成功時は pending のまま遷移させ、遷移前にもう一度押されるのを防ぐ
+      router.push("/");
+    } catch {
+      setError(t("actionFailed"));
+      setTrashConfirmOpen(false);
+      setTrashing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    setRestoreError("");
+    try {
+      const result = await restorePlate(plate.id);
+      if ("error" in result) {
+        setRestoreError(t("actionFailed"));
+        return;
+      }
+      router.refresh();
+    } catch {
+      setRestoreError(t("actionFailed"));
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <div className="bg-bg-primary min-h-screen pb-10">
       {/* Header */}
@@ -176,6 +223,7 @@ export function PlateDetailClient({
             type="button"
             onClick={() => router.back()}
             className="cursor-pointer"
+            aria-label={t("back")}
           >
             <ArrowLeft className="size-6 text-text-primary" />
           </button>
@@ -183,16 +231,44 @@ export function PlateDetailClient({
             {plate.name}
           </h1>
         </div>
-        <Button
-          variant={editMode ? "default" : "ghost"}
-          size="icon"
-          onClick={() => setEditMode(!editMode)}
-        >
-          <Pencil className="size-5" />
-        </Button>
+        {/* ゴミ箱のプレートは閲覧のみ */}
+        {!isTrashed && (
+          <Button
+            type="button"
+            variant={editMode ? "default" : "ghost"}
+            size="icon"
+            onClick={() => setEditMode(!editMode)}
+            aria-label={t("edit")}
+          >
+            <Pencil className="size-5" />
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6 px-6">
+        {isTrashed && (
+          <div className="rounded-xl bg-accent-negative/10 p-4">
+            <div className="flex items-center gap-2 text-[14px] font-medium text-accent-negative">
+              <Trash2 className="size-4" />
+              {t("inTrashBanner")}
+            </div>
+            {restoreError && (
+              <p className="mt-2 text-[13px] text-accent-negative">
+                {restoreError}
+              </p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 h-10 w-full rounded-xl bg-bg-surface"
+              onClick={handleRestore}
+              disabled={restoring}
+            >
+              {restoring ? t("restoring") : t("restore")}
+            </Button>
+          </div>
+        )}
+
         {/* Well Map */}
         <div>
           <SectionHeader label={t("wellMap")} />
@@ -205,8 +281,8 @@ export function PlateDetailClient({
           </div>
         </div>
 
-        {/* Edit Mode */}
-        {editMode && (
+        {/* Edit Mode（鉛筆を隠すだけでなく、ここでもゴミ箱なら出さない） */}
+        {editMode && !isTrashed && (
           <div className="space-y-4 rounded-xl bg-bg-surface p-4">
             {error && (
               <div className="rounded-xl bg-accent-negative/10 px-4 py-3 text-[13px] text-accent-negative">
@@ -360,6 +436,15 @@ export function PlateDetailClient({
                 {saving ? t("saving") : t("saveChanges")}
               </Button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setTrashConfirmOpen(true)}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-accent-negative/40 py-2.5 text-[14px] font-medium text-accent-negative transition-colors hover:bg-accent-negative/10"
+            >
+              <Trash2 className="size-4" />
+              {t("moveToTrash")}
+            </button>
           </div>
         )}
 
@@ -467,6 +552,17 @@ export function PlateDetailClient({
         sampleName={plate.sampleName}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={trashConfirmOpen}
+        onOpenChange={setTrashConfirmOpen}
+        title={t("trashConfirmTitle")}
+        description={t("trashConfirmBody")}
+        confirmLabel={t("moveToTrash")}
+        pendingLabel={t("moving")}
+        pending={trashing}
+        onConfirm={handleMoveToTrash}
       />
     </div>
   );

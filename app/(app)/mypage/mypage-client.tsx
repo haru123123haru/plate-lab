@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { User, FlaskConical, Activity, Archive, Menu } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  User,
+  FlaskConical,
+  Activity,
+  Archive,
+  Menu,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -27,6 +35,7 @@ interface MyPageClientProps {
 export function MyPageClient({ user, stats }: MyPageClientProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { t } = useTranslation();
+  const router = useRouter();
 
   return (
     <div className="bg-bg-primary min-h-screen">
@@ -87,6 +96,14 @@ export function MyPageClient({ user, stats }: MyPageClientProps) {
               description={`${stats.archivedPlates}`}
             />
           </div>
+        </div>
+
+        <div>
+          <ListRow
+            icon={Trash2}
+            title={t("trash")}
+            onClick={() => router.push("/trash")}
+          />
         </div>
       </div>
 

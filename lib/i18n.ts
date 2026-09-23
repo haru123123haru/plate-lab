@@ -121,6 +121,27 @@ const translations = {
     // QR Code
     qrCode: "QR CODE",
     downloadQr: "Download QR Code",
+
+    // Trash
+    trash: "Trash",
+    moveToTrash: "Move to Trash",
+    moving: "Moving...",
+    restore: "Restore",
+    restoring: "Restoring...",
+    deletePermanently: "Delete Permanently",
+    deleting: "Deleting...",
+    trashConfirmTitle: "Move this plate to the trash?",
+    trashConfirmBody:
+      "It will disappear from lists and search. You can restore it from the trash on My Page.",
+    purgeConfirmTitle: "Delete this plate permanently?",
+    purgeConfirmBody:
+      "The plate and all of its wells will be deleted. This cannot be undone.",
+    inTrashBanner: "This plate is in the trash.",
+    trashEmpty: "The trash is empty",
+    trashedOn: "Trashed",
+    actionFailed: "Something went wrong. Please try again.",
+    back: "Back",
+    edit: "Edit",
   },
   ja: {
     // Navigation
@@ -243,6 +264,27 @@ const translations = {
     // QR Code
     qrCode: "QRコード",
     downloadQr: "QRコードをダウンロード",
+
+    // Trash
+    trash: "ゴミ箱",
+    moveToTrash: "ゴミ箱に移動",
+    moving: "移動中...",
+    restore: "復元",
+    restoring: "復元中...",
+    deletePermanently: "完全に削除",
+    deleting: "削除中...",
+    trashConfirmTitle: "このプレートをゴミ箱に移動しますか？",
+    trashConfirmBody:
+      "一覧と検索に表示されなくなります。マイページのゴミ箱から復元できます。",
+    purgeConfirmTitle: "このプレートを完全に削除しますか？",
+    purgeConfirmBody:
+      "プレートとすべてのウェルが削除されます。この操作は元に戻せません。",
+    inTrashBanner: "このプレートはゴミ箱にあります。",
+    trashEmpty: "ゴミ箱は空です",
+    trashedOn: "移動日",
+    actionFailed: "処理に失敗しました。もう一度お試しください。",
+    back: "戻る",
+    edit: "編集",
   },
 } as const;
 

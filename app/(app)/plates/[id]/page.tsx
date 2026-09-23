@@ -80,6 +80,7 @@ export default async function PlateDetailPage({
     wells: uiWells,
     createdAt: plate.createdAt.toISOString().split("T")[0],
     updatedAt: plate.updatedAt.toISOString().split("T")[0],
+    deletedAt: plate.deletedAt?.toISOString() ?? null,
   };
 
   const uiConditionTemplates = conditionTemplates.map((ct) => ({
