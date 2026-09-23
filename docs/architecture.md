@@ -22,16 +22,16 @@
 
 ルーティングは App Router のルートグループで2つに割れている。`app/(app)/` が認証必須のアプリ本体、`app/(auth)/` がログインと新規登録。グループ名は URL に出ないので、`app/(app)/page.tsx` がそのまま `/` になる。
 
-| URL | ファイル | 役割 |
-| --- | --- | --- |
-| `/` | `app/(app)/page.tsx` | ダッシュボード。プレート一覧 |
-| `/plates/[id]` | `app/(app)/plates/[id]/page.tsx` | プレート詳細。QR コードの表示先 |
-| `/samples` | `app/(app)/samples/page.tsx` | サンプル一覧と検索 |
-| `/mypage`, `/mypage/edit` | `app/(app)/mypage/` | ユーザー情報と編集 |
-| `/trash` | `app/(app)/trash/page.tsx` | ゴミ箱。復元と完全削除 |
-| `/settings` | `app/(app)/settings/page.tsx` | 言語と外観の設定 |
-| `/login`, `/register` | `app/(auth)/` | 認証フォーム |
-| `/auth/callback` | `app/auth/callback/route.ts` | OAuth のコード交換 |
+| URL                       | ファイル                         | 役割                            |
+| ------------------------- | -------------------------------- | ------------------------------- |
+| `/`                       | `app/(app)/page.tsx`             | ダッシュボード。プレート一覧    |
+| `/plates/[id]`            | `app/(app)/plates/[id]/page.tsx` | プレート詳細。QR コードの表示先 |
+| `/samples`                | `app/(app)/samples/page.tsx`     | サンプル一覧と検索              |
+| `/mypage`, `/mypage/edit` | `app/(app)/mypage/`              | ユーザー情報と編集              |
+| `/trash`                  | `app/(app)/trash/page.tsx`       | ゴミ箱。復元と完全削除          |
+| `/settings`               | `app/(app)/settings/page.tsx`    | 言語と外観の設定                |
+| `/login`, `/register`     | `app/(auth)/`                    | 認証フォーム                    |
+| `/auth/callback`          | `app/auth/callback/route.ts`     | OAuth のコード交換              |
 
 各画面は例外なく同じ形をとる。`page.tsx` は Server Component としてデータ取得と整形だけを行い、`*-client.tsx` に渡す。状態とインタラクションはすべて Client 側。この分離のおかげで、DB アクセスがクライアントバンドルに混ざる事故が構造的に起きない。
 
@@ -94,12 +94,12 @@ RLS SQL の末尾には「Prisma は service_role キーで接続するため」
 
 ## 5. インフラは Vercel + Supabase + Google OAuth の3点構成
 
-| 層 | サービス | 備考 |
-| --- | --- | --- |
-| ホスティング | Vercel（プロジェクト名 `plate-manage-app`） | Node.js 24.x、`main` ブランチに連動 |
-| DB | Supabase PostgreSQL（`nbavmqhtkdiacpwvblij`, ap-northeast-1） | Prisma から Pooler 経由で接続 |
-| 認証 | Supabase Auth | メール + パスワード、Google OAuth |
-| ソース | GitHub `haru123123haru/plate-lab` | |
+| 層           | サービス                                                      | 備考                                |
+| ------------ | ------------------------------------------------------------- | ----------------------------------- |
+| ホスティング | Vercel（プロジェクト名 `plate-manage-app`）                   | Node.js 24.x、`main` ブランチに連動 |
+| DB           | Supabase PostgreSQL（`nbavmqhtkdiacpwvblij`, ap-northeast-1） | Prisma から Pooler 経由で接続       |
+| 認証         | Supabase Auth                                                 | メール + パスワード、Google OAuth   |
+| ソース       | GitHub `haru123123haru/plate-lab`                             |                                     |
 
 アプリが実際に読む環境変数は4つだけ。
 
