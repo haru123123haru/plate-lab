@@ -87,6 +87,16 @@ grep -n "activePlateWhere\|trashedPlateWhere" lib/actions/*.ts
 
 grep の結果が、import 行を除いて `getPlates`・`searchPlates`×2・`updatePlate`・`deletePlate`・`getTrashedPlates`・`restorePlate`・`purgePlate` の8か所であること。
 
+### 実測（2026-09-23 完了、コミット `dafcf17`）
+
+計画どおりに完了した。typecheck・test（17件）・build はすべて通過し、ヘルパーの適用はちょうど8か所。手書きのマイグレーション SQL は、適用後に `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` の結果が空になることで、スキーマとの一致を確かめた。
+
+計画になかった事実が3つあった。
+
+- `npm run format` は70ファイルで警告を出す。今回の変更とは無関係で、`core.autocrlf=true` によってチェックアウト時に CRLF になり、prettier（LF 前提）と食い違っているのが原因。別件として扱う
+- 触った `plates.ts` と `access-control.ts` には、改行コードとは別に既存の整形崩れがあった。機能の差分と混ぜないよう、整形だけを `e78e36e` に切り出した
+- lint のベースライン2件は `dashboard-client.tsx:93` と `samples-client.tsx:91`。`architecture.md` の「2件とも samples-client」は誤りで、Phase 2 のついでに直す
+
 ---
 
 ## Phase 2: 画面
