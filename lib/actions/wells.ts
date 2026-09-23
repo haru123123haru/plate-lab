@@ -27,11 +27,12 @@ export async function updateWell(
 
   const well = await prisma.well.findUnique({
     where: { id: parsedId.data },
-    include: { plate: { select: { userId: true } } },
+    include: { plate: { select: { userId: true, deletedAt: true } } },
   });
 
-  if (!well || well.plate.userId !== userId) {
-    throw new Error("Not found");
+  // ゴミ箱のプレートのウェルは編集させない
+  if (!well || well.plate.userId !== userId || well.plate.deletedAt) {
+    return { error: "Not found" };
   }
 
   return prisma.well.update({

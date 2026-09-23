@@ -6,6 +6,8 @@ import {
   accessibleConditionSetWhere,
   accessibleConditionTemplateWhere,
   accessiblePlateTypeWhere,
+  activePlateWhere,
+  trashedPlateWhere,
 } from "../lib/access-control";
 import {
   createPlateSchema,
@@ -99,5 +101,19 @@ describe("access-control predicates", () => {
     expect(templateWhere).not.toEqual(
       accessibleConditionTemplateWhere("user-b")
     );
+  });
+
+  it("limits active plates to the owner's non-trashed plates", () => {
+    expect(activePlateWhere("user-a")).toEqual({
+      userId: "user-a",
+      deletedAt: null,
+    });
+  });
+
+  it("limits trashed plates to the owner's trashed plates", () => {
+    expect(trashedPlateWhere("user-a")).toEqual({
+      userId: "user-a",
+      deletedAt: { not: null },
+    });
   });
 });

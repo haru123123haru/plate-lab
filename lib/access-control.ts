@@ -25,6 +25,18 @@ export function accessibleConditionSetWhere(
   };
 }
 
+// ゴミ箱の条件はここにだけ書く。各クエリで直書きすると除外漏れが起きる
+export function activePlateWhere(userId: string) {
+  return { userId, deletedAt: null } satisfies Prisma.PlateWhereInput;
+}
+
+export function trashedPlateWhere(userId: string) {
+  return {
+    userId,
+    deletedAt: { not: null },
+  } satisfies Prisma.PlateWhereInput;
+}
+
 export function getAccessibleConditionTemplate(id: number, userId: string) {
   return prisma.conditionTemplate.findFirst({
     where: {

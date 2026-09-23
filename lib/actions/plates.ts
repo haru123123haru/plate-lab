@@ -11,7 +11,9 @@ import {
 import {
   accessiblePlateTypeWhere,
   accessibleConditionTemplateWhere,
+  activePlateWhere,
   getAccessibleConditionTemplate,
+  trashedPlateWhere,
 } from "@/lib/access-control";
 import type { PlateStatus, WellStatus } from "../../generated/prisma/client";
 
@@ -19,7 +21,7 @@ export async function getPlates() {
   const userId = await getCurrentUserId();
   return prisma.plate.findMany({
     where: {
-      userId,
+      ...activePlateWhere(userId),
       plateType: accessiblePlateTypeWhere(userId),
     },
     include: {
@@ -187,12 +189,12 @@ export async function updatePlate(
   if (!parsedId.success) return { error: "Not found" };
 
   const plate = await prisma.plate.findFirst({
-    where: { id: parsedId.data, userId },
+    where: { id: parsedId.data, ...activePlateWhere(userId) },
     select: { id: true },
   });
 
   if (!plate) {
-    throw new Error("Not found");
+    return { error: "Not found" };
   }
 
   const templateIds = [
@@ -208,11 +210,12 @@ export async function updatePlate(
     )
   );
   if (accessibleTemplates.some((template) => !template)) {
-    throw new Error("Not found");
+    return { error: "Not found" };
   }
 
+  // 確認と更新の間にゴミ箱へ移された場合は更新しない
   return prisma.plate.update({
-    where: { id: parsedId.data },
+    where: { id: parsedId.data, deletedAt: null },
     data: parsed.data,
     include: {
       plateType: true,
@@ -229,7 +232,7 @@ export async function searchPlates(query: string) {
   if (!normalizedQuery) {
     return prisma.plate.findMany({
       where: {
-        userId,
+        ...activePlateWhere(userId),
         plateType: accessiblePlateTypeWhere(userId),
       },
       include: { plateType: true, wells: true },
@@ -239,7 +242,7 @@ export async function searchPlates(query: string) {
 
   return prisma.plate.findMany({
     where: {
-      userId,
+      ...activePlateWhere(userId),
       plateType: accessiblePlateTypeWhere(userId),
       OR: [
         { name: { contains: normalizedQuery, mode: "insensitive" } },
@@ -257,18 +260,55 @@ export async function searchPlates(query: string) {
   });
 }
 
+// ゴミ箱へ移す。物理削除は purgePlate だけが行う
 export async function deletePlate(id: string) {
   const userId = await getCurrentUserId();
   const parsedId = resourceIdSchema.safeParse(id);
-  if (!parsedId.success) throw new Error("Not found");
-  const plate = await prisma.plate.findUnique({
-    where: { id: parsedId.data },
-    select: { userId: true },
+  if (!parsedId.success) return { error: "Not found" };
+
+  const { count } = await prisma.plate.updateMany({
+    where: { id: parsedId.data, ...activePlateWhere(userId) },
+    data: { deletedAt: new Date() },
   });
+  if (count === 0) return { error: "Not found" };
+  return { success: true };
+}
 
-  if (!plate || plate.userId !== userId) {
-    throw new Error("Not found");
-  }
+export async function getTrashedPlates() {
+  const userId = await getCurrentUserId();
+  return prisma.plate.findMany({
+    where: {
+      ...trashedPlateWhere(userId),
+      // getPlates と揃え、一覧に出るのに詳細が開けないプレートを作らない
+      plateType: accessiblePlateTypeWhere(userId),
+    },
+    include: { plateType: true },
+    orderBy: { deletedAt: "desc" },
+  });
+}
 
-  return prisma.plate.delete({ where: { id: parsedId.data } });
+export async function restorePlate(id: string) {
+  const userId = await getCurrentUserId();
+  const parsedId = resourceIdSchema.safeParse(id);
+  if (!parsedId.success) return { error: "Not found" };
+
+  const { count } = await prisma.plate.updateMany({
+    where: { id: parsedId.data, ...trashedPlateWhere(userId) },
+    data: { deletedAt: null },
+  });
+  if (count === 0) return { error: "Not found" };
+  return { success: true };
+}
+
+// ゴミ箱に入っているプレートだけを物理削除する。ウェルは onDelete: Cascade で消える
+export async function purgePlate(id: string) {
+  const userId = await getCurrentUserId();
+  const parsedId = resourceIdSchema.safeParse(id);
+  if (!parsedId.success) return { error: "Not found" };
+
+  const { count } = await prisma.plate.deleteMany({
+    where: { id: parsedId.data, ...trashedPlateWhere(userId) },
+  });
+  if (count === 0) return { error: "Not found" };
+  return { success: true };
 }
