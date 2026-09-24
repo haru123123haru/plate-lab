@@ -178,19 +178,19 @@ Phase は作業の区切りで、本番に出す単位は別に決める。
 
 ### タスク
 
-- [ ] `prisma/schema.prisma` — `PlateType` に `rows`・`cols`・`maxDrops`・`layout`、enum `PlateLayout`、`Drop`、`Observation` を追加する
-- [ ] マイグレーション（足すだけ）— 上の「マイグレーションの書き方」の順で書く。新しい2種類はまだ入れない
-- [ ] `prisma/seed.ts` — 既存3種類に新しい欄を入れる
-- [ ] `types/index.ts` の `PlateType` と、`app/(app)/page.tsx:30-35`・`samples/page.tsx:30-35` の変換に新しい欄を足す
-- [ ] 形の判定3か所を `rows`・`cols` に置き換える（`lib/actions/plates.ts:106`、`components/new-plate-sheet.tsx:147-156`、`plate-detail-client.tsx:254`）。詳細画面は、グリッドがまとまる Phase 2 までは「4×6 なら 24 用、それ以外は 96 用」で分ける
-- [ ] `lib/validations.ts` と `lib/actions/plate-types.ts` — 種別作成を `rows`・`cols`・`maxDrops`・`layout` で受け取る。この Phase では既存の組み合わせ（4×6 と 8×12、1ドロップ）だけを通す
-- [ ] `components/new-plate-type-dialog.tsx` — 送る値を新しい欄に合わせる。選択肢は今と同じ（24穴と96穴）。スキーマが変わると typecheck が通らなくなるので、この Phase で直す
-- [ ] `tests/validation-access-control.test.ts:23-31` — 種別作成のテストを新しい欄に合わせる
-- [ ] `lib/access-control.ts` — `editableWellWhere`・`editableDropWhere` を追加する
-- [ ] `lib/validations.ts` — ドロップ・観察・まとめて追加のスキーマ。観察日は `"YYYY-MM-DD"` の文字列で受ける
-- [ ] `lib/actions/drops.ts`（新規）— `createDrop`・`updateDrop`・`deleteDrop`・`bulkCreateDrops`・`addObservation`・`deleteObservation`（形は「認可」の節のとおり）
-- [ ] `lib/actions/plates.ts` の `getPlateById` — ドロップと観察を含めて返す
-- [ ] `tests/drop-actions.test.ts`（新規）— prisma をモックし、次を確かめる
+- [x] `prisma/schema.prisma` — `PlateType` に `rows`・`cols`・`maxDrops`・`layout`、enum `PlateLayout`、`Drop`、`Observation` を追加する
+- [x] マイグレーション（足すだけ）— 上の「マイグレーションの書き方」の順で書く。新しい2種類はまだ入れない
+- [x] `prisma/seed.ts` — 既存3種類に新しい欄を入れる
+- [x] `types/index.ts` の `PlateType` と、`app/(app)/page.tsx:30-35`・`samples/page.tsx:30-35` の変換に新しい欄を足す
+- [x] 形の判定3か所を `rows`・`cols` に置き換える（`lib/actions/plates.ts:106`、`components/new-plate-sheet.tsx:147-156`、`plate-detail-client.tsx:254`）。詳細画面は、グリッドがまとまる Phase 2 までは「4×6 なら 24 用、それ以外は 96 用」で分ける
+- [x] `lib/validations.ts` と `lib/actions/plate-types.ts` — 種別作成を `rows`・`cols`・`maxDrops`・`layout` で受け取る。この Phase では既存の組み合わせ（4×6 と 8×12、1ドロップ）だけを通す
+- [x] `components/new-plate-type-dialog.tsx` — 送る値を新しい欄に合わせる。選択肢は今と同じ（24穴と96穴）。スキーマが変わると typecheck が通らなくなるので、この Phase で直す
+- [x] `tests/validation-access-control.test.ts:23-31` — 種別作成のテストを新しい欄に合わせる
+- [x] `lib/access-control.ts` — `editableWellWhere`・`editableDropWhere` を追加する
+- [x] `lib/validations.ts` — ドロップ・観察・まとめて追加のスキーマ。観察日は `"YYYY-MM-DD"` の文字列で受ける
+- [x] `lib/actions/drops.ts`（新規）— `createDrop`・`updateDrop`・`deleteDrop`・`bulkCreateDrops`・`addObservation`・`deleteObservation`（形は「認可」の節のとおり）
+- [x] `lib/actions/plates.ts` の `getPlateById` — ドロップと観察を含めて返す
+- [x] `tests/drop-actions.test.ts`（新規）— prisma をモックし、次を確かめる
   - 6つの Action すべてが、持ち主とゴミ箱の条件を `where` に入れている（`deleteObservation` を含む）
   - `slot` が `maxDrops` を超えると拒否される
   - `bulkCreateDrops` がプレートの持ち主を確かめ、スキップ件数を正しく返す
@@ -207,6 +207,7 @@ npm run check               # 全部通る
 - 既存の24穴・96穴のプレートの作成と表示が、今までどおり動くこと
 - 本番に出す前に、本番の PlateType の値を SQL Editor で確かめること（「プレートの形は PlateType に持たせる」の節）
 - 本番に出したあと、`Drop` と `Observation` に `anon`・`authenticated` の権限が付いていないことを確かめること。Data API の権限を外したマイグレーションの `ALTER DEFAULT PRIVILEGES` は、実行したロール（`postgres`）が作るテーブルにしか効かないため
+- 本番で `migrate deploy` が失敗したときは、DB は元のまま戻るが `_prisma_migrations` に失敗の記録が残り、以降のデプロイが P3009 で止まり続ける。原因の行を直したら、`npx prisma migrate resolve --rolled-back 20260925000000_add_drops_and_plate_shape` を打ってから出し直す
 
 ## Phase 2: グリッドとウェルのシート（Phase 3 と一緒に出す）
 
@@ -299,3 +300,11 @@ npm run check    # 全部通る
 （実装しながら、計画と違ったことをここに書き足す）
 
 - 計画のレビュー（2026-09-24）で、初版の Phase の切り方では途中で画面が壊れるか、表示が食い違うことが分かった。新しい2種類の投入を Phase 2 に遅らせ、Phase 2 と 3 はまとめて出す形に直した。既存データの移し替えは、対象を使用中のウェルすべてに広げ、一意制約との衝突を避ける形にした
+- Phase 1（2026-09-25）
+  - `prisma migrate dev --create-only` が shadow DB を作れずに失敗した。ローカルの template1 の照合順序バージョン（153.121）と OS 側（153.120）が合っていないためだ。DB 側は直さず、`prisma migrate diff --from-config-datasource --to-schema` で SQL を出し、手で順序を書き換えた。適用後に同じ diff が空になることで、スキーマとの一致を確かめた
+  - `createDrop` と `addObservation` は、`well.update` / `drop.update` の入れ子 create をやめ、`drop.create` / `observation.create` の `connect: { id, ...editable〜Where }` で作る形にした。作ったレコードをそのまま返せる。なお、どちらの形も Prisma の中では「SELECT で確かめてから INSERT」の2文になる。`updatePlate` の `UPDATE … WHERE` のような1文の原子性は無く、競合の窓を最小にしているだけだ。すり抜けても作られるのは持ち主本人のドロップなので許容する。条件に合わないときに P2025 が返ることは、ローカル DB でゴミ箱のプレートのウェルを使って確かめた
+  - 新しい2テーブルには、マイグレーションの中で `anon`・`authenticated` の権限を個別に外す処理を足した（ロールがある環境だけで実行する）。ローカルでは両テーブルとも権限が0件だった。本番に出したあとの確認は、完了条件どおり引き続き行う
+  - 種別作成ダイアログにはまだ描き方の入力が無い。そのため `layout` は、マイグレーションと同じく名前に "hanging" を含むかどうかで決めて送る。Phase 2 で選択肢に置き換える
+  - `bulkCreateDrops` は、プレートの確認と `createMany` のあいだにゴミ箱へ移されると、ドロップを作ってしまう。`createMany` は `where` を持てないためで、画面から呼ぶのは Phase 3 なので今は許容し、コードに印を残した
+  - 新しい2テーブルは、既存のテーブル（`supabase/migrations/20260219_enable_rls.sql`）にそろえて RLS を有効にした。Supabase の Security Advisor の警告を避けるためで、postgres は RLS を素通りするのでアプリには影響しない
+  - `bulkCreateDrops` の位置は `"A1"` 形式で受ける。DB の `Well.position` をそのまま引けるからだ。`well-grid-selector.tsx` と `createPlateSchema.filledPositions` は `"0-0"`（行-列）形式なので、Phase 3 の `bulk-drop-form.tsx` で変換してから渡す
