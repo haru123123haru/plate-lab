@@ -66,7 +66,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 
-マイグレーションは9本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の `revoke_data_api_access` はスキーマを変えず、権限だけを外している（→4章）。
+マイグレーションは10本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。
 
 ---
 
@@ -162,9 +162,11 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ## 7. 本番の状態
 
-2026-09-24 時点で、本番は最新のコード（`300a101`）で稼働している。マイグレーション9本はすべて本番DBに適用済み。
+2026-09-24 時点で、本番は最新のコード（`a5af9d6`）で稼働している。マイグレーション10本はすべて本番DBに適用済み。
 
-**本番の共有テンプレート PEG・MPD には、条件（`TemplateWell`）が1件も入っていない。** 名前だけの行があり（ID 3 と 4）、`TemplateWell` のシーケンスは一度も使われていない。消された跡は無く、最初から投入されていなかったことになる。どうやって作ったかの記録は残っていない。`prisma db seed` は全テーブルを `deleteMany` してから作り直すので、本番では絶対に実行しない。
+本番の共有テンプレートは PEG（ID 3）と MPD（ID 4）、共有セットも同名の2つ（ID 3 と 2）がある。セットの名前が seed（`PEG Set` など）と違うので、手作業で作ったらしい。作り方の記録は残っていない。2026-09-24 までは名前だけの行で、条件（`TemplateWell`）が1件も入っていなかった。`TemplateWell` のシーケンスが一度も使われていなかったので、最初から空だったことになる。消された跡は無い。同日、マイグレーション `fill_default_template_wells` で `conditions/*.md` から96ウェルずつ入れた。
+
+**`prisma db seed` は本番では絶対に実行しない。** 全テーブルを `deleteMany` してから作り直すので、本番のデータが消える。本番のデータを直すときは、今回のように「条件に合う行が無いときだけ入れる」マイグレーションにする。
 
 デプロイは `main` ブランチへの push で自動的に走る。ビルドコマンドは `prisma migrate deploy && prisma generate && next build` で、デプロイのたびに本番DBへマイグレーションが適用される。マイグレーションが失敗するとビルドも失敗するので、壊れた組み合わせが本番に出ることはない。
 
@@ -190,7 +192,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 重いものが2つある。
 
-ひとつは、本番の共有テンプレートが空なこと（7章）。本番でプレートを作っても、各ウェルの組成が出てこない。seed は使えないので、共有テンプレートのウェルだけを足す手順が要る。あわせて、個人テンプレートも名前と説明しか登録できず、中身を入れる経路が無い（`createConditionTemplate` が `TemplateWell` を作らない）。
+ひとつは、個人テンプレートに中身を登録できないこと。`createConditionTemplate` は名前と説明しか受け取らず、`TemplateWell` を作る経路がどこにも無い。つまり、共有の PEG・MPD 以外の条件は、実質的に登録できない。
 
 もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書は `docs/plans/2026-09-24-db-integration-tests.md`（未着手）。
 
