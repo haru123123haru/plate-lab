@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { countUsedWells } from "@/lib/wells";
+import { countUsedWells, summarizeSamples } from "@/lib/wells";
 import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,11 @@ import type { PlateType } from "@/types";
 interface UiPlate {
   id: string;
   name: string;
-  plateType: { name: string; wellCount: number };
+  plateType: { name: string };
   filledWells: number;
   totalWells: number;
   createdAt: string;
+  samples: { names: string[]; dropCount: number };
 }
 
 import type { UiConditionSet } from "@/app/(app)/dashboard-client";
@@ -58,11 +59,9 @@ export function SamplesClient({
       results.map((p) => ({
         id: p.id,
         name: p.name,
-        plateType: {
-          name: p.plateType.name,
-          wellCount: p.plateType.wellCount,
-        },
+        plateType: { name: p.plateType.name },
         filledWells: countUsedWells(p.wells),
+        samples: summarizeSamples(p.wells),
         totalWells: p.wells.length,
         createdAt: new Date(p.createdAt).toLocaleDateString(),
       }))

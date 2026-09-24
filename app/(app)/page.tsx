@@ -20,10 +20,7 @@ export default async function DashboardPage() {
   const uiPlates = plates.map((p) => ({
     id: p.id,
     name: p.name,
-    plateType: {
-      name: p.plateType.name,
-      wellCount: p.plateType.wellCount,
-    },
+    plateType: { name: p.plateType.name },
     filledWells: countUsedWells(p.wells),
     totalWells: p.wells.length,
   }));
@@ -31,7 +28,6 @@ export default async function DashboardPage() {
   const uiPlateTypes = plateTypes.map((pt) => ({
     id: pt.id,
     name: pt.name,
-    wellCount: pt.wellCount,
     rows: pt.rows,
     cols: pt.cols,
     maxDrops: pt.maxDrops,

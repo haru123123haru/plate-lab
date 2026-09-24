@@ -26,7 +26,7 @@ import {
   updateDrop,
 } from "../lib/actions/drops";
 import { createPlate } from "../lib/actions/plates";
-import { countUsedWells } from "../lib/wells";
+import { countUsedWells, summarizeSamples } from "../lib/wells";
 
 const editablePlate = { userId: "user-a", deletedAt: null };
 const editableWell = { plate: editablePlate };
@@ -325,5 +325,17 @@ describe("countUsedWells", () => {
         { _count: { drops: 4 } },
       ])
     ).toBe(2);
+  });
+});
+
+describe("summarizeSamples", () => {
+  it("lists each sample name once and counts every drop", () => {
+    expect(
+      summarizeSamples([
+        { drops: [{ sampleName: "Lysozyme" }, { sampleName: "Thaumatin" }] },
+        { drops: [] },
+        { drops: [{ sampleName: "Lysozyme" }] },
+      ])
+    ).toEqual({ names: ["Lysozyme", "Thaumatin"], dropCount: 3 });
   });
 });

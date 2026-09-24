@@ -1,7 +1,7 @@
 import { getPlateById } from "@/lib/actions/plates";
 import { getConditionTemplates } from "@/lib/actions/condition-templates";
 import { PlateDetailClient } from "./plate-detail-client";
-import type { WellData, WellStatus } from "@/types";
+import type { WellData } from "@/types";
 
 export type WellCondition = {
   salt: string;
@@ -33,13 +33,6 @@ export default async function PlateDetailPage({
     position: w.position,
     row: w.row,
     col: w.col,
-    status: w.status.toLowerCase() as WellStatus,
-    protein: w.protein ?? undefined,
-    concentration: w.concentration ?? undefined,
-    buffer: w.buffer ?? undefined,
-    ph: w.ph ?? undefined,
-    precipitant: w.precipitant ?? undefined,
-    notes: w.notes ?? undefined,
     drops: w.drops.map((d) => ({
       id: d.id,
       slot: d.slot,
@@ -86,7 +79,6 @@ export default async function PlateDetailPage({
     screeningTemplateId: plate.screeningTemplate?.id ?? null,
     plateType: {
       name: plate.plateType.name,
-      wellCount: plate.plateType.wellCount,
       rows: plate.plateType.rows,
       cols: plate.plateType.cols,
       maxDrops: plate.plateType.maxDrops,

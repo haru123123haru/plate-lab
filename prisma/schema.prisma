@@ -41,8 +41,6 @@ model UserSettings {
 model PlateType {
   id          String  @id @default(uuid())
   name        String
-  wellCount   Int
-  // 形はここから読む。wellCount は rows × cols と同じ値で、いずれ削除する
   rows        Int
   cols        Int
   maxDrops    Int         @default(1)
@@ -71,7 +69,6 @@ model Plate {
   plateTypeId String
   plateType   PlateType @relation(fields: [plateTypeId], references: [id])
 
-  sampleName           String?
   reservoirTemplateId  Int?
   reservoirTemplate    ConditionTemplate? @relation("ReservoirTemplate", fields: [reservoirTemplateId], references: [id])
   screeningTemplateId  Int?
@@ -85,19 +82,12 @@ model Plate {
   @@index([userId, deletedAt])
 }
 
-// 実際のウェルデータ（プレートごと）
+// プレートの中のウェル。持つのは位置だけで、記録はドロップ（Drop）が持つ
 model Well {
-  id            String     @id @default(uuid())
-  position      String
-  row           Int
-  col           Int
-  status        WellStatus @default(EMPTY)
-  protein       String?
-  concentration String?
-  buffer        String?
-  ph            String?
-  precipitant   String?
-  notes         String?    @db.Text
+  id       String @id @default(uuid())
+  position String
+  row      Int
+  col      Int
 
   plateId String
   plate   Plate  @relation(fields: [plateId], references: [id], onDelete: Cascade)
@@ -139,14 +129,6 @@ model Observation {
 enum PlateLayout {
   SITTING
   HANGING
-}
-
-enum WellStatus {
-  FILLED
-  EMPTY
-  CRYSTAL
-  PRECIPITATE
-  CLEAR
 }
 
 // 条件セット（Reservoir + Screening テンプレートのペア）

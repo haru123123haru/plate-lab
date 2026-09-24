@@ -31,8 +31,6 @@ export async function createPlateType(data: {
   return prisma.plateType.create({
     data: {
       name: parsed.data.name,
-      // wellCount は削除するまで rows × cols と揃えて書く
-      wellCount: parsed.data.rows * parsed.data.cols,
       rows: parsed.data.rows,
       cols: parsed.data.cols,
       maxDrops: parsed.data.maxDrops,

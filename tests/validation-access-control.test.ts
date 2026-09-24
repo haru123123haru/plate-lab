@@ -14,7 +14,6 @@ import {
   createPlateTypeSchema,
   updatePlateSchema,
   updateUserSettingsSchema,
-  updateWellSchema,
 } from "../lib/validations";
 
 describe("validation schemas", () => {
@@ -74,7 +73,7 @@ describe("validation schemas", () => {
     ).toBe(false);
   });
 
-  it("rejects unknown keys and invalid enum values for plate and well updates", () => {
+  it("rejects unknown keys and invalid enum values for plate updates", () => {
     expect(
       updatePlateSchema.safeParse({ name: "plate", unexpected: true }).success
     ).toBe(false);
@@ -85,12 +84,6 @@ describe("validation schemas", () => {
     expect(updatePlateSchema.safeParse({ status: "ARCHIVED" }).success).toBe(
       false
     );
-    expect(updateWellSchema.safeParse({ status: "INVALID" }).success).toBe(
-      false
-    );
-    expect(
-      updateWellSchema.safeParse({ status: "EMPTY", unexpected: true }).success
-    ).toBe(false);
   });
 
   it("accepts only supported settings values", () => {

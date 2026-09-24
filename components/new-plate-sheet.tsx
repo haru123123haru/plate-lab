@@ -346,7 +346,7 @@ export function NewPlateSheet({
                             : "text-text-secondary"
                         )}
                       >
-                        {pt.wellCount} {t("wells")}
+                        {pt.rows * pt.cols} {t("wells")}
                       </div>
                     </button>
                   ))}

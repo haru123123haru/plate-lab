@@ -1,16 +1,12 @@
 export type PlateType = {
   id: string;
   name: string;
-  wellCount: number;
   rows: number;
   cols: number;
   maxDrops: number;
   layout: "SITTING" | "HANGING";
   description?: string;
 };
-
-export type WellStatus =
-  "filled" | "empty" | "crystal" | "precipitate" | "clear";
 
 export type PlateLayout = PlateType["layout"];
 
@@ -36,13 +32,6 @@ export type WellData = {
   position: string;
   row: number;
   col: number;
-  status: WellStatus;
-  protein?: string;
-  concentration?: string;
-  buffer?: string;
-  ph?: string;
-  precipitant?: string;
-  notes?: string;
   drops: DropData[];
 };
 
@@ -56,7 +45,6 @@ export type Plate = {
   createdAt: string;
   updatedAt: string;
   notes?: string;
-  sampleName?: string;
   reservoirTemplate?: string;
   screeningTemplate?: string;
 };

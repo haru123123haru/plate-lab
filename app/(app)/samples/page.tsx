@@ -1,5 +1,5 @@
-import { getPlates } from "@/lib/actions/plates";
-import { countUsedWells } from "@/lib/wells";
+import { searchPlates } from "@/lib/actions/plates";
+import { countUsedWells, summarizeSamples } from "@/lib/wells";
 import { getPlateTypes } from "@/lib/actions/plate-types";
 import {
   getConditionTemplates,
@@ -10,7 +10,8 @@ import { SamplesClient } from "./samples-client";
 export default async function SamplesPage() {
   const [plates, plateTypes, conditionTemplates, conditionSets] =
     await Promise.all([
-      getPlates(),
+      // 空の検索は全件を返す。検索結果と同じ形（サンプル名つき）で最初の一覧を出すため
+      searchPlates(""),
       getPlateTypes(),
       getConditionTemplates(),
       getConditionSets(),
@@ -19,11 +20,9 @@ export default async function SamplesPage() {
   const uiPlates = plates.map((p) => ({
     id: p.id,
     name: p.name,
-    plateType: {
-      name: p.plateType.name,
-      wellCount: p.plateType.wellCount,
-    },
+    plateType: { name: p.plateType.name },
     filledWells: countUsedWells(p.wells),
+    samples: summarizeSamples(p.wells),
     totalWells: p.wells.length,
     createdAt: p.createdAt.toISOString().split("T")[0],
   }));
@@ -31,7 +30,6 @@ export default async function SamplesPage() {
   const uiPlateTypes = plateTypes.map((pt) => ({
     id: pt.id,
     name: pt.name,
-    wellCount: pt.wellCount,
     rows: pt.rows,
     cols: pt.cols,
     maxDrops: pt.maxDrops,
