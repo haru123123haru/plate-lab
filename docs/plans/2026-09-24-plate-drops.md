@@ -244,14 +244,14 @@ npm run check               # 全部通る
 
 ### タスク
 
-- [ ] `components/bulk-drop-form.tsx`（新規）— `well-grid-selector.tsx` でウェルを複数選び、置き場所を選び、サンプル名と濃度を入れる
-- [ ] `components/new-plate-sheet.tsx` — 「使うウェルを選ぶ」ステップとサンプル名欄を、上の部品に置き換える。712行あるので、置き換える部分を別ファイルに切り出す形で進める
-- [ ] `lib/actions/plates.ts` の `createPlate` — `filledPositions` の代わりに、まとめて入れる内容を受け取ってドロップを作る
-- [ ] `plate-detail-client.tsx` — 編集モードに「まとめて追加」を置く
-- [ ] サンプル名の入力と表示を消す。詳細画面の編集欄（`plate-detail-client.tsx:66, 124, 139, 281-292`）と表示（同 `:417`）、`updatePlate` と `updatePlateSchema` の `sampleName`（`lib/actions/plates.ts:176`、`lib/validations.ts:60`）、`createPlateSchema` の `sampleName`（`lib/validations.ts:17`）。列そのものは Phase 4 で消す
-- [ ] マイグレーション — 使用中のウェルを1番のドロップへ移す（「既存データの移し替え」の節）
-- [ ] 使用中ウェル数の計算を `lib/` の純粋関数にまとめ、4か所をそれに置き換える。`getPlates` と `searchPlates` の `include`（`lib/actions/plates.ts:29, 237, 257`）にドロップの件数を足す
-- [ ] `lib/i18n.ts` — まとめて入れるフォームの文言
+- [x] `components/bulk-drop-form.tsx`（新規）— `well-grid-selector.tsx` でウェルを複数選び、置き場所を選び、サンプル名と濃度を入れる
+- [x] `components/new-plate-sheet.tsx` — 「使うウェルを選ぶ」ステップとサンプル名欄を、上の部品に置き換える。712行あるので、置き換える部分を別ファイルに切り出す形で進める
+- [x] `lib/actions/plates.ts` の `createPlate` — `filledPositions` の代わりに、まとめて入れる内容を受け取ってドロップを作る
+- [x] `plate-detail-client.tsx` — 編集モードに「まとめて追加」を置く
+- [x] サンプル名の入力と表示を消す。詳細画面の編集欄（`plate-detail-client.tsx:66, 124, 139, 281-292`）と表示（同 `:417`）、`updatePlate` と `updatePlateSchema` の `sampleName`（`lib/actions/plates.ts:176`、`lib/validations.ts:60`）、`createPlateSchema` の `sampleName`（`lib/validations.ts:17`）。列そのものは Phase 4 で消す
+- [x] マイグレーション — 使用中のウェルを1番のドロップへ移す（「既存データの移し替え」の節）
+- [x] 使用中ウェル数の計算を `lib/` の純粋関数にまとめ、4か所をそれに置き換える。`getPlates` と `searchPlates` の `include`（`lib/actions/plates.ts:29, 237, 257`）にドロップの件数を足す
+- [x] `lib/i18n.ts` — まとめて入れるフォームの文言
 
 ### 完了条件
 
@@ -319,3 +319,15 @@ npm run check    # 全部通る
   - シートの操作は、`router.refresh()` の完了まで止める（`useTransition` の `isPending`）。止めないと、削除したドロップや観察が数百ミリ秒残り、もう一度押すと「失敗しました」が出る。レビューで見つかった
   - 種別作成では、8×12 に4ドロップのような組み合わせも作れる。402px 幅ではウェル1つが約20px、置き場所の丸が約5pxになり、押しにくい。使われるまでは縛らない
   - `npm run build` は `prisma migrate deploy` を含む。Vercel の Preview 環境の `DATABASE_URL` が本番 DB を指していると、feature ブランチを push しただけで本番にマイグレーションが流れる。push の前に Preview 用の環境変数を確かめる
+- Phase 3（2026-09-25）
+  - `bulk-drop-form.tsx` には2つの部品を置いた。作成シートで使う入力欄だけの `BulkDropFields`（値は親が持つ）と、詳細画面の編集モードで使う送信つきの `BulkAddDropsForm` だ。ウェルの位置は `WellGridSelector` の "0-0" 形式で持ち、送る直前に "A1" 形式へ変える
+  - 作成画面の「置き場所」の選択は、1ドロップの種別では出さない（1番しか無いため）。初期値は1番だけを選んだ状態
+  - `createPlate` は、ウェルを作る入れ子の create の中でドロップも作る。作成とドロップの投入が1回の書き込みで済み、途中で止まって「ドロップの無いプレート」が残ることがない。新しく作るウェルの `status` は書かない（初期値の EMPTY のまま）。使用中かどうかはドロップの有無で決まる
+  - `getPlates` と `searchPlates` は、ウェルごとのドロップの件数だけを引く（`_count`）。一覧に要るのはウェル数と使用中のウェル数だけだからだ
+  - 移し替えのマイグレーションは、ローカル DB で件数を突き合わせた。適用前のドロップ14件と使用中のウェル252件に対し、適用後は265件になった。1件足りないのは、先に1番へドロップを入れておいたウェルが `ON CONFLICT` で飛ばされたためで、そのドロップは上書きされずに残った。サンプル名と濃度は、空白だけの値も `NULLIF(TRIM(…))` で '-' に倒す
+  - seed は、使用中のウェルに1番のドロップを作るようにした。`migrate reset` は移し替えの後に seed を流すので、seed 側でも作らないと seed のプレートが空になる（Phase 2 のレビューで指摘された）。ローカルのデータを全部消すため、seed は流していない。確かめたのは型チェックだけだ
+  - サンプル検索には、Phase 4 を待たずにドロップのサンプル名を足した（`Plate.sampleName` の条件も Phase 4 まで残す）。作成画面から `Plate.sampleName` が入らなくなったので、足さないと Phase 2・3 を出したあとに作ったプレートがサンプル名で見つからなくなる。レビューで見つかった。結果にサンプル名とドロップ数を添えるのは Phase 4 のまま
+  - 移し替えでは、ウェルの残りの記録欄（buffer・ph・precipitant・notes）と観察結果の status（CRYSTAL・PRECIPITATE・CLEAR）も、ドロップのメモに1行ずつ詰めた。これらの列は Phase 4 で消えるので、ここで移さないと戻せない。本番に中身があるかは手元から確かめられないため、失わない側に倒した
+  - `bulkCreateDrops` の、確認と作成のあいだにゴミ箱へ移されると作ってしまう窓は、画面から届くようになった。作られるのは持ち主本人のドロップなので、引き続き許容する
+  - ドロップの追加・編集・削除では `Plate.updatedAt` が変わらない。一覧の並び（更新順）と詳細の「更新日」に反映されないが、今回は見送る
+  - デプロイ中、`migrate deploy` が終わってから新しいコードに切り替わるまでのあいだに古いコードでプレートを作ると、使用中のウェルがドロップ無しでできる。本番はまだ使われていないので許容する。出したあとに空に見えるプレートがあれば、これが原因
