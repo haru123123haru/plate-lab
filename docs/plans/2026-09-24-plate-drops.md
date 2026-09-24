@@ -92,7 +92,7 @@ model Observation {
 
 `sampleName` に索引は張らない。検索は部分一致（`ILIKE '%q%'`）なので、通常の索引は効かない。
 
-`observedAt` は日付だけを持つ。クライアントからは `"YYYY-MM-DD"` の文字列で受け取り、サーバーで `` new Date(`${s}T00:00:00Z`) `` に変換する。`Date` をそのまま送ると、日本時間の0〜9時は UTC で前日になり、1日ずれるためだ。表示するときも UTC の日付として扱う。
+`observedAt` は日付だけを持つ。クライアントからは `"YYYY-MM-DD"` の文字列で受け取り、サーバーで ``new Date(`${s}T00:00:00Z`)`` に変換する。`Date` をそのまま送ると、日本時間の0〜9時は UTC で前日になり、1日ずれるためだ。表示するときも UTC の日付として扱う。
 
 ウェルに残るのは位置（`position`・`row`・`col`）だけになる。そのウェルのリザーバー条件とスクリーニング条件は、今までどおりプレートのテンプレートから位置で引く。「使用中のウェル」は「ドロップが1つ以上あるウェル」と定義する。今は `status !== "EMPTY"` で数えていて、その計算が4か所に散らばっている（`app/(app)/page.tsx:26`、`dashboard-client.tsx:72`、`samples/page.tsx:25`、`samples-client.tsx:64`）。これを `lib/` 配下の純粋関数1つにまとめる。dashboard と samples の client 側でも使うので、`"use server"` のファイルには置かない。
 
