@@ -217,13 +217,13 @@ npm run check               # 全部通る
 
 ### タスク
 
-- [ ] `components/well-grid.tsx` — `rows`・`cols`・`layout`・`maxDrops` を受け取る形にまとめ、4ドロップと3ドロップの描き方を足す。塗りつぶしはドロップの有無で決める
-- [ ] `components/well-grid-24.tsx` — 削除する
-- [ ] `components/well-detail-modal.tsx` を `components/well-sheet.tsx` に改名して広げる。置き場所の図、ドロップの編集フォーム、観察履歴を持たせる
-- [ ] `app/(app)/plates/[id]/page.tsx` と `plate-detail-client.tsx` — 新しいグリッドとシートを使う
-- [ ] マイグレーション — 新しい2種類を入れる（同じ名前の共有種別が無いときだけ）。`prisma/seed.ts` にも足す
-- [ ] 種別作成のスキーマとダイアログ — 上の3通りの組み合わせを通す
-- [ ] `lib/i18n.ts` — 追加する文言（日本語と英語）
+- [x] `components/well-grid.tsx` — `rows`・`cols`・`layout`・`maxDrops` を受け取る形にまとめ、4ドロップと3ドロップの描き方を足す。塗りつぶしはドロップの有無で決める
+- [x] `components/well-grid-24.tsx` — 削除する
+- [x] `components/well-detail-modal.tsx` を `components/well-sheet.tsx` に改名して広げる。置き場所の図、ドロップの編集フォーム、観察履歴を持たせる
+- [x] `app/(app)/plates/[id]/page.tsx` と `plate-detail-client.tsx` — 新しいグリッドとシートを使う
+- [x] マイグレーション — 新しい2種類を入れる（同じ名前の共有種別が無いときだけ）。`prisma/seed.ts` にも足す
+- [x] 種別作成のスキーマとダイアログ — 上の3通りの組み合わせを通す
+- [x] `lib/i18n.ts` — 追加する文言（日本語と英語）
 
 ### 完了条件
 
@@ -308,3 +308,14 @@ npm run check    # 全部通る
   - `bulkCreateDrops` は、プレートの確認と `createMany` のあいだにゴミ箱へ移されると、ドロップを作ってしまう。`createMany` は `where` を持てないためで、画面から呼ぶのは Phase 3 なので今は許容し、コードに印を残した
   - 新しい2テーブルは、既存のテーブル（`supabase/migrations/20260219_enable_rls.sql`）にそろえて RLS を有効にした。Supabase の Security Advisor の警告を避けるためで、postgres は RLS を素通りするのでアプリには影響しない
   - `bulkCreateDrops` の位置は `"A1"` 形式で受ける。DB の `Well.position` をそのまま引けるからだ。`well-grid-selector.tsx` と `createPlateSchema.filledPositions` は `"0-0"`（行-列）形式なので、Phase 3 の `bulk-drop-form.tsx` で変換してから渡す
+- Phase 2（2026-09-25）
+  - 置き場所の描き分けは `components/well-shape.tsx` に切り出した。計画には無いファイルだが、グリッドの1マスとシートの大きい図で同じ描き方を使うためだ。置き場所の位置は、ウェルの正方形に対する % で持つ。1ドロップは「直径100%の置き場所が1つ」として扱うので、既存の見た目がそのまま残る
+  - 詳細画面は、選んだウェルを丸ごとではなく ID で持つようにした。ウェルを丸ごと持つと、`router.refresh()` のあとも古いウェルがシートに残り、足したドロップが出てこない
+  - シートは、ウェルを押したあとにだけ描く。観察日の初期値を利用者の端末の今日にするためだ。サーバーで描くと UTC の日付になり、日本時間の0〜9時は前日になる
+  - 空の置き場所は、編集できるプレートなら追加フォームを出し、ゴミ箱のプレートなら「ドロップがありません」と出す
+  - 種別作成ダイアログの描き方は4択にした（Sitting・1、Hanging・1、Sitting・4、Hanging・3）。計画の「3通り」の1つ目は SITTING と HANGING のどちらでもよいので、選択肢としては4つになる
+  - ブラウザでの確認は Playwright（ローカルのブラウザを使い、スクリプトは作業用ディレクトリに置いた）で、402px 幅で行った。ローカル専用のテスト用ユーザーを作り、プレートは DB に直接入れた
+  - 完了条件の「既存の96穴・24穴の見た目が変わっていない」は、グリッドの形についてだけ満たしている。塗りつぶしはドロップの有無で決めるので、既存プレートの使用中ウェル（ドロップがまだ無い）は、Phase 3 で移し替えるまで空に見える。計画どおりだが、Phase 2 だけを出してはいけない理由がここにある
+  - シートの操作は、`router.refresh()` の完了まで止める（`useTransition` の `isPending`）。止めないと、削除したドロップや観察が数百ミリ秒残り、もう一度押すと「失敗しました」が出る。レビューで見つかった
+  - 種別作成では、8×12 に4ドロップのような組み合わせも作れる。402px 幅ではウェル1つが約20px、置き場所の丸が約5pxになり、押しにくい。使われるまでは縛らない
+  - `npm run build` は `prisma migrate deploy` を含む。Vercel の Preview 環境の `DATABASE_URL` が本番 DB を指していると、feature ブランチを push しただけで本番にマイグレーションが流れる。push の前に Preview 用の環境変数を確かめる
