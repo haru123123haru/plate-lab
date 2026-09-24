@@ -12,6 +12,25 @@ export type PlateType = {
 export type WellStatus =
   "filled" | "empty" | "crystal" | "precipitate" | "clear";
 
+export type PlateLayout = PlateType["layout"];
+
+export type ObservationData = {
+  id: string;
+  // "YYYY-MM-DD"（UTC の日付）
+  observedAt: string;
+  notes: string;
+};
+
+export type DropData = {
+  id: string;
+  slot: number;
+  sampleName: string;
+  concentration: string;
+  notes?: string;
+  // 新しい順
+  observations: ObservationData[];
+};
+
 export type WellData = {
   id?: string;
   position: string;
@@ -24,6 +43,7 @@ export type WellData = {
   ph?: string;
   precipitant?: string;
   notes?: string;
+  drops: DropData[];
 };
 
 export type Plate = {

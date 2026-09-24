@@ -18,29 +18,31 @@ import {
 } from "../lib/validations";
 
 describe("validation schemas", () => {
-  it("accepts only supported plate type shapes", () => {
-    const base = { name: "type", maxDrops: 1, layout: "SITTING" as const };
-    expect(
-      createPlateTypeSchema.safeParse({ ...base, rows: 4, cols: 6 }).success
-    ).toBe(true);
-    expect(
-      createPlateTypeSchema.safeParse({ ...base, rows: 8, cols: 12 }).success
-    ).toBe(true);
-    // 描き方が追いつくまでは 3×5 も複数ドロップも通さない
-    expect(
-      createPlateTypeSchema.safeParse({ ...base, rows: 3, cols: 5 }).success
-    ).toBe(false);
-    expect(
+  it("accepts only plate type shapes that can be drawn", () => {
+    const parse = (
+      rows: number,
+      cols: number,
+      layout: "SITTING" | "HANGING",
+      maxDrops: number
+    ) =>
       createPlateTypeSchema.safeParse({
-        ...base,
-        rows: 4,
-        cols: 6,
-        maxDrops: 4,
-      }).success
-    ).toBe(false);
-    expect(
-      createPlateTypeSchema.safeParse({ ...base, rows: 9, cols: 12 }).success
-    ).toBe(false);
+        name: "type",
+        rows,
+        cols,
+        layout,
+        maxDrops,
+      }).success;
+
+    expect(parse(8, 12, "SITTING", 1)).toBe(true);
+    expect(parse(4, 6, "HANGING", 1)).toBe(true);
+    expect(parse(4, 6, "SITTING", 4)).toBe(true);
+    expect(parse(3, 5, "HANGING", 3)).toBe(true);
+    // 描き方の無い組み合わせ
+    expect(parse(4, 6, "HANGING", 4)).toBe(false);
+    expect(parse(3, 5, "SITTING", 3)).toBe(false);
+    expect(parse(4, 6, "SITTING", 2)).toBe(false);
+    // 行ラベルは A〜H まで
+    expect(parse(9, 12, "SITTING", 1)).toBe(false);
   });
 
   it("rejects duplicate and malformed filled well positions", () => {

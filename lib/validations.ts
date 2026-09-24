@@ -46,11 +46,12 @@ export const createPlateTypeSchema = z
     layout: z.enum(["SITTING", "HANGING"]),
     description: z.string().max(500).optional(),
   })
-  // 描き方と一覧の表示が追いつくまで、既存の形（4×6 と 8×12、1ドロップ）だけを作らせる
+  // 描き方があるのは、1ドロップ・SITTING の4ドロップ・HANGING の3ドロップだけ
   .refine(
-    ({ rows, cols, maxDrops }) =>
-      maxDrops === 1 &&
-      ((rows === 4 && cols === 6) || (rows === 8 && cols === 12)),
+    ({ layout, maxDrops }) =>
+      maxDrops === 1 ||
+      (layout === "SITTING" && maxDrops === 4) ||
+      (layout === "HANGING" && maxDrops === 3),
     { message: "Unsupported plate shape" }
   );
 

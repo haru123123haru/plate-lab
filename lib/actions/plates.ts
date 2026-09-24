@@ -72,7 +72,12 @@ export async function getPlateById(id: string) {
         include: {
           drops: {
             orderBy: { slot: "asc" },
-            include: { observations: { orderBy: { observedAt: "desc" } } },
+            include: {
+              // 観察日は日付だけなので、同じ日の中は書いた順で並べる
+              observations: {
+                orderBy: [{ observedAt: "desc" }, { createdAt: "desc" }],
+              },
+            },
           },
         },
       },

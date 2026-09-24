@@ -134,6 +134,25 @@ const translations = {
     actionFailed: "Something went wrong. Please try again.",
     back: "Back",
     edit: "Edit",
+
+    // Drops
+    slot: "Position",
+    concentration: "Concentration",
+    addDrop: "Add Drop",
+    deleteDrop: "Delete Drop",
+    deleteDropConfirmTitle: "Delete this drop?",
+    deleteDropConfirmBody:
+      "Its observations will be deleted too. This cannot be undone.",
+    emptySlot: "No drop in this position.",
+    slotInUse: "This position already has a drop.",
+    observations: "OBSERVATIONS",
+    noObservations: "No observations yet.",
+    addObservation: "Add Observation",
+    observedOn: "DATE",
+    adding: "Adding...",
+    delete: "Delete",
+    close: "Close",
+    hasDrop: "has a drop",
   },
   ja: {
     // Navigation
@@ -269,6 +288,24 @@ const translations = {
     actionFailed: "処理に失敗しました。もう一度お試しください。",
     back: "戻る",
     edit: "編集",
+
+    // ドロップ
+    slot: "置き場所",
+    concentration: "濃度",
+    addDrop: "ドロップを追加",
+    deleteDrop: "ドロップを削除",
+    deleteDropConfirmTitle: "このドロップを削除しますか？",
+    deleteDropConfirmBody: "観察の記録も一緒に削除されます。元に戻せません。",
+    emptySlot: "この置き場所にはドロップがありません。",
+    slotInUse: "この置き場所はすでに使われています。",
+    observations: "観察",
+    noObservations: "まだ観察の記録がありません。",
+    addObservation: "観察を追加",
+    observedOn: "観察日",
+    adding: "追加中...",
+    delete: "削除",
+    close: "閉じる",
+    hasDrop: "ドロップあり",
   },
 } as const;
 

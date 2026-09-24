@@ -147,6 +147,33 @@ async function main() {
     },
   });
 
+  // 1ウェルに複数のドロップを置く種別。本番にはマイグレーションで入れる
+  await prisma.plateType.create({
+    data: {
+      name: "24 Well - Sitting 4 Drop",
+      wellCount: 24,
+      rows: 4,
+      cols: 6,
+      maxDrops: 4,
+      layout: "SITTING",
+      description: "24-well sitting drop plate with 4 drop positions per well",
+      isDefault: true,
+    },
+  });
+
+  await prisma.plateType.create({
+    data: {
+      name: "15 Well - Hanging 3 Drop",
+      wellCount: 15,
+      rows: 3,
+      cols: 5,
+      maxDrops: 3,
+      layout: "HANGING",
+      description: "15-well hanging drop plate with up to 3 drops per well",
+      isDefault: true,
+    },
+  });
+
   // 条件テンプレート（PEG / MPD スクリーニング）
   const conditionsDir = path.join(process.cwd(), "conditions");
 
@@ -283,7 +310,7 @@ async function main() {
 
   console.log("Seed completed successfully!");
   console.log(`  - 1 user`);
-  console.log(`  - 3 plate types`);
+  console.log(`  - 5 plate types`);
   console.log(
     `  - 2 condition templates (PEG: ${pegWells.length} wells, MPD: ${mpdWells.length} wells)`
   );
