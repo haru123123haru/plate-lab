@@ -66,11 +66,11 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 
-マイグレーションは8本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。
+マイグレーションは9本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の `revoke_data_api_access` はスキーマを変えず、権限だけを外している（→4章）。
 
 ---
 
-## 4. 認可は3層あるが、実際に効いているのはアプリ層だけ
+## 4. 認可はアプリ層で行い、DB への別の入口は閉じてある
 
 ここがこのアプリで一番込み入っていて、一番誤解しやすい部分。
 
@@ -78,15 +78,15 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 それを実際に適用しているのが `lib/actions/` の各 Server Action。全ファイルが先頭で `getCurrentUserId()`（`lib/auth.ts`。未認証なら `/login` へ redirect）を呼び、取得した userId を `where` 句に必ず混ぜる。丁寧に作られている箇所が2つあって、`getPlateById()` は `where` で絞ったうえで取得後に `plate.userId !== userId` をもう一度確認する。`deleteConditionTemplate()` は「他ユーザーの ConditionSet や Plate から参照されていないか」をトランザクション内で確認してから削除する。
 
-3層目の RLS は `supabase/migrations/20260219_enable_rls.sql` にある。ただしこれは2つの理由で当てにできない。
+アプリ層を通らずに DB に届く入口が、Supabase には一つある。テーブルを自動で公開する REST API（`/rest/v1/<テーブル名>`）で、URL と anon key だけで叩ける。どちらもブラウザ向けの JavaScript に入っているので、秘密ではない。この入口では、`anon` / `authenticated` ロールのテーブル権限と RLS のポリシーの2段で、何ができるかが決まる。
 
-一つ目は内容が古いこと。このSQLでは `ConditionTemplate`・`ConditionSet`・`TemplateWell` のポリシーが「認証済みなら誰でも読み書き削除できる」（`auth.uid() IS NOT NULL`）になっている。所有権モデルを導入した `add_condition_ownership` マイグレーション以降のアプリ層の挙動と食い違っており、RLS のほうが緩い。
+2026-09-24 まで、この入口は開いていた。テーブル権限は Supabase の初期設定のまま全部許可で、実質的に守っていたのは RLS（`supabase/migrations/20260219_enable_rls.sql`）だけだった。RLS は本番では有効だが、ローカルでは無効になっている。本番のポリシーは `User`・`Plate`・`Well` を本人の行に絞っていた。ただ、`ConditionTemplate`・`ConditionSet`・`TemplateWell` は「ログインしていれば誰でも読み書き削除できる」（`auth.uid() IS NOT NULL`）で、アプリ層の所有権モデルより緩かった。サインアップが開いているので、誰でもアカウントを作って共有テンプレートを消せる状態だった。調べた範囲では、悪用された形跡は無い（知らないアカウントは無く、テンプレートの変化も無い）。
 
-二つ目は、そもそも Prisma 経由のアクセスに RLS が効かないこと。Prisma は `DATABASE_URL` の Postgres 接続を直接使っており、この接続のロールは RLS をバイパスする。つまりアプリの全アクセスは RLS を素通りする。
+これを、マイグレーション `20260924000000_revoke_data_api_access` で塞いだ。`anon` と `authenticated` から、`public` スキーマの全テーブル・シーケンス・関数の権限を外し、今後作るテーブルにも付かないようにしてある。**アプリは Prisma でしか DB に触らない**ので、この変更の影響は受けない。Prisma の接続ロール（`postgres`）は RLS もテーブル権限の制限も受けないためだ。supabase-js は認証にだけ使っていて、データの取得には使っていない。このマイグレーションは、`anon` ロールの無い素の Postgres ではスキップされる。
 
-RLS SQL の末尾には「Prisma は service_role キーで接続するため」というコメントがあるが、これは事実と違う。`SUPABASE_SERVICE_ROLE_KEY` はコードのどこからも参照されていない。結論は同じ——RLS は効かない——だが、理由の記述は誤っている。
+したがって、**認可を判断しているのはアプリ層の Server Action だけ**で、それ以外の入口は権限の段階で閉じている。RLS の SQL は古いまま残っているが、今は届く経路が無い。REST API を使う機能を今後足すなら、権限を戻す前に RLS を所有権モデルに合わせて書き直す必要がある。
 
-**したがって、防御線はアプリ層の Server Action 1枚だけ。** ここを迂回する経路（Supabase の REST API を anon key で直接叩くなど）が作られた場合、RLS は現状の緩いポリシーしか返さない。RLS を実効的な二重防御として使うなら、SQL を所有権モデルに合わせて書き直したうえで、Prisma の接続ロールを RLS の効くものに変える必要がある。どちらも未着手。
+RLS SQL の末尾には「Prisma は service_role キーで接続するため」というコメントがあるが、これは事実と違う。`SUPABASE_SERVICE_ROLE_KEY` はコードのどこからも参照されていない。Prisma が RLS を受けないのは、`postgres` ロールで直接つないでいるからだ。
 
 テストは2本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりの Action が実際に渡す `where` に `userId` と `deletedAt` の条件が入っているかを検査する。後者があるので、ヘルパーの呼び忘れは検出できる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
 
@@ -94,12 +94,12 @@ RLS SQL の末尾には「Prisma は service_role キーで接続するため」
 
 ## 5. インフラは Vercel + Supabase + Google OAuth の3点構成
 
-| 層           | サービス                                                      | 備考                                |
-| ------------ | ------------------------------------------------------------- | ----------------------------------- |
-| ホスティング | Vercel（プロジェクト名 `plate-manage-app`）                   | Node.js 24.x、`main` ブランチに連動 |
-| DB           | Supabase PostgreSQL（`nbavmqhtkdiacpwvblij`, ap-northeast-1） | Prisma から Pooler 経由で接続       |
-| 認証         | Supabase Auth                                                 | メール + パスワード、Google OAuth   |
-| ソース       | GitHub `haru123123haru/plate-lab`                             |                                     |
+| 層           | サービス                                                      | 備考                                                       |
+| ------------ | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| ホスティング | Vercel（プロジェクト名 `plate-manage-app`）                   | Node.js 24.x、`main` ブランチに連動、関数は `hnd1`（東京） |
+| DB           | Supabase PostgreSQL（`nbavmqhtkdiacpwvblij`, ap-northeast-1） | Prisma から Pooler 経由で接続                              |
+| 認証         | Supabase Auth                                                 | メール + パスワード、Google OAuth                          |
+| ソース       | GitHub `haru123123haru/plate-lab`                             |                                                            |
 
 アプリが実際に読む環境変数は4つだけ。
 
@@ -108,6 +108,8 @@ RLS SQL の末尾には「Prisma は service_role キーで接続するため」
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — `lib/supabase/` の3ファイルが読む
 
 ローカルの `.env` には他に `SUPABASE_SERVICE_ROLE_KEY`・`GOOGLE_CLIENT_ID`・`GOOGLE_CLIENT_SECRET` も書かれているが、コードからは一切参照されていない。Google の認証情報は Supabase 側（`supabase/config.toml` の `[auth.external.google]` と、本番はダッシュボード）に登録するものなので、アプリに持つ必要がない。実質的に死んだ変数。
+
+関数のリージョンは `vercel.json` で `hnd1` に固定している。以前は既定の `iad1`（ワシントン）で動いていて、DB と認証（東京）とのやり取りが1リクエストに何度も太平洋を往復していた。2026-09-24 に変えてから、体感でも速くなった。
 
 セキュリティヘッダは `next.config.ts` で設定済み。`X-Frame-Options: DENY`、`X-Content-Type-Options: nosniff`、`Referrer-Policy`、`Permissions-Policy` でカメラ・マイク・位置情報を無効化、`poweredByHeader` も落としてある。
 
@@ -160,7 +162,9 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ## 7. 本番の状態
 
-2026-09-23 時点で、本番は最新のコード（`2b3920a`）で稼働している。マイグレーション8本はすべて本番DBに適用済み。
+2026-09-24 時点で、本番は最新のコード（`300a101`）で稼働している。マイグレーション9本はすべて本番DBに適用済み。
+
+**本番の共有テンプレート PEG・MPD には、条件（`TemplateWell`）が1件も入っていない。** 名前だけの行があり（ID 3 と 4）、`TemplateWell` のシーケンスは一度も使われていない。消された跡は無く、最初から投入されていなかったことになる。どうやって作ったかの記録は残っていない。`prisma db seed` は全テーブルを `deleteMany` してから作り直すので、本番では絶対に実行しない。
 
 デプロイは `main` ブランチへの push で自動的に走る。ビルドコマンドは `prisma migrate deploy && prisma generate && next build` で、デプロイのたびに本番DBへマイグレーションが適用される。マイグレーションが失敗するとビルドも失敗するので、壊れた組み合わせが本番に出ることはない。
 
@@ -186,9 +190,11 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 重いものが2つある。
 
-ひとつは、RLS がアプリ層の所有権モデルと食い違っていること。4章に書いたとおり、現在の防御線はアプリ層1枚しかない。RLS を二重防御として機能させるなら、SQL を所有権モデルに合わせて書き直したうえで、Prisma の接続ロールを RLS の効くものに変える必要がある。どちらも手つかず。
+ひとつは、本番の共有テンプレートが空なこと（7章）。本番でプレートを作っても、各ウェルの組成が出てこない。seed は使えないので、共有テンプレートのウェルだけを足す手順が要る。あわせて、個人テンプレートも名前と説明しか登録できず、中身を入れる経路が無い（`createConditionTemplate` が `TemplateWell` を作らない）。
 
-もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。
+もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書は `docs/plans/2026-09-24-db-integration-tests.md`（未着手）。
+
+サインアップがまだ開いていることも残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
 
 残りは軽い。`components/new-plate-sheet.tsx` が700行を超えており、分割の候補になっている。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
 
