@@ -144,16 +144,8 @@ export function NewPlateSheet({
     () => allPlateTypes.find((pt) => pt.id === selectedType),
     [allPlateTypes, selectedType]
   );
-  const gridRows = selectedPlateType
-    ? selectedPlateType.wellCount === 24
-      ? 4
-      : 8
-    : 0;
-  const gridCols = selectedPlateType
-    ? selectedPlateType.wellCount === 24
-      ? 6
-      : 12
-    : 0;
+  const gridRows = selectedPlateType?.rows ?? 0;
+  const gridCols = selectedPlateType?.cols ?? 0;
   const totalWells = gridRows * gridCols;
 
   const handleAddPlateType = (newType: PlateType) => {

@@ -41,7 +41,7 @@ interface PlateDetailClientProps {
     sampleName?: string;
     reservoirTemplateId: number | null;
     screeningTemplateId: number | null;
-    plateType: { name: string; wellCount: number };
+    plateType: { name: string; wellCount: number; rows: number; cols: number };
     wells: WellData[];
     createdAt: string;
     updatedAt: string;
@@ -251,7 +251,8 @@ export function PlateDetailClient({
         <div>
           <SectionHeader label={t("wellMap")} />
           <div className="mt-3 rounded-xl bg-bg-surface">
-            {plate.plateType.wellCount === 24 ? (
+            {/* グリッドを1つにまとめるまでは 4×6 だけ 24 用で描く */}
+            {plate.plateType.rows === 4 && plate.plateType.cols === 6 ? (
               <WellGrid24 wells={plate.wells} onWellClick={handleWellClick} />
             ) : (
               <WellGrid wells={plate.wells} onWellClick={handleWellClick} />

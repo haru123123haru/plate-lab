@@ -115,6 +115,9 @@ async function main() {
     data: {
       name: "96 Well - Sitting",
       wellCount: 96,
+      rows: 8,
+      cols: 12,
+      layout: "SITTING",
       description: "Standard 96-well sitting drop plate",
       isDefault: true,
     },
@@ -124,6 +127,9 @@ async function main() {
     data: {
       name: "24 Well - Hanging",
       wellCount: 24,
+      rows: 4,
+      cols: 6,
+      layout: "HANGING",
       description: "24-well hanging drop plate",
       isDefault: true,
     },
@@ -133,6 +139,9 @@ async function main() {
     data: {
       name: "Sitting Manual",
       wellCount: 96,
+      rows: 8,
+      cols: 12,
+      layout: "SITTING",
       description: "Manual sitting drop plate",
       isDefault: true,
     },

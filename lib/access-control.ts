@@ -37,6 +37,16 @@ export function trashedPlateWhere(userId: string) {
   } satisfies Prisma.PlateWhereInput;
 }
 
+// 編集できるのは、持ち主のゴミ箱に入っていないプレートのウェルとドロップだけ。
+// ゴミ箱のプレートのドロップは読めるが、ここを通る書き込みはできない
+export function editableWellWhere(userId: string) {
+  return { plate: activePlateWhere(userId) } satisfies Prisma.WellWhereInput;
+}
+
+export function editableDropWhere(userId: string) {
+  return { well: editableWellWhere(userId) } satisfies Prisma.DropWhereInput;
+}
+
 export function getAccessibleConditionTemplate(id: number, userId: string) {
   return prisma.conditionTemplate.findFirst({
     where: {

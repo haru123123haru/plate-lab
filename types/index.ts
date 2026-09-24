@@ -2,6 +2,10 @@ export type PlateType = {
   id: string;
   name: string;
   wellCount: number;
+  rows: number;
+  cols: number;
+  maxDrops: number;
+  layout: "SITTING" | "HANGING";
   description?: string;
 };
 

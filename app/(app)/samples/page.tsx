@@ -31,6 +31,10 @@ export default async function SamplesPage() {
     id: pt.id,
     name: pt.name,
     wellCount: pt.wellCount,
+    rows: pt.rows,
+    cols: pt.cols,
+    maxDrops: pt.maxDrops,
+    layout: pt.layout,
     description: pt.description ?? undefined,
   }));
 

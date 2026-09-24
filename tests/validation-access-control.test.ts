@@ -18,18 +18,28 @@ import {
 } from "../lib/validations";
 
 describe("validation schemas", () => {
-  it("accepts only supported plate type well counts", () => {
+  it("accepts only supported plate type shapes", () => {
+    const base = { name: "type", maxDrops: 1, layout: "SITTING" as const };
     expect(
-      createPlateTypeSchema.safeParse({ name: "24 well", wellCount: 24 })
-        .success
+      createPlateTypeSchema.safeParse({ ...base, rows: 4, cols: 6 }).success
     ).toBe(true);
     expect(
-      createPlateTypeSchema.safeParse({ name: "96 well", wellCount: 96 })
-        .success
+      createPlateTypeSchema.safeParse({ ...base, rows: 8, cols: 12 }).success
     ).toBe(true);
+    // 描き方が追いつくまでは 3×5 も複数ドロップも通さない
     expect(
-      createPlateTypeSchema.safeParse({ name: "48 well", wellCount: 48 })
-        .success
+      createPlateTypeSchema.safeParse({ ...base, rows: 3, cols: 5 }).success
+    ).toBe(false);
+    expect(
+      createPlateTypeSchema.safeParse({
+        ...base,
+        rows: 4,
+        cols: 6,
+        maxDrops: 4,
+      }).success
+    ).toBe(false);
+    expect(
+      createPlateTypeSchema.safeParse({ ...base, rows: 9, cols: 12 }).success
     ).toBe(false);
   });
 

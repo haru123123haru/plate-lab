@@ -50,13 +50,21 @@ export function NewPlateTypeDialog({
     try {
       const result = await createPlateType({
         name: name.trim(),
-        wellCount: parsedWellCount,
+        rows: parsedWellCount === 24 ? 4 : 8,
+        cols: parsedWellCount === 24 ? 6 : 12,
+        maxDrops: 1,
+        // 描き方の選択は Phase 2 で足す。それまではマイグレーションと同じく名前で決める
+        layout: /hanging/i.test(name) ? "HANGING" : "SITTING",
         description: description.trim() || undefined,
       });
       onAdd({
         id: result.id,
         name: result.name,
         wellCount: result.wellCount,
+        rows: result.rows,
+        cols: result.cols,
+        maxDrops: result.maxDrops,
+        layout: result.layout,
         description: result.description ?? undefined,
       });
       onOpenChange(false);

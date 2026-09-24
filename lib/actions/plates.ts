@@ -69,6 +69,12 @@ export async function getPlateById(id: string) {
       },
       wells: {
         orderBy: [{ row: "asc" }, { col: "asc" }],
+        include: {
+          drops: {
+            orderBy: { slot: "asc" },
+            include: { observations: { orderBy: { observedAt: "desc" } } },
+          },
+        },
       },
     },
   });
@@ -95,7 +101,7 @@ export async function createPlate(data: {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  // プレートタイプから wellCount を取得してウェルを自動生成
+  // プレートタイプの形からウェルを自動生成
   const plateType = await prisma.plateType.findFirst({
     where: {
       AND: [{ id: parsed.data.plateTypeId }, accessiblePlateTypeWhere(userId)],
@@ -103,15 +109,7 @@ export async function createPlate(data: {
   });
   if (!plateType) return { error: "Not found" };
 
-  const geometry =
-    plateType.wellCount === 24
-      ? { rows: 4, cols: 6 }
-      : plateType.wellCount === 96
-        ? { rows: 8, cols: 12 }
-        : null;
-  if (!geometry) return { error: "Not found" };
-
-  const { rows, cols } = geometry;
+  const { rows, cols } = plateType;
   const requestedPositions = parsed.data.filledPositions ?? [];
   const hasInvalidPosition = requestedPositions.some((position) => {
     const [row, col] = position.split("-").map(Number);

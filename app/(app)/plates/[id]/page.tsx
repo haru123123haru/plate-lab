@@ -75,6 +75,8 @@ export default async function PlateDetailPage({
     plateType: {
       name: plate.plateType.name,
       wellCount: plate.plateType.wellCount,
+      rows: plate.plateType.rows,
+      cols: plate.plateType.cols,
     },
     wells: uiWells,
     createdAt: plate.createdAt.toISOString().split("T")[0],

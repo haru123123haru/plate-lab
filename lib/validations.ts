@@ -36,11 +36,23 @@ export const createPlateSchema = z.object({
     .optional(),
 });
 
-export const createPlateTypeSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  wellCount: z.union([z.literal(24), z.literal(96)]),
-  description: z.string().max(500).optional(),
-});
+export const createPlateTypeSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    // 行ラベルが A〜H なので行は8まで
+    rows: z.number().int().min(1).max(8),
+    cols: z.number().int().min(1).max(12),
+    maxDrops: z.number().int().min(1).max(4),
+    layout: z.enum(["SITTING", "HANGING"]),
+    description: z.string().max(500).optional(),
+  })
+  // 描き方と一覧の表示が追いつくまで、既存の形（4×6 と 8×12、1ドロップ）だけを作らせる
+  .refine(
+    ({ rows, cols, maxDrops }) =>
+      maxDrops === 1 &&
+      ((rows === 4 && cols === 6) || (rows === 8 && cols === 12)),
+    { message: "Unsupported plate shape" }
+  );
 
 export const createConditionTemplateSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -76,6 +88,41 @@ export const updateWellSchema = z
     notes: z.string().max(2000).nullable().optional(),
   })
   .strict();
+
+const dropFieldsSchema = z.object({
+  sampleName: z.string().trim().min(1).max(200),
+  concentration: z.string().trim().min(1).max(100),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+const slotSchema = z.number().int().min(1);
+
+export const createDropSchema = dropFieldsSchema.extend({
+  wellId: z.string().trim().min(1).max(100),
+  slot: slotSchema,
+});
+
+// slot は受け付けない。置き場所を変えたいときは消して作り直す
+export const updateDropSchema = dropFieldsSchema.partial().strict();
+
+export const bulkCreateDropsSchema = z.object({
+  plateId: z.string().trim().min(1).max(100),
+  // ウェルの位置ラベル（"A1" など）
+  positions: z
+    .array(z.string().regex(/^[A-H](?:[1-9]|1[0-2])$/, "Invalid well position"))
+    .min(1)
+    .max(96),
+  slots: z.array(slotSchema).min(1).max(4),
+  sampleName: dropFieldsSchema.shape.sampleName,
+  concentration: dropFieldsSchema.shape.concentration,
+});
+
+// 観察日は日付だけ。Date で送ると日本時間の0〜9時が UTC で前日になるので文字列で受ける
+export const addObservationSchema = z.object({
+  dropId: z.string().trim().min(1).max(100),
+  observedAt: z.iso.date(),
+  notes: z.string().trim().min(1).max(2000),
+});
 
 export const updateUserSettingsSchema = z
   .object({
