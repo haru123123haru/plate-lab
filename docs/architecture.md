@@ -1,6 +1,6 @@
 # PLATE LAB 現状アーキテクチャ
 
-最終更新: 2026-09-23
+最終更新: 2026-09-24
 
 このドキュメントは、PLATE LAB の設計とインフラの現状を一か所にまとめたもの。読者は開発者本人（および引き継ぎを受ける人）を想定している。Next.js の App Router と Prisma の基本は知っている前提で書いた。
 
@@ -190,7 +190,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。
 
-残りは軽い。lint エラーが2件、`app/(app)/dashboard-client.tsx` と `app/(app)/samples/samples-client.tsx` の検索まわりに残っている。どちらも `react-hooks/set-state-in-effect` で、`useEffect` の中で同期的に `setState` を呼んでいる。`npm run check` は format を通過したあと、この lint で止まる（format は 2026-09-23 に全体を整形し、`endOfLine: "auto"` で Windows の CRLF も許容したので通るようになった）。`components/new-plate-sheet.tsx` は700行を超えており、分割の候補。
+残りは軽い。`components/new-plate-sheet.tsx` が700行を超えており、分割の候補になっている。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
 
 運用面では、Supabase Free が7日間アクセスの無いプロジェクトを一時停止する点に注意がいる。復帰は自動ではなく、ダッシュボードから手動で Resume する。ビルドが本番DBに接続するようになったため、停止中はデプロイもできない。
 
