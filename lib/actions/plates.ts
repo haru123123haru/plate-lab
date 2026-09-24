@@ -15,7 +15,11 @@ import {
   getAccessibleConditionTemplate,
   trashedPlateWhere,
 } from "@/lib/access-control";
-import type { WellStatus } from "../../generated/prisma/client";
+
+// 一覧で使うのはウェル数と使用中ウェル数（countUsedWells）だけなので、ドロップは件数だけ引く
+const wellDropCount = {
+  select: { _count: { select: { drops: true } } },
+} as const;
 
 export async function getPlates() {
   const userId = await getCurrentUserId();
@@ -26,7 +30,7 @@ export async function getPlates() {
     },
     include: {
       plateType: true,
-      wells: true,
+      wells: wellDropCount,
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -94,11 +98,15 @@ export async function getPlateById(id: string) {
 export async function createPlate(data: {
   name: string;
   plateTypeId: string;
-  sampleName?: string;
   reservoirTemplateId?: number | null;
   screeningTemplateId?: number | null;
   notes?: string;
-  filledPositions?: string[];
+  drops?: {
+    positions: string[];
+    slots: number[];
+    sampleName: string;
+    concentration: string;
+  };
 }) {
   const userId = await getCurrentUserId();
   const parsed = createPlateSchema.safeParse(data);
@@ -114,13 +122,11 @@ export async function createPlate(data: {
   });
   if (!plateType) return { error: "Not found" };
 
-  const { rows, cols } = plateType;
-  const requestedPositions = parsed.data.filledPositions ?? [];
-  const hasInvalidPosition = requestedPositions.some((position) => {
-    const [row, col] = position.split("-").map(Number);
-    return row < 0 || row >= rows || col < 0 || col >= cols;
-  });
-  if (hasInvalidPosition) return { error: "Invalid well position" };
+  const { rows, cols, maxDrops } = plateType;
+  const batch = parsed.data.drops;
+  const dropPositions = new Set(batch?.positions);
+  const slots = [...new Set(batch?.slots)];
+  if (slots.some((slot) => slot > maxDrops)) return { error: "Invalid slot" };
 
   const templateIds = [
     parsed.data.reservoirTemplateId,
@@ -134,30 +140,34 @@ export async function createPlate(data: {
   }
 
   const rowLabels = "ABCDEFGH";
-  const filledSet = new Set(requestedPositions);
-
-  const wells: {
-    position: string;
-    row: number;
-    col: number;
-    status: WellStatus;
-  }[] = [];
+  const wells = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
+      const position = `${rowLabels[r]}${c + 1}`;
       wells.push({
-        position: `${rowLabels[r]}${c + 1}`,
+        position,
         row: r,
         col: c,
-        status: filledSet.has(`${r}-${c}`) ? "FILLED" : "EMPTY",
+        drops:
+          batch && dropPositions.delete(position)
+            ? {
+                create: slots.map((slot) => ({
+                  slot,
+                  sampleName: batch.sampleName,
+                  concentration: batch.concentration,
+                })),
+              }
+            : undefined,
       });
     }
   }
+  // 残った位置はこのプレートの範囲の外
+  if (dropPositions.size > 0) return { error: "Invalid well position" };
 
   return prisma.plate.create({
     data: {
       name: parsed.data.name,
       plateTypeId: parsed.data.plateTypeId,
-      sampleName: parsed.data.sampleName ?? null,
       reservoirTemplateId: parsed.data.reservoirTemplateId ?? null,
       screeningTemplateId: parsed.data.screeningTemplateId ?? null,
       notes: parsed.data.notes,
@@ -176,7 +186,6 @@ export async function updatePlate(
   data: {
     name?: string;
     notes?: string | null;
-    sampleName?: string | null;
     reservoirTemplateId?: number | null;
     screeningTemplateId?: number | null;
   }
@@ -237,7 +246,7 @@ export async function searchPlates(query: string) {
         ...activePlateWhere(userId),
         plateType: accessiblePlateTypeWhere(userId),
       },
-      include: { plateType: true, wells: true },
+      include: { plateType: true, wells: wellDropCount },
       orderBy: { updatedAt: "desc" },
     });
   }
@@ -249,6 +258,21 @@ export async function searchPlates(query: string) {
       OR: [
         { name: { contains: normalizedQuery, mode: "insensitive" } },
         { sampleName: { contains: normalizedQuery, mode: "insensitive" } },
+        // 作成画面からは Plate.sampleName が入らなくなったので、ドロップのサンプル名も見る
+        {
+          wells: {
+            some: {
+              drops: {
+                some: {
+                  sampleName: {
+                    contains: normalizedQuery,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+          },
+        },
         {
           plateType: {
             name: { contains: normalizedQuery, mode: "insensitive" },
@@ -257,7 +281,7 @@ export async function searchPlates(query: string) {
         { notes: { contains: normalizedQuery, mode: "insensitive" } },
       ],
     },
-    include: { plateType: true, wells: true },
+    include: { plateType: true, wells: wellDropCount },
     orderBy: { updatedAt: "desc" },
   });
 }

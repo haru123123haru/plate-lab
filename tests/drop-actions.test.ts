@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // plate-trash-actions.test.ts と同じく、Action が prisma に渡す条件そのものを検査する
 const prismaMock = vi.hoisted(() => ({
-  plate: { findFirst: vi.fn() },
+  plate: { findFirst: vi.fn(), create: vi.fn() },
+  plateType: { findFirst: vi.fn() },
   well: { findFirst: vi.fn() },
   drop: {
     create: vi.fn(),
@@ -24,6 +25,8 @@ import {
   deleteObservation,
   updateDrop,
 } from "../lib/actions/drops";
+import { createPlate } from "../lib/actions/plates";
+import { countUsedWells } from "../lib/wells";
 
 const editablePlate = { userId: "user-a", deletedAt: null };
 const editableWell = { plate: editablePlate };
@@ -237,5 +240,90 @@ describe("deleteObservation", () => {
     expect(prismaMock.observation.deleteMany).toHaveBeenCalledWith({
       where: { id: "obs-1", drop: editableDrop },
     });
+  });
+});
+
+describe("createPlate", () => {
+  const batch = {
+    positions: ["A1", "B2"],
+    slots: [1, 3],
+    ...dropInput,
+  };
+
+  beforeEach(() => {
+    prismaMock.plateType.findFirst.mockResolvedValue({
+      id: "type-1",
+      rows: 4,
+      cols: 6,
+      maxDrops: 4,
+    });
+    prismaMock.plate.create.mockResolvedValue({ id: "plate-1" });
+  });
+
+  it("creates drops only in the chosen wells and slots", async () => {
+    await createPlate({ name: "P", plateTypeId: "type-1", drops: batch });
+
+    const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
+    expect(wells).toHaveLength(24);
+    const withDrops = wells.filter(
+      (w: { drops?: unknown }) => w.drops !== undefined
+    );
+    expect(withDrops.map((w: { position: string }) => w.position)).toEqual([
+      "A1",
+      "B2",
+    ]);
+    expect(withDrops[0].drops.create).toEqual([
+      { slot: 1, ...dropInput },
+      { slot: 3, ...dropInput },
+    ]);
+  });
+
+  it("ignores duplicate positions and slots instead of hitting the unique constraint", async () => {
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      drops: { ...batch, positions: ["A1", "A1"], slots: [1, 1] },
+    });
+
+    const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
+    const a1 = wells.find((w: { position: string }) => w.position === "A1");
+    expect(a1.drops.create).toEqual([{ slot: 1, ...dropInput }]);
+  });
+
+  it("creates an empty plate without drops", async () => {
+    await createPlate({ name: "P", plateTypeId: "type-1" });
+
+    const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
+    expect(wells.every((w: { drops?: unknown }) => !w.drops)).toBe(true);
+  });
+
+  it("rejects slots beyond maxDrops and positions outside the plate", async () => {
+    expect(
+      await createPlate({
+        name: "P",
+        plateTypeId: "type-1",
+        drops: { ...batch, slots: [5] },
+      })
+    ).toEqual({ error: "Invalid slot" });
+    expect(
+      await createPlate({
+        name: "P",
+        plateTypeId: "type-1",
+        drops: { ...batch, positions: ["A1", "H12"] },
+      })
+    ).toEqual({ error: "Invalid well position" });
+    expect(prismaMock.plate.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("countUsedWells", () => {
+  it("counts wells that have at least one drop", () => {
+    expect(
+      countUsedWells([
+        { _count: { drops: 0 } },
+        { _count: { drops: 1 } },
+        { _count: { drops: 4 } },
+      ])
+    ).toBe(2);
   });
 });

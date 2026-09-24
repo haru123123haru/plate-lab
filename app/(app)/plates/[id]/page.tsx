@@ -82,7 +82,6 @@ export default async function PlateDetailPage({
     id: plate.id,
     name: plate.name,
     notes: plate.notes ?? undefined,
-    sampleName: plate.sampleName ?? undefined,
     reservoirTemplateId: plate.reservoirTemplate?.id ?? null,
     screeningTemplateId: plate.screeningTemplate?.id ?? null,
     plateType: {

@@ -19,6 +19,7 @@ import { SectionHeader } from "@/components/section-header";
 import { ListRow } from "@/components/list-row";
 import { WellGrid } from "@/components/well-grid";
 import { WellSheet } from "@/components/well-sheet";
+import { BulkAddDropsForm } from "@/components/bulk-drop-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,6 @@ interface PlateDetailClientProps {
     id: string;
     name: string;
     notes?: string;
-    sampleName?: string;
     reservoirTemplateId: number | null;
     screeningTemplateId: number | null;
     plateType: {
@@ -69,7 +69,6 @@ export function PlateDetailClient({
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(plate.name);
   const [editNotes, setEditNotes] = useState(plate.notes ?? "");
-  const [editSampleName, setEditSampleName] = useState(plate.sampleName ?? "");
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
   >(plate.reservoirTemplateId);
@@ -132,7 +131,6 @@ export function PlateDetailClient({
   const handleCancelEdit = () => {
     setEditName(plate.name);
     setEditNotes(plate.notes ?? "");
-    setEditSampleName(plate.sampleName ?? "");
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
     setError("");
@@ -147,7 +145,6 @@ export function PlateDetailClient({
       const result = await updatePlate(plate.id, {
         name: editName,
         notes: editNotes || undefined,
-        sampleName: editSampleName || null,
         reservoirTemplateId: editReservoirTemplateId,
         screeningTemplateId: editScreeningTemplateId,
       });
@@ -292,19 +289,6 @@ export function PlateDetailClient({
               />
             </div>
 
-            {/* Sample Name */}
-            <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                {t("sampleNameLabel")}
-              </label>
-              <Input
-                value={editSampleName}
-                onChange={(e) => setEditSampleName(e.target.value)}
-                placeholder="e.g. Lysozyme"
-                className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
-              />
-            </div>
-
             {/* Reservoir Template */}
             <div className="space-y-2">
               <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
@@ -416,6 +400,16 @@ export function PlateDetailClient({
           </div>
         )}
 
+        {/* まとめて追加（編集モードだけ。ゴミ箱のプレートでは出さない） */}
+        {editMode && !isTrashed && (
+          <BulkAddDropsForm
+            plateId={plate.id}
+            rows={plate.plateType.rows}
+            cols={plate.plateType.cols}
+            maxDrops={plate.plateType.maxDrops}
+          />
+        )}
+
         {/* Plate Details */}
         <div>
           <SectionHeader label={t("plateDetails")} />
@@ -424,11 +418,6 @@ export function PlateDetailClient({
               icon={FlaskConical}
               title={t("type")}
               description={plate.plateType.name}
-            />
-            <ListRow
-              icon={FlaskConical}
-              title={t("sample")}
-              description={plate.sampleName ?? "-"}
             />
             <ListRow
               icon={Beaker}

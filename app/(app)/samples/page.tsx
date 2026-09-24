@@ -1,4 +1,5 @@
 import { getPlates } from "@/lib/actions/plates";
+import { countUsedWells } from "@/lib/wells";
 import { getPlateTypes } from "@/lib/actions/plate-types";
 import {
   getConditionTemplates,
@@ -22,7 +23,7 @@ export default async function SamplesPage() {
       name: p.plateType.name,
       wellCount: p.plateType.wellCount,
     },
-    filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+    filledWells: countUsedWells(p.wells),
     totalWells: p.wells.length,
     createdAt: p.createdAt.toISOString().split("T")[0],
   }));

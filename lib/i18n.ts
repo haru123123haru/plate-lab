@@ -153,6 +153,11 @@ const translations = {
     delete: "Delete",
     close: "Close",
     hasDrop: "has a drop",
+    bulkAddDrops: "Add Drops in Bulk",
+    dropsAdded: "Added",
+    dropsSkipped: "Skipped (already had a drop)",
+    dropBatchIncomplete:
+      "Choose a position and enter the sample name and concentration for the selected wells.",
   },
   ja: {
     // Navigation
@@ -306,6 +311,11 @@ const translations = {
     delete: "削除",
     close: "閉じる",
     hasDrop: "ドロップあり",
+    bulkAddDrops: "まとめて追加",
+    dropsAdded: "追加",
+    dropsSkipped: "スキップ（使用中）",
+    dropBatchIncomplete:
+      "選んだウェルに入れる置き場所・サンプル名・濃度を入れてください。",
   },
 } as const;
 

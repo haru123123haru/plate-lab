@@ -41,7 +41,8 @@ function parseConditionMd(
 function generateWells(
   rows: number,
   cols: number,
-  filledCount: number
+  filledCount: number,
+  sampleName: string
 ): {
   position: string;
   row: number;
@@ -52,6 +53,9 @@ function generateWells(
   buffer?: string;
   ph?: string;
   precipitant?: string;
+  drops?: {
+    create: { slot: number; sampleName: string; concentration: string }[];
+  };
 }[] {
   const wells: ReturnType<typeof generateWells> = [];
   const rowLabels = "ABCDEFGH";
@@ -70,6 +74,10 @@ function generateWells(
           buffer: "Tris-HCl",
           ph: "7.5",
           precipitant: "NaCl 1M",
+          // 記録の単位はドロップ。使用中のウェルは1番の置き場所にドロップを持つ
+          drops: {
+            create: [{ slot: 1, sampleName, concentration: "10 mg/mL" }],
+          },
         }),
       });
       filled++;
@@ -302,7 +310,7 @@ async function main() {
         ...plateFields,
         userId: user.id,
         wells: {
-          create: generateWells(rows, cols, filled),
+          create: generateWells(rows, cols, filled, plateFields.sampleName),
         },
       },
     });
