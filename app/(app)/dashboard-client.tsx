@@ -58,28 +58,22 @@ export function DashboardClient({
   const [newPlateOpen, setNewPlateOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const doSearch = useCallback(
-    async (query: string) => {
-      if (!query.trim()) {
-        setFilteredPlates(plates);
-        return;
-      }
-      const results = await searchPlates(query);
-      setFilteredPlates(
-        results.map((p) => ({
-          id: p.id,
-          name: p.name,
-          plateType: {
-            name: p.plateType.name,
-            wellCount: p.plateType.wellCount,
-          },
-          filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
-          totalWells: p.wells.length,
-        }))
-      );
-    },
-    [plates]
-  );
+  const doSearch = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+    const results = await searchPlates(query);
+    setFilteredPlates(
+      results.map((p) => ({
+        id: p.id,
+        name: p.name,
+        plateType: {
+          name: p.plateType.name,
+          wellCount: p.plateType.wellCount,
+        },
+        filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+        totalWells: p.wells.length,
+      }))
+    );
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -89,10 +83,8 @@ export function DashboardClient({
     };
   }, [search, doSearch]);
 
-  // plates が変わった時（router.refresh後）に反映
-  useEffect(() => {
-    if (!search.trim()) setFilteredPlates(plates);
-  }, [plates, search]);
+  // 検索中でなければ最新の plates（router.refresh 後も含む）をそのまま出す
+  const visiblePlates = search.trim() ? filteredPlates : plates;
 
   return (
     <div className="bg-bg-primary min-h-screen">
@@ -119,7 +111,7 @@ export function DashboardClient({
         />
 
         <div>
-          {filteredPlates.map((plate) => (
+          {visiblePlates.map((plate) => (
             <ListRow
               key={plate.id}
               icon={FlaskConical}
@@ -128,7 +120,7 @@ export function DashboardClient({
               onClick={() => router.push(`/plates/${plate.id}`)}
             />
           ))}
-          {filteredPlates.length === 0 && (
+          {visiblePlates.length === 0 && (
             <p className="py-8 text-center text-[14px] text-text-secondary">
               {t("noPlatesFound")}
             </p>

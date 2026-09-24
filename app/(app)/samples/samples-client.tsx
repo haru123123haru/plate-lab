@@ -50,29 +50,23 @@ export function SamplesClient({
   const [newPlateOpen, setNewPlateOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const doSearch = useCallback(
-    async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults(plates);
-        return;
-      }
-      const results = await searchPlates(query);
-      setSearchResults(
-        results.map((p) => ({
-          id: p.id,
-          name: p.name,
-          plateType: {
-            name: p.plateType.name,
-            wellCount: p.plateType.wellCount,
-          },
-          filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
-          totalWells: p.wells.length,
-          createdAt: new Date(p.createdAt).toLocaleDateString(),
-        }))
-      );
-    },
-    [plates]
-  );
+  const doSearch = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+    const results = await searchPlates(query);
+    setSearchResults(
+      results.map((p) => ({
+        id: p.id,
+        name: p.name,
+        plateType: {
+          name: p.plateType.name,
+          wellCount: p.plateType.wellCount,
+        },
+        filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+        totalWells: p.wells.length,
+        createdAt: new Date(p.createdAt).toLocaleDateString(),
+      }))
+    );
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -82,9 +76,8 @@ export function SamplesClient({
     };
   }, [search, doSearch]);
 
-  useEffect(() => {
-    if (!search.trim()) setSearchResults(plates);
-  }, [plates, search]);
+  // 検索中でなければ最新の plates（router.refresh 後も含む）をそのまま出す
+  const visiblePlates = search.trim() ? searchResults : plates;
 
   return (
     <div className="bg-bg-primary min-h-screen">
@@ -105,8 +98,8 @@ export function SamplesClient({
         />
 
         <div className="mt-4 space-y-3">
-          {searchResults.length > 0 ? (
-            searchResults.map((plate) => (
+          {visiblePlates.length > 0 ? (
+            visiblePlates.map((plate) => (
               <PlateCard
                 key={plate.id}
                 plate={plate}
