@@ -11,31 +11,30 @@ import {
 } from "@/components/ui/dialog";
 import { createPlateType } from "@/lib/actions/plate-types";
 import { cn } from "@/lib/utils";
-import type { PlateLayout, PlateType } from "@/types";
+import { plateShapeLabel } from "@/lib/wells";
+import { useTranslation } from "@/components/locale-provider";
+import type { PlateLayout } from "@/types";
 
 // createPlateTypeSchema が許す描き方の組み合わせ
-const SHAPE_OPTIONS: {
-  layout: PlateLayout;
-  maxDrops: number;
-  label: string;
-}[] = [
-  { layout: "SITTING", maxDrops: 1, label: "Sitting · 1 drop" },
-  { layout: "HANGING", maxDrops: 1, label: "Hanging · 1 drop" },
-  { layout: "SITTING", maxDrops: 4, label: "Sitting · 4 drops" },
-  { layout: "HANGING", maxDrops: 3, label: "Hanging · 3 drops" },
+const SHAPE_OPTIONS: { layout: PlateLayout; maxDrops: number }[] = [
+  { layout: "SITTING", maxDrops: 1 },
+  { layout: "HANGING", maxDrops: 1 },
+  { layout: "SITTING", maxDrops: 4 },
+  { layout: "HANGING", maxDrops: 3 },
 ];
 
 interface NewPlateTypeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (type: PlateType) => void;
+  onAdded: () => void;
 }
 
 export function NewPlateTypeDialog({
   open,
   onOpenChange,
-  onAdd,
+  onAdded,
 }: NewPlateTypeDialogProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [rows, setRows] = useState("");
   const [cols, setCols] = useState("");
@@ -67,13 +66,13 @@ export function NewPlateTypeDialog({
       parsedCols < 1 ||
       parsedCols > 12
     ) {
-      setError("Rows must be 1-8 and columns 1-12.");
+      setError(t("rowsColumnsInvalid"));
       return;
     }
     setSubmitting(true);
     setError("");
     try {
-      const result = await createPlateType({
+      await createPlateType({
         name: name.trim(),
         rows: parsedRows,
         cols: parsedCols,
@@ -81,18 +80,10 @@ export function NewPlateTypeDialog({
         maxDrops: SHAPE_OPTIONS[shapeIndex].maxDrops,
         description: description.trim() || undefined,
       });
-      onAdd({
-        id: result.id,
-        name: result.name,
-        rows: result.rows,
-        cols: result.cols,
-        maxDrops: result.maxDrops,
-        layout: result.layout,
-        description: result.description ?? undefined,
-      });
+      onAdded();
       onOpenChange(false);
     } catch {
-      setError("Unable to add plate type.");
+      setError(t("addPlateTypeFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +94,7 @@ export function NewPlateTypeDialog({
       <DialogContent className="bg-bg-primary">
         <DialogHeader>
           <DialogTitle className="text-[20px] font-bold text-text-primary">
-            Add Plate Type
+            {t("addPlateType")}
           </DialogTitle>
         </DialogHeader>
 
@@ -114,7 +105,7 @@ export function NewPlateTypeDialog({
               htmlFor="plate-type-name"
               className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
             >
-              TYPE NAME
+              {t("typeName")}
             </label>
             <Input
               id="plate-type-name"
@@ -127,7 +118,7 @@ export function NewPlateTypeDialog({
 
           <div>
             <label className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-              ROWS × COLUMNS
+              {t("rowsColumns")}
             </label>
             <div className="flex items-center gap-3">
               <Input
@@ -137,7 +128,7 @@ export function NewPlateTypeDialog({
                 value={rows}
                 onChange={(e) => setRows(e.target.value)}
                 placeholder="e.g. 8"
-                aria-label="Rows"
+                aria-label={t("rows")}
                 className="h-12 rounded-xl"
               />
               <span className="text-text-secondary">×</span>
@@ -148,12 +139,12 @@ export function NewPlateTypeDialog({
                 value={cols}
                 onChange={(e) => setCols(e.target.value)}
                 placeholder="e.g. 12"
-                aria-label="Columns"
+                aria-label={t("columns")}
                 className="h-12 rounded-xl"
               />
             </div>
             <p className="mt-2 text-[13px] text-text-secondary">
-              Rows 1-8 (A-H), columns 1-12.
+              {t("rowsColumnsHint")}
             </p>
           </div>
 
@@ -162,7 +153,7 @@ export function NewPlateTypeDialog({
               id="plate-type-shape-label"
               className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
             >
-              DROPS PER WELL
+              {t("dropsPerWell")}
             </div>
             <div
               role="group"
@@ -172,7 +163,7 @@ export function NewPlateTypeDialog({
               {SHAPE_OPTIONS.map((option, i) => (
                 <button
                   type="button"
-                  key={option.label}
+                  key={`${option.layout}-${option.maxDrops}`}
                   aria-pressed={shapeIndex === i}
                   onClick={() => setShapeIndex(i)}
                   className={cn(
@@ -182,7 +173,7 @@ export function NewPlateTypeDialog({
                       : "bg-bg-surface text-text-primary"
                   )}
                 >
-                  {option.label}
+                  {plateShapeLabel(t, option.layout, option.maxDrops)}
                 </button>
               ))}
             </div>
@@ -190,13 +181,13 @@ export function NewPlateTypeDialog({
 
           <div>
             <label className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-              DESCRIPTION
+              {t("description")}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              placeholder="Describe this plate type..."
+              placeholder={t("describePlateType")}
               className="w-full rounded-xl border border-border-default bg-bg-surface p-4 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none resize-none"
             />
           </div>
@@ -210,14 +201,15 @@ export function NewPlateTypeDialog({
             </div>
           )}
           <Button
+            type="button"
             className="h-12 w-full rounded-xl"
             onClick={handleAdd}
             disabled={submitting}
           >
-            {submitting ? "Adding..." : "Add Plate Type"}
+            {submitting ? t("adding") : t("addPlateType")}
           </Button>
           <p className="mt-3 text-center text-[13px] text-text-secondary">
-            This type will be available when creating new plates.
+            {t("plateTypeAvailableHint")}
           </p>
         </div>
       </DialogContent>

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { prismaErrorCode } from "@/lib/prisma-error";
 import { getCurrentUserId } from "@/lib/auth";
 import {
   activePlateWhere,
@@ -14,13 +15,6 @@ import {
   resourceIdSchema,
   updateDropSchema,
 } from "@/lib/validations";
-
-// P2002: 一意制約の違反 / P2025: where に合う行が無い（持ち主でない・ゴミ箱に移された）
-function prismaErrorCode(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error
-    ? error.code
-    : undefined;
-}
 
 export async function createDrop(data: {
   wellId: string;

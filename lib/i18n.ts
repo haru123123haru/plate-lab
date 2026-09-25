@@ -54,6 +54,32 @@ const translations = {
     add: "Add",
     editAfterCreation: "You can edit plate details anytime after creation.",
 
+    // Plate Types
+    plateTypes: "Plate Types",
+    data: "Data",
+    managePlateTypes: "Manage plate types",
+    sitting: "Sitting",
+    hanging: "Hanging",
+    drop: "drop",
+    addPlateType: "Add Plate Type",
+    typeName: "TYPE NAME",
+    rowsColumns: "ROWS × COLUMNS",
+    rows: "Rows",
+    columns: "Columns",
+    rowsColumnsHint: "Rows 1-8 (A-H), columns 1-12.",
+    rowsColumnsInvalid: "Rows must be 1-8 and columns 1-12.",
+    dropsPerWell: "DROPS PER WELL",
+    description: "DESCRIPTION",
+    describePlateType: "Describe this plate type...",
+    addPlateTypeFailed: "Unable to add plate type.",
+    plateTypeAvailableHint:
+      "This type will be available when creating new plates.",
+    deletePlateTypeConfirmTitle: "Delete this plate type?",
+    deletePlateTypeConfirmBody: "This cannot be undone.",
+    plateTypeInUse:
+      "Used by {count} plate(s), including those in the trash. It can't be deleted.",
+    plateTypeInUseNoCount: "Plates use this type, so it can't be deleted.",
+
     // Settings
     general: "General",
     language: "Language",
@@ -208,6 +234,31 @@ const translations = {
     clear: "クリア",
     add: "追加",
     editAfterCreation: "作成後いつでもプレートの詳細を編集できます。",
+
+    // Plate Types
+    plateTypes: "プレートタイプ",
+    data: "データ",
+    managePlateTypes: "プレートタイプを管理",
+    sitting: "シッティング",
+    hanging: "ハンギング",
+    drop: "ドロップ",
+    addPlateType: "プレートタイプを追加",
+    typeName: "タイプ名",
+    rowsColumns: "行 × 列",
+    rows: "行",
+    columns: "列",
+    rowsColumnsHint: "行は 1〜8（A〜H）、列は 1〜12。",
+    rowsColumnsInvalid: "行は 1〜8、列は 1〜12 で入れてください。",
+    dropsPerWell: "1ウェルのドロップ数",
+    description: "説明",
+    describePlateType: "このプレートタイプの説明",
+    addPlateTypeFailed: "プレートタイプを追加できませんでした。",
+    plateTypeAvailableHint: "プレートを作るときに選べるようになります。",
+    deletePlateTypeConfirmTitle: "このプレートタイプを削除しますか？",
+    deletePlateTypeConfirmBody: "元に戻せません。",
+    plateTypeInUse:
+      "{count} 枚のプレートで使っています（ゴミ箱を含む）。削除できません。",
+    plateTypeInUseNoCount: "プレートで使っているため、削除できません。",
 
     // Settings
     general: "一般",

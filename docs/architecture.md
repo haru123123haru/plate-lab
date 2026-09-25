@@ -22,16 +22,17 @@
 
 ルーティングは App Router のルートグループで2つに割れている。`app/(app)/` が認証必須のアプリ本体、`app/(auth)/` がログインと新規登録。グループ名は URL に出ないので、`app/(app)/page.tsx` がそのまま `/` になる。
 
-| URL                       | ファイル                         | 役割                            |
-| ------------------------- | -------------------------------- | ------------------------------- |
-| `/`                       | `app/(app)/page.tsx`             | ダッシュボード。プレート一覧    |
-| `/plates/[id]`            | `app/(app)/plates/[id]/page.tsx` | プレート詳細。QR コードの表示先 |
-| `/samples`                | `app/(app)/samples/page.tsx`     | サンプル一覧と検索              |
-| `/mypage`, `/mypage/edit` | `app/(app)/mypage/`              | ユーザー情報と編集              |
-| `/trash`                  | `app/(app)/trash/page.tsx`       | ゴミ箱。復元と完全削除          |
-| `/settings`               | `app/(app)/settings/page.tsx`    | 言語と外観の設定                |
-| `/login`, `/register`     | `app/(auth)/`                    | 認証フォーム                    |
-| `/auth/callback`          | `app/auth/callback/route.ts`     | OAuth のコード交換              |
+| URL                       | ファイル                          | 役割                             |
+| ------------------------- | --------------------------------- | -------------------------------- |
+| `/`                       | `app/(app)/page.tsx`              | ダッシュボード。プレート一覧     |
+| `/plates/[id]`            | `app/(app)/plates/[id]/page.tsx`  | プレート詳細。QR コードの表示先  |
+| `/samples`                | `app/(app)/samples/page.tsx`      | サンプル一覧と検索               |
+| `/mypage`, `/mypage/edit` | `app/(app)/mypage/`               | ユーザー情報と編集               |
+| `/trash`                  | `app/(app)/trash/page.tsx`        | ゴミ箱。復元と完全削除           |
+| `/settings`               | `app/(app)/settings/page.tsx`     | 言語と外観の設定                 |
+| `/settings/plate-types`   | `app/(app)/settings/plate-types/` | プレートタイプの一覧・追加・削除 |
+| `/login`, `/register`     | `app/(auth)/`                     | 認証フォーム                     |
+| `/auth/callback`          | `app/auth/callback/route.ts`      | OAuth のコード交換               |
 
 各画面は例外なく同じ形をとる。`page.tsx` は Server Component としてデータ取得と整形だけを行い、`*-client.tsx` に渡す。状態とインタラクションはすべて Client 側。この分離のおかげで、DB アクセスがクライアントバンドルに混ざる事故が構造的に起きない。
 
@@ -59,7 +60,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 - `User` — 認証ユーザー。`id` は Supabase Auth のユーザーIDをそのまま使う
 - `UserSettings` — `User` と1対1。言語・外観・通知の設定
-- `PlateType` — プレートの種別。形を `rows`・`cols`・`maxDrops`（1ウェルの最大ドロップ数）・`layout`（`SITTING` か `HANGING`）で持つ。描き方があるのは「1ドロップ」「SITTING の4ドロップ」「HANGING の3ドロップ」の3通りだけで、種別作成ではそれ以外を作らせない
+- `PlateType` — プレートの種別。形を `rows`・`cols`・`maxDrops`（1ウェルの最大ドロップ数）・`layout`（`SITTING` か `HANGING`）で持つ。描き方があるのは「1ドロップ」「SITTING の4ドロップ」「HANGING の3ドロップ」の3通りだけで、種別作成ではそれ以外を作らせない。自分で作った種別は `/settings/plate-types` で足し引きする。使っているプレートが1枚でもあれば（ゴミ箱のものも含む）消せない。`Plate.plateTypeId` の外部キーが `ON DELETE RESTRICT` なので、数えたあとにプレートが作られても DB が削除を拒む
 - `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意。`deletedAt` に日時が入っていればゴミ箱にある。`setupDate` は実験を仕込んだ日（日付だけ）で、作成時に利用者が選び、あとから直せる。アプリを使う前からあるプレートも登録できるよう、記録を作った時刻（`createdAt`）とは別に持つ。画面に出す日付はこちらで、`createdAt` は出さない。観察日と同じく `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。2026-09-25 に足したときは、既存のプレートに `createdAt` を日本時間に直した日付を入れた
 - `Well` — ウェルの位置（`position`・`row`・`col`）だけを持つ。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
 - `Drop` — 1ドロップ分の記録。サンプル名と濃度（必須）、メモ（任意）。`slot` は 1〜`maxDrops` の置き場所の番号で、`@@unique([wellId, slot])` で同じ置き場所に2つ入らない

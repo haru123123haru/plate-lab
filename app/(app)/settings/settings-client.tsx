@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, Moon, Info, Menu } from "lucide-react";
+import { Globe, Moon, Info, Menu, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -91,6 +91,17 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               title={t("appearance")}
               description={currentAppearanceLabel}
               onClick={() => setActiveDialog("appearance")}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <SectionHeader label={t("data")} />
+          <div>
+            <ListRow
+              icon={LayoutGrid}
+              title={t("plateTypes")}
+              onClick={() => router.push("/settings/plate-types")}
             />
           </div>
         </div>
