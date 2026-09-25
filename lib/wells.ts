@@ -1,3 +1,5 @@
+import type { PlateLayout } from "@/types";
+
 // 「使用中のウェル」はドロップが1つ以上あるウェル。一覧・検索・サンプル画面で同じ数え方をする
 export function countUsedWells(wells: { _count: { drops: number } }[]) {
   return wells.filter((well) => well._count.drops > 0).length;
@@ -10,4 +12,13 @@ export function summarizeSamples(wells: { drops: { sampleName: string }[] }[]) {
     names: [...new Set(drops.map((drop) => drop.sampleName))],
     dropCount: drops.length,
   };
+}
+
+// プレートタイプの描き方とドロップ数（例: 「Sitting · 4 drops」）
+export function plateShapeLabel(
+  t: (key: "sitting" | "hanging" | "drop" | "drops") => string,
+  layout: PlateLayout,
+  maxDrops: number
+) {
+  return `${t(layout === "SITTING" ? "sitting" : "hanging")} · ${maxDrops} ${t(maxDrops === 1 ? "drop" : "drops")}`;
 }

@@ -56,7 +56,7 @@
 
 1. ID を検証する。プレートタイプの ID は uuid の文字列なので、`deletePlate` と同じ `resourceIdSchema` を使う
 2. `plateType.findFirst({ where: { id, createdById: userId, isDefault: false } })` で、自分の非共有タイプかを確かめる。無ければ `{ error: "Not found" }` を返す
-3. `prisma.plate.count({ where: { plateTypeId: id } })` で使われている枚数を数える。ゴミ箱のプレートも含めたいので、`deletedAt` では絞らない。0 でなければ `{ error: "in use", count }` を返す
+3. `prisma.plate.count({ where: { plateTypeId: id } })` で使われている枚数を数える。ゴミ箱のプレートも含めたいので、`deletedAt` では絞らない。0 でなければ `{ error: "In use", count }` を返す
 4. `delete` で消す
 
 2を3より先にするのは、数える前に持ち主を確かめないと、他人のタイプの ID を送ったときに使用枚数が返ってしまうからだ（コードレビューで指摘された）。`deleteConditionTemplate` も同じ順で持ち主を先に見ている。枚数は自分のプレートに絞らない。`createPlate` は `accessiblePlateTypeWhere` を通したタイプしか受け付けないので、非共有タイプを使えるのは持ち主のプレートだけだからだ。
@@ -102,16 +102,16 @@
 
 ### タスク
 
-- [ ] `lib/actions/plate-types.ts` — `deletePlateType` を足す（持ち主を先に確かめ、使っていれば止める。`P2003` も「使っています」に直す）
-- [ ] `lib/actions/drops.ts` — `prismaErrorCode` を共通の場所に移し、`plate-types.ts` からも使う
-- [ ] `tests/plate-type-actions.test.ts` — 他人のタイプと共有種別は数える前に `Not found` を返すこと、使っている枚数が 1 以上なら消さずに枚数を返すこと、`P2003` を枚数なしの「使っています」として返すことを確かめる
-- [ ] `lib/wells.ts` — 形式とドロップ数から「Sitting · 4 drops」を作る関数を置き、作成画面・管理ページ・追加ダイアログから使う
-- [ ] `components/new-plate-type-dialog.tsx` — 見出し・ラベル・エラー文を `lib/i18n.ts` に移し、`SHAPE_OPTIONS` の `label` を上の関数に替える
-- [ ] `app/(app)/settings/plate-types/page.tsx`・`plate-types-client.tsx` — 一覧・追加・削除（確認あり）。共有種別には削除ボタンを出さない。エラー文は i18n を通す
-- [ ] `app/(app)/settings/settings-client.tsx` — 「データ」の欄を足し、プレートタイプの行を置く
-- [ ] `components/new-plate-sheet.tsx` — タイプを縦のリストにし、「＋追加」を外して管理ページへのリンクを置く。`NewPlateTypeDialog`・`handleAddPlateType`・`allPlateTypes`（と `useEffect` の `setAllPlateTypes`）も外し、`plateTypes` の props をそのまま使う
-- [ ] `lib/i18n.ts` — 増えた文言を ja / en の両方に足す
-- [ ] `docs/architecture.md` — 画面一覧に管理ページを足す
+- [x] `lib/actions/plate-types.ts` — `deletePlateType` を足す（持ち主を先に確かめ、使っていれば止める。`P2003` も「使っています」に直す）
+- [x] `lib/actions/drops.ts` — `prismaErrorCode` を共通の場所に移し、`plate-types.ts` からも使う
+- [x] `tests/plate-type-actions.test.ts` — 他人のタイプと共有種別は数える前に `Not found` を返すこと、使っている枚数が 1 以上なら消さずに枚数を返すこと、`P2003` を枚数なしの「使っています」として返すことを確かめる
+- [x] `lib/wells.ts` — 形式とドロップ数から「Sitting · 4 drops」を作る関数を置き、作成画面・管理ページ・追加ダイアログから使う
+- [x] `components/new-plate-type-dialog.tsx` — 見出し・ラベル・エラー文を `lib/i18n.ts` に移し、`SHAPE_OPTIONS` の `label` を上の関数に替える
+- [x] `app/(app)/settings/plate-types/page.tsx`・`plate-types-client.tsx` — 一覧・追加・削除（確認あり）。共有種別には削除ボタンを出さない。エラー文は i18n を通す
+- [x] `app/(app)/settings/settings-client.tsx` — 「データ」の欄を足し、プレートタイプの行を置く
+- [x] `components/new-plate-sheet.tsx` — タイプを縦のリストにし、「＋追加」を外して管理ページへのリンクを置く。`NewPlateTypeDialog`・`handleAddPlateType`・`allPlateTypes`（と `useEffect` の `setAllPlateTypes`）も外し、`plateTypes` の props をそのまま使う
+- [x] `lib/i18n.ts` — 増えた文言を ja / en の両方に足す
+- [x] `docs/architecture.md` — 画面一覧に管理ページを足す
 
 ### 完了条件
 
@@ -122,8 +122,17 @@
   - まだ使っていないタイプは、確認のあとで消える
   - 使っているタイプ（ゴミ箱のプレートだけで使っている場合も）は消えず、枚数が出る
   - 共有種別には削除ボタンが出ない
-- ローカル DB で、プレートが使っているタイプを `prisma.plateType.delete` で直接消そうとすると `P2003` になる（catch の分岐が実際に通ることの確認）
   - 言語を英語に切り替えても、管理ページと追加ダイアログに日本語が残らない
+- ローカル DB で、プレートが使っているタイプを `prisma.plateType.delete` で直接消そうとすると `P2003` になる（catch の分岐が実際に通ることの確認）
+
+### 実装してみて分かったこと（2026-09-25）
+
+- `prismaErrorCode` の移し先は `lib/prisma-error.ts` にした。`lib/prisma.ts` に置くと、テストで `@/lib/prisma` をモックしたときに一緒に消える。`drops.ts` は `"use server"` なので、そこから export もできない（サーバーアクションのファイルは async 関数しか export できない）
+- `NewPlateTypeDialog` の `onAdd(type)` は `onAdded()` に変えた。管理ページは `router.refresh()` で読み直すだけで、足したタイプの中身を受け取る必要が無い。呼んでいるのは管理ページだけになった
+- 入力欄の例（`e.g. 8` など）は英語のまま残した。作成画面の `e.g. Plate A-001` と同じ扱いにそろえている
+- `P2003` の確認は、ローカル DB でプレートが使っている「96 Well - Sitting」を `$transaction` の中で `delete` して行った（成功したら巻き戻す作り）。`@prisma/adapter-pg` 経由でも `code` が `P2003` で返る
+- ブラウザ確認用に、ローカルのテストユーザーへタイプ「P1 TrashOnly」と、それを使うゴミ箱のプレート「P1 Trashed」を残してある。削除を止める表示は「Used by 1 plate(s)…」と出た
+- `router.refresh()` だけで、戻ったホームの作成画面に足したタイプが出た。`revalidatePath` は足していない
 
 ## Phase 2: 条件
 

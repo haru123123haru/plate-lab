@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import {
   SheetClose,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { NewPlateTypeDialog } from "@/components/new-plate-type-dialog";
 import {
   BulkDropFields,
   emptyDropBatch,
@@ -27,6 +27,7 @@ import {
   deleteConditionSet,
 } from "@/lib/actions/condition-templates";
 import { cn, today } from "@/lib/utils";
+import { plateShapeLabel } from "@/lib/wells";
 import { useTranslation } from "@/components/locale-provider";
 import type { PlateType } from "@/types";
 import type { UiConditionSet } from "@/app/(app)/dashboard-client";
@@ -56,7 +57,6 @@ export function NewPlateSheet({
   const { t } = useTranslation();
   const [plateName, setPlateName] = useState("");
   const [setupDate, setSetupDate] = useState(today);
-  const [allPlateTypes, setAllPlateTypes] = useState<PlateType[]>(plateTypes);
   const [allTemplates, setAllTemplates] =
     useState<ConditionTemplateItem[]>(conditionTemplates);
   const [allSets, setAllSets] = useState<UiConditionSet[]>(conditionSets);
@@ -80,7 +80,6 @@ export function NewPlateSheet({
     null
   );
   const [deletingSetId, setDeletingSetId] = useState<number | null>(null);
-  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -145,8 +144,8 @@ export function NewPlateSheet({
   };
 
   const selectedPlateType = useMemo(
-    () => allPlateTypes.find((pt) => pt.id === selectedType),
-    [allPlateTypes, selectedType]
+    () => plateTypes.find((pt) => pt.id === selectedType),
+    [plateTypes, selectedType]
   );
 
   // 種別を変えたら形が変わるので、選んだウェルと置き場所（とその濃度）を戻す。サンプル名は残す
@@ -158,11 +157,6 @@ export function NewPlateSheet({
       positions: new Set(),
       drops: emptyDropBatch().drops,
     }));
-  };
-
-  const handleAddPlateType = (newType: PlateType) => {
-    setAllPlateTypes((prev) => [...prev, newType]);
-    selectPlateType(newType.id);
   };
 
   const handleRegisterSet = async () => {
@@ -216,11 +210,10 @@ export function NewPlateSheet({
       setCreating(false);
       setError("");
     } else {
-      setAllPlateTypes(plateTypes);
       setAllTemplates(conditionTemplates);
       setAllSets(conditionSets);
     }
-  }, [open, plateTypes, conditionTemplates, conditionSets]);
+  }, [open, conditionTemplates, conditionSets]);
 
   const handleCreate = async () => {
     if (
@@ -346,43 +339,45 @@ export function NewPlateSheet({
                 <Label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
                   {t("plateType")}
                 </Label>
-                <div className="flex gap-3 overflow-x-auto">
-                  {allPlateTypes.map((pt) => (
+                <div className="space-y-2">
+                  {plateTypes.map((pt) => (
                     <button
                       type="button"
                       key={pt.id}
                       onClick={() => selectPlateType(pt.id)}
-                      className={cn(
-                        "shrink-0 cursor-pointer rounded-xl p-4 text-left transition-colors",
-                        selectedType === pt.id
-                          ? "bg-text-primary text-white"
-                          : "border border-border-default bg-bg-surface text-text-primary"
-                      )}
+                      aria-pressed={selectedType === pt.id}
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-bg-surface p-4 text-left"
                     >
-                      <div className="text-[15px] font-semibold">{pt.name}</div>
                       <div
                         className={cn(
-                          "mt-1 text-[13px]",
+                          "flex size-5 shrink-0 items-center justify-center rounded-full",
                           selectedType === pt.id
-                            ? "text-white/70"
-                            : "text-text-secondary"
+                            ? "bg-text-primary"
+                            : "border-2 border-border-default"
                         )}
                       >
-                        {pt.rows * pt.cols} {t("wells")}
+                        {selectedType === pt.id && (
+                          <div className="size-2 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="break-words text-[15px] font-medium text-text-primary">
+                          {pt.name}
+                        </div>
+                        <div className="text-[13px] text-text-secondary">
+                          {pt.rows * pt.cols} {t("wells")} ·{" "}
+                          {plateShapeLabel(t, pt.layout, pt.maxDrops)}
+                        </div>
                       </div>
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => setTypeDialogOpen(true)}
-                    className="flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-border-default px-6 py-4 text-text-secondary transition-colors hover:border-text-secondary"
-                  >
-                    <Plus className="size-5" />
-                    <span className="mt-1 text-[13px] font-medium">
-                      {t("add")}
-                    </span>
-                  </button>
                 </div>
+                <Link
+                  href="/settings/plate-types"
+                  className="inline-block text-[13px] text-text-secondary underline underline-offset-2"
+                >
+                  {t("managePlateTypes")}
+                </Link>
               </div>
 
               {/* 使うウェルとサンプル */}
@@ -666,12 +661,6 @@ export function NewPlateSheet({
           </div>
         </SheetContent>
       </Sheet>
-
-      <NewPlateTypeDialog
-        open={typeDialogOpen}
-        onOpenChange={setTypeDialogOpen}
-        onAdd={handleAddPlateType}
-      />
     </>
   );
 }
