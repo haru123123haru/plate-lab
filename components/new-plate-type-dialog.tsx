@@ -10,7 +10,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createPlateType } from "@/lib/actions/plate-types";
-import type { PlateType } from "@/types";
+import { cn } from "@/lib/utils";
+import type { PlateLayout, PlateType } from "@/types";
+
+// createPlateTypeSchema が許す描き方の組み合わせ
+const SHAPE_OPTIONS: {
+  layout: PlateLayout;
+  maxDrops: number;
+  label: string;
+}[] = [
+  { layout: "SITTING", maxDrops: 1, label: "Sitting · 1 drop" },
+  { layout: "HANGING", maxDrops: 1, label: "Hanging · 1 drop" },
+  { layout: "SITTING", maxDrops: 4, label: "Sitting · 4 drops" },
+  { layout: "HANGING", maxDrops: 3, label: "Hanging · 3 drops" },
+];
 
 interface NewPlateTypeDialogProps {
   open: boolean;
@@ -24,7 +37,9 @@ export function NewPlateTypeDialog({
   onAdd,
 }: NewPlateTypeDialogProps) {
   const [name, setName] = useState("");
-  const [wellCount, setWellCount] = useState("");
+  const [rows, setRows] = useState("");
+  const [cols, setCols] = useState("");
+  const [shapeIndex, setShapeIndex] = useState(0);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -32,17 +47,27 @@ export function NewPlateTypeDialog({
   useEffect(() => {
     if (!open) {
       setName("");
-      setWellCount("");
+      setRows("");
+      setCols("");
+      setShapeIndex(0);
       setDescription("");
       setError("");
     }
   }, [open]);
 
   const handleAdd = async () => {
-    if (submitting || !name.trim() || !wellCount.trim()) return;
-    const parsedWellCount = Number(wellCount);
-    if (![24, 96].includes(parsedWellCount)) {
-      setError("Well count must be 24 or 96.");
+    if (submitting || !name.trim() || !rows.trim() || !cols.trim()) return;
+    const parsedRows = Number(rows);
+    const parsedCols = Number(cols);
+    if (
+      !Number.isInteger(parsedRows) ||
+      !Number.isInteger(parsedCols) ||
+      parsedRows < 1 ||
+      parsedRows > 8 ||
+      parsedCols < 1 ||
+      parsedCols > 12
+    ) {
+      setError("Rows must be 1-8 and columns 1-12.");
       return;
     }
     setSubmitting(true);
@@ -50,13 +75,20 @@ export function NewPlateTypeDialog({
     try {
       const result = await createPlateType({
         name: name.trim(),
-        wellCount: parsedWellCount,
+        rows: parsedRows,
+        cols: parsedCols,
+        layout: SHAPE_OPTIONS[shapeIndex].layout,
+        maxDrops: SHAPE_OPTIONS[shapeIndex].maxDrops,
         description: description.trim() || undefined,
       });
       onAdd({
         id: result.id,
         name: result.name,
         wellCount: result.wellCount,
+        rows: result.rows,
+        cols: result.cols,
+        maxDrops: result.maxDrops,
+        layout: result.layout,
         description: result.description ?? undefined,
       });
       onOpenChange(false);
@@ -79,10 +111,14 @@ export function NewPlateTypeDialog({
         {/* Form */}
         <div className="flex flex-col gap-7">
           <div>
-            <label className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
+            <label
+              htmlFor="plate-type-name"
+              className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
+            >
               TYPE NAME
             </label>
             <Input
+              id="plate-type-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. 96 Well - Sitting Drop"
@@ -92,21 +128,65 @@ export function NewPlateTypeDialog({
 
           <div>
             <label className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-              WELL COUNT
+              ROWS × COLUMNS
             </label>
-            <Input
-              type="number"
-              min={24}
-              max={96}
-              step={72}
-              value={wellCount}
-              onChange={(e) => setWellCount(e.target.value)}
-              placeholder="e.g. 96"
-              className="h-12 rounded-xl"
-            />
+            <div className="flex items-center gap-3">
+              <Input
+                type="number"
+                min={1}
+                max={8}
+                value={rows}
+                onChange={(e) => setRows(e.target.value)}
+                placeholder="e.g. 8"
+                aria-label="Rows"
+                className="h-12 rounded-xl"
+              />
+              <span className="text-text-secondary">×</span>
+              <Input
+                type="number"
+                min={1}
+                max={12}
+                value={cols}
+                onChange={(e) => setCols(e.target.value)}
+                placeholder="e.g. 12"
+                aria-label="Columns"
+                className="h-12 rounded-xl"
+              />
+            </div>
             <p className="mt-2 text-[13px] text-text-secondary">
-              Allowed values: 24 or 96.
+              Rows 1-8 (A-H), columns 1-12.
             </p>
+          </div>
+
+          <div>
+            <div
+              id="plate-type-shape-label"
+              className="mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
+            >
+              DROPS PER WELL
+            </div>
+            <div
+              role="group"
+              aria-labelledby="plate-type-shape-label"
+              className="grid grid-cols-2 gap-2"
+            >
+              {SHAPE_OPTIONS.map((option, i) => (
+                <button
+                  type="button"
+                  key={option.label}
+                  aria-pressed={shapeIndex === i}
+                  onClick={() => setShapeIndex(i)}
+                  className={cn(
+                    "cursor-pointer rounded-xl px-3 py-3 text-[14px] font-medium",
+                    shapeIndex === i
+                      ? "bg-text-primary text-white"
+                      : "bg-bg-surface text-text-primary"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

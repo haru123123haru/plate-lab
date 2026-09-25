@@ -11,36 +11,66 @@ export const signInSchema = z.object({
   password: z.string().min(1),
 });
 
+const dropFieldsSchema = z.object({
+  sampleName: z.string().trim().min(1).max(200),
+  concentration: z.string().trim().min(1).max(100),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+const slotSchema = z.number().int().min(1);
+
+export const createDropSchema = dropFieldsSchema.extend({
+  wellId: z.string().trim().min(1).max(100),
+  slot: slotSchema,
+});
+
+// slot は受け付けない。置き場所を変えたいときは消して作り直す
+export const updateDropSchema = dropFieldsSchema.partial().strict();
+
+// 同じサンプルを複数のウェル・置き場所へまとめて入れる内容
+const dropBatchSchema = z.object({
+  // ウェルの位置ラベル（"A1" など）
+  positions: z
+    .array(z.string().regex(/^[A-H](?:[1-9]|1[0-2])$/, "Invalid well position"))
+    .min(1)
+    .max(96),
+  slots: z.array(slotSchema).min(1).max(4),
+  sampleName: dropFieldsSchema.shape.sampleName,
+  concentration: dropFieldsSchema.shape.concentration,
+});
+
+export const bulkCreateDropsSchema = dropBatchSchema.extend({
+  plateId: z.string().trim().min(1).max(100),
+});
+
 export const createPlateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   plateTypeId: z.string().trim().min(1).max(100),
-  sampleName: z.string().trim().max(200).optional(),
   reservoirTemplateId: z.number().int().positive().nullable().optional(),
   screeningTemplateId: z.number().int().positive().nullable().optional(),
   notes: z.string().max(2000).optional(),
-  filledPositions: z
-    .array(
-      z
-        .string()
-        .regex(/^(?:0|[1-9]\d*)-(?:0|[1-9]\d*)$/, "Invalid well position")
-    )
-    .max(96)
-    .superRefine((positions, ctx) => {
-      if (new Set(positions).size !== positions.length) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Duplicate well positions are not allowed",
-        });
-      }
-    })
-    .optional(),
+  // 作成と同時に入れるドロップ。ウェルを選ばなければ省く
+  drops: dropBatchSchema.optional(),
 });
 
-export const createPlateTypeSchema = z.object({
-  name: z.string().trim().min(1).max(100),
-  wellCount: z.union([z.literal(24), z.literal(96)]),
-  description: z.string().max(500).optional(),
-});
+export const createPlateTypeSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    // 行ラベルが A〜H なので行は8まで
+    rows: z.number().int().min(1).max(8),
+    cols: z.number().int().min(1).max(12),
+    maxDrops: z.number().int().min(1).max(4),
+    layout: z.enum(["SITTING", "HANGING"]),
+    description: z.string().max(500).optional(),
+  })
+  // 描き方があるのは、1ドロップ・SITTING の4ドロップ・HANGING の3ドロップだけ
+  .refine(
+    ({ layout, maxDrops }) =>
+      maxDrops === 1 ||
+      (layout === "SITTING" && maxDrops === 4) ||
+      (layout === "HANGING" && maxDrops === 3),
+    { message: "Unsupported plate shape" }
+  );
 
 export const createConditionTemplateSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -57,7 +87,6 @@ export const updatePlateSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
     notes: z.string().max(2000).nullable().optional(),
-    sampleName: z.string().max(200).nullable().optional(),
     reservoirTemplateId: z.number().int().positive().nullable().optional(),
     screeningTemplateId: z.number().int().positive().nullable().optional(),
   })
@@ -76,6 +105,13 @@ export const updateWellSchema = z
     notes: z.string().max(2000).nullable().optional(),
   })
   .strict();
+
+// 観察日は日付だけ。Date で送ると日本時間の0〜9時が UTC で前日になるので文字列で受ける
+export const addObservationSchema = z.object({
+  dropId: z.string().trim().min(1).max(100),
+  observedAt: z.iso.date(),
+  notes: z.string().trim().min(1).max(2000),
+});
 
 export const updateUserSettingsSchema = z
   .object({

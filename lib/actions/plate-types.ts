@@ -16,7 +16,10 @@ export async function getPlateTypes() {
 
 export async function createPlateType(data: {
   name: string;
-  wellCount: number;
+  rows: number;
+  cols: number;
+  maxDrops: number;
+  layout: "SITTING" | "HANGING";
   description?: string;
 }) {
   const userId = await getCurrentUserId();
@@ -28,7 +31,12 @@ export async function createPlateType(data: {
   return prisma.plateType.create({
     data: {
       name: parsed.data.name,
-      wellCount: parsed.data.wellCount,
+      // wellCount は削除するまで rows × cols と揃えて書く
+      wellCount: parsed.data.rows * parsed.data.cols,
+      rows: parsed.data.rows,
+      cols: parsed.data.cols,
+      maxDrops: parsed.data.maxDrops,
+      layout: parsed.data.layout,
       description: parsed.data.description ?? null,
       createdById: userId,
       isDefault: false,

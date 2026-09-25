@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { countUsedWells } from "@/lib/wells";
 import { useRouter } from "next/navigation";
 import { Menu, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ export function DashboardClient({
           name: p.plateType.name,
           wellCount: p.plateType.wellCount,
         },
-        filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+        filledWells: countUsedWells(p.wells),
         totalWells: p.wells.length,
       }))
     );

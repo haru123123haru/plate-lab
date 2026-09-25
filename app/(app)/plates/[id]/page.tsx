@@ -40,6 +40,19 @@ export default async function PlateDetailPage({
     ph: w.ph ?? undefined,
     precipitant: w.precipitant ?? undefined,
     notes: w.notes ?? undefined,
+    drops: w.drops.map((d) => ({
+      id: d.id,
+      slot: d.slot,
+      sampleName: d.sampleName,
+      concentration: d.concentration,
+      notes: d.notes ?? undefined,
+      observations: d.observations.map((o) => ({
+        id: o.id,
+        // observedAt は日付だけの列なので、UTC の日付として読む
+        observedAt: o.observedAt.toISOString().slice(0, 10),
+        notes: o.notes,
+      })),
+    })),
   }));
 
   // テンプレートウェルから position → 条件データ のマップを構築
@@ -69,12 +82,15 @@ export default async function PlateDetailPage({
     id: plate.id,
     name: plate.name,
     notes: plate.notes ?? undefined,
-    sampleName: plate.sampleName ?? undefined,
     reservoirTemplateId: plate.reservoirTemplate?.id ?? null,
     screeningTemplateId: plate.screeningTemplate?.id ?? null,
     plateType: {
       name: plate.plateType.name,
       wellCount: plate.plateType.wellCount,
+      rows: plate.plateType.rows,
+      cols: plate.plateType.cols,
+      maxDrops: plate.plateType.maxDrops,
+      layout: plate.plateType.layout,
     },
     wells: uiWells,
     createdAt: plate.createdAt.toISOString().split("T")[0],

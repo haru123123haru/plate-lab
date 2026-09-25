@@ -41,7 +41,8 @@ function parseConditionMd(
 function generateWells(
   rows: number,
   cols: number,
-  filledCount: number
+  filledCount: number,
+  sampleName: string
 ): {
   position: string;
   row: number;
@@ -52,6 +53,9 @@ function generateWells(
   buffer?: string;
   ph?: string;
   precipitant?: string;
+  drops?: {
+    create: { slot: number; sampleName: string; concentration: string }[];
+  };
 }[] {
   const wells: ReturnType<typeof generateWells> = [];
   const rowLabels = "ABCDEFGH";
@@ -70,6 +74,10 @@ function generateWells(
           buffer: "Tris-HCl",
           ph: "7.5",
           precipitant: "NaCl 1M",
+          // 記録の単位はドロップ。使用中のウェルは1番の置き場所にドロップを持つ
+          drops: {
+            create: [{ slot: 1, sampleName, concentration: "10 mg/mL" }],
+          },
         }),
       });
       filled++;
@@ -115,6 +123,9 @@ async function main() {
     data: {
       name: "96 Well - Sitting",
       wellCount: 96,
+      rows: 8,
+      cols: 12,
+      layout: "SITTING",
       description: "Standard 96-well sitting drop plate",
       isDefault: true,
     },
@@ -124,6 +135,9 @@ async function main() {
     data: {
       name: "24 Well - Hanging",
       wellCount: 24,
+      rows: 4,
+      cols: 6,
+      layout: "HANGING",
       description: "24-well hanging drop plate",
       isDefault: true,
     },
@@ -133,7 +147,37 @@ async function main() {
     data: {
       name: "Sitting Manual",
       wellCount: 96,
+      rows: 8,
+      cols: 12,
+      layout: "SITTING",
       description: "Manual sitting drop plate",
+      isDefault: true,
+    },
+  });
+
+  // 1ウェルに複数のドロップを置く種別。本番にはマイグレーションで入れる
+  await prisma.plateType.create({
+    data: {
+      name: "24 Well - Sitting 4 Drop",
+      wellCount: 24,
+      rows: 4,
+      cols: 6,
+      maxDrops: 4,
+      layout: "SITTING",
+      description: "24-well sitting drop plate with 4 drop positions per well",
+      isDefault: true,
+    },
+  });
+
+  await prisma.plateType.create({
+    data: {
+      name: "15 Well - Hanging 3 Drop",
+      wellCount: 15,
+      rows: 3,
+      cols: 5,
+      maxDrops: 3,
+      layout: "HANGING",
+      description: "15-well hanging drop plate with up to 3 drops per well",
       isDefault: true,
     },
   });
@@ -266,7 +310,7 @@ async function main() {
         ...plateFields,
         userId: user.id,
         wells: {
-          create: generateWells(rows, cols, filled),
+          create: generateWells(rows, cols, filled, plateFields.sampleName),
         },
       },
     });
@@ -274,7 +318,7 @@ async function main() {
 
   console.log("Seed completed successfully!");
   console.log(`  - 1 user`);
-  console.log(`  - 3 plate types`);
+  console.log(`  - 5 plate types`);
   console.log(
     `  - 2 condition templates (PEG: ${pegWells.length} wells, MPD: ${mpdWells.length} wells)`
   );

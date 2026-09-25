@@ -18,35 +18,59 @@ import {
 } from "../lib/validations";
 
 describe("validation schemas", () => {
-  it("accepts only supported plate type well counts", () => {
-    expect(
-      createPlateTypeSchema.safeParse({ name: "24 well", wellCount: 24 })
-        .success
-    ).toBe(true);
-    expect(
-      createPlateTypeSchema.safeParse({ name: "96 well", wellCount: 96 })
-        .success
-    ).toBe(true);
-    expect(
-      createPlateTypeSchema.safeParse({ name: "48 well", wellCount: 48 })
-        .success
-    ).toBe(false);
+  it("accepts only plate type shapes that can be drawn", () => {
+    const parse = (
+      rows: number,
+      cols: number,
+      layout: "SITTING" | "HANGING",
+      maxDrops: number
+    ) =>
+      createPlateTypeSchema.safeParse({
+        name: "type",
+        rows,
+        cols,
+        layout,
+        maxDrops,
+      }).success;
+
+    expect(parse(8, 12, "SITTING", 1)).toBe(true);
+    expect(parse(4, 6, "HANGING", 1)).toBe(true);
+    expect(parse(4, 6, "SITTING", 4)).toBe(true);
+    expect(parse(3, 5, "HANGING", 3)).toBe(true);
+    // 描き方の無い組み合わせ
+    expect(parse(4, 6, "HANGING", 4)).toBe(false);
+    expect(parse(3, 5, "SITTING", 3)).toBe(false);
+    expect(parse(4, 6, "SITTING", 2)).toBe(false);
+    // 行ラベルは A〜H まで
+    expect(parse(9, 12, "SITTING", 1)).toBe(false);
   });
 
-  it("rejects duplicate and malformed filled well positions", () => {
+  it("requires a complete drop batch when creating a plate with drops", () => {
+    const plate = { name: "Plate A", plateTypeId: "plate-type-1" };
+    const drops = {
+      positions: ["A1", "H12"],
+      slots: [1],
+      sampleName: "Lysozyme",
+      concentration: "10 mg/mL",
+    };
+    expect(createPlateSchema.safeParse(plate).success).toBe(true);
+    expect(createPlateSchema.safeParse({ ...plate, drops }).success).toBe(true);
+    // 位置は "A1" 形式だけ。WellGridSelector の "0-0" 形式はフォーム側で変換する
     expect(
       createPlateSchema.safeParse({
-        name: "Plate A",
-        plateTypeId: "plate-type-1",
-        filledPositions: ["0-0", "0-0"],
+        ...plate,
+        drops: { ...drops, positions: ["0-0"] },
       }).success
     ).toBe(false);
     expect(
       createPlateSchema.safeParse({
-        name: "Plate A",
-        plateTypeId: "plate-type-1",
-        filledPositions: ["A1"],
+        ...plate,
+        drops: { ...drops, sampleName: " " },
       }).success
+    ).toBe(false);
+    expect(
+      createPlateSchema.safeParse({ ...plate, drops: { ...drops, slots: [] } })
+        .success
     ).toBe(false);
   });
 

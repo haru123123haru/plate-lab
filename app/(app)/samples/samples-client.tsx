@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { countUsedWells } from "@/lib/wells";
 import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export function SamplesClient({
           name: p.plateType.name,
           wellCount: p.plateType.wellCount,
         },
-        filledWells: p.wells.filter((w) => w.status !== "EMPTY").length,
+        filledWells: countUsedWells(p.wells),
         totalWells: p.wells.length,
         createdAt: new Date(p.createdAt).toLocaleDateString(),
       }))

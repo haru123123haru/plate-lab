@@ -13,7 +13,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { NewPlateTypeDialog } from "@/components/new-plate-type-dialog";
-import { WellGridSelector } from "@/components/well-grid-selector";
+import {
+  BulkDropFields,
+  emptyDropBatch,
+  isDropBatchComplete,
+  toDropBatchInput,
+} from "@/components/bulk-drop-form";
 import { createPlate } from "@/lib/actions/plates";
 import {
   createConditionTemplate,
@@ -50,15 +55,13 @@ export function NewPlateSheet({
   const router = useRouter();
   const { t } = useTranslation();
   const [plateName, setPlateName] = useState("");
-  const [sampleName, setSampleName] = useState("");
   const [allPlateTypes, setAllPlateTypes] = useState<PlateType[]>(plateTypes);
   const [allTemplates, setAllTemplates] =
     useState<ConditionTemplateItem[]>(conditionTemplates);
   const [allSets, setAllSets] = useState<UiConditionSet[]>(conditionSets);
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [filledPositions, setFilledPositions] = useState<Set<string>>(
-    new Set()
-  );
+  // 作成と同時に入れるドロップ（ウェル・置き場所・サンプル名・濃度）
+  const [dropBatch, setDropBatch] = useState(emptyDropBatch);
   const [conditionMode, setConditionMode] = useState<"sets" | "custom">("sets");
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
   const [customReservoirId, setCustomReservoirId] = useState<number | null>(
@@ -144,21 +147,20 @@ export function NewPlateSheet({
     () => allPlateTypes.find((pt) => pt.id === selectedType),
     [allPlateTypes, selectedType]
   );
-  const gridRows = selectedPlateType
-    ? selectedPlateType.wellCount === 24
-      ? 4
-      : 8
-    : 0;
-  const gridCols = selectedPlateType
-    ? selectedPlateType.wellCount === 24
-      ? 6
-      : 12
-    : 0;
-  const totalWells = gridRows * gridCols;
+
+  // 種別を変えたら形が変わるので、選んだウェルと置き場所だけ戻す（サンプル名と濃度は残す）
+  const selectPlateType = (id: string) => {
+    setSelectedType(id);
+    setDropBatch((prev) => ({
+      ...prev,
+      positions: new Set(),
+      slots: new Set([1]),
+    }));
+  };
 
   const handleAddPlateType = (newType: PlateType) => {
     setAllPlateTypes((prev) => [...prev, newType]);
-    setSelectedType(newType.id);
+    selectPlateType(newType.id);
   };
 
   const handleRegisterSet = async () => {
@@ -197,42 +199,11 @@ export function NewPlateSheet({
     }
   };
 
-  const handleToggleWell = (key: string) => {
-    setFilledPositions((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
-
-  const handleSelectAll = () => {
-    const all = new Set<string>();
-    for (let r = 0; r < gridRows; r++) {
-      for (let c = 0; c < gridCols; c++) {
-        all.add(`${r}-${c}`);
-      }
-    }
-    setFilledPositions(all);
-  };
-
-  const handleClearAll = () => {
-    setFilledPositions(new Set());
-  };
-
-  useEffect(() => {
-    setFilledPositions(new Set());
-  }, [selectedType]);
-
   useEffect(() => {
     if (!open) {
       setPlateName("");
-      setSampleName("");
       setSelectedType(null);
-      setFilledPositions(new Set());
+      setDropBatch(emptyDropBatch());
       setConditionMode("sets");
       setSelectedSetId(null);
       setCustomReservoirId(null);
@@ -249,7 +220,13 @@ export function NewPlateSheet({
   }, [open, plateTypes, conditionTemplates, conditionSets]);
 
   const handleCreate = async () => {
-    if (creating || !plateName.trim() || !selectedType) return;
+    if (
+      creating ||
+      !plateName.trim() ||
+      !selectedType ||
+      !isDropBatchComplete(dropBatch)
+    )
+      return;
     setCreating(true);
     setError("");
 
@@ -271,11 +248,10 @@ export function NewPlateSheet({
       const result = await createPlate({
         name: plateName.trim(),
         plateTypeId: selectedType,
-        sampleName: sampleName.trim() || undefined,
         reservoirTemplateId: resId,
         screeningTemplateId: scrId,
         notes: notes.trim() || undefined,
-        filledPositions: Array.from(filledPositions),
+        drops: toDropBatchInput(dropBatch),
       });
       if (result && "error" in result) {
         setError("Unable to create plate.");
@@ -343,19 +319,6 @@ export function NewPlateSheet({
                 />
               </div>
 
-              {/* Sample Name */}
-              <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                  {t("sampleNameLabel")}
-                </Label>
-                <Input
-                  value={sampleName}
-                  onChange={(e) => setSampleName(e.target.value)}
-                  placeholder="e.g. Lysozyme"
-                  className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
-                />
-              </div>
-
               {/* Plate Type */}
               <div className="space-y-2">
                 <Label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
@@ -366,7 +329,7 @@ export function NewPlateSheet({
                     <button
                       type="button"
                       key={pt.id}
-                      onClick={() => setSelectedType(pt.id)}
+                      onClick={() => selectPlateType(pt.id)}
                       className={cn(
                         "shrink-0 cursor-pointer rounded-xl p-4 text-left transition-colors",
                         selectedType === pt.id
@@ -400,42 +363,15 @@ export function NewPlateSheet({
                 </div>
               </div>
 
-              {/* Well Map Selector */}
+              {/* 使うウェルとサンプル */}
               {selectedPlateType && (
-                <div className="space-y-2">
-                  <Label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                    {t("wellMap")}
-                  </Label>
-                  <div className="rounded-xl bg-bg-surface">
-                    <WellGridSelector
-                      rows={gridRows}
-                      cols={gridCols}
-                      filledPositions={filledPositions}
-                      onToggle={handleToggleWell}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-text-secondary">
-                      {filledPositions.size} / {totalWells} {t("wellsSelected")}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSelectAll}
-                        className="cursor-pointer text-[13px] font-medium text-text-primary underline underline-offset-2"
-                      >
-                        {t("selectAll")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleClearAll}
-                        className="cursor-pointer text-[13px] font-medium text-text-secondary underline underline-offset-2"
-                      >
-                        {t("clear")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <BulkDropFields
+                  rows={selectedPlateType.rows}
+                  cols={selectedPlateType.cols}
+                  maxDrops={selectedPlateType.maxDrops}
+                  value={dropBatch}
+                  onChange={setDropBatch}
+                />
               )}
 
               {/* Condition */}
@@ -689,7 +625,12 @@ export function NewPlateSheet({
               <Button
                 className="h-12 w-full rounded-xl text-[16px] font-semibold"
                 onClick={handleCreate}
-                disabled={creating || !plateName.trim() || !selectedType}
+                disabled={
+                  creating ||
+                  !plateName.trim() ||
+                  !selectedType ||
+                  !isDropBatchComplete(dropBatch)
+                }
               >
                 {creating ? t("creating") : t("createPlate")}
               </Button>

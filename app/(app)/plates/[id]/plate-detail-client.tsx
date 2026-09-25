@@ -18,13 +18,13 @@ import { Input } from "@/components/ui/input";
 import { SectionHeader } from "@/components/section-header";
 import { ListRow } from "@/components/list-row";
 import { WellGrid } from "@/components/well-grid";
-import { WellGrid24 } from "@/components/well-grid-24";
-import { WellDetailModal } from "@/components/well-detail-modal";
+import { WellSheet } from "@/components/well-sheet";
+import { BulkAddDropsForm } from "@/components/bulk-drop-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/components/locale-provider";
-import type { WellData } from "@/types";
+import type { PlateLayout, WellData } from "@/types";
 
 export type WellCondition = {
   salt: string;
@@ -38,10 +38,16 @@ interface PlateDetailClientProps {
     id: string;
     name: string;
     notes?: string;
-    sampleName?: string;
     reservoirTemplateId: number | null;
     screeningTemplateId: number | null;
-    plateType: { name: string; wellCount: number };
+    plateType: {
+      name: string;
+      wellCount: number;
+      rows: number;
+      cols: number;
+      maxDrops: number;
+      layout: PlateLayout;
+    };
     wells: WellData[];
     createdAt: string;
     updatedAt: string;
@@ -63,15 +69,18 @@ export function PlateDetailClient({
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(plate.name);
   const [editNotes, setEditNotes] = useState(plate.notes ?? "");
-  const [editSampleName, setEditSampleName] = useState(plate.sampleName ?? "");
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
   >(plate.reservoirTemplateId);
   const [editScreeningTemplateId, setEditScreeningTemplateId] = useState<
     number | null
   >(plate.screeningTemplateId);
-  const [selectedWell, setSelectedWell] = useState<WellData | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  // ウェルそのものではなく ID を持つ。router.refresh() 後の新しい props から引き直すため
+  const [selectedWellId, setSelectedWellId] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // 開くたびに増やしてシートを作り直す。同じウェルを開き直しても前回の入力を残さない
+  const [sheetKey, setSheetKey] = useState(0);
+  const selectedWell = plate.wells.find((w) => w.id === selectedWellId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [trashConfirmOpen, setTrashConfirmOpen] = useState(false);
@@ -114,14 +123,14 @@ export function PlateDetailClient({
   }, [plate.name]);
 
   const handleWellClick = (well: WellData) => {
-    setSelectedWell(well);
-    setModalOpen(true);
+    setSelectedWellId(well.id ?? null);
+    setSheetKey((k) => k + 1);
+    setSheetOpen(true);
   };
 
   const handleCancelEdit = () => {
     setEditName(plate.name);
     setEditNotes(plate.notes ?? "");
-    setEditSampleName(plate.sampleName ?? "");
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
     setError("");
@@ -136,7 +145,6 @@ export function PlateDetailClient({
       const result = await updatePlate(plate.id, {
         name: editName,
         notes: editNotes || undefined,
-        sampleName: editSampleName || null,
         reservoirTemplateId: editReservoirTemplateId,
         screeningTemplateId: editScreeningTemplateId,
       });
@@ -251,11 +259,14 @@ export function PlateDetailClient({
         <div>
           <SectionHeader label={t("wellMap")} />
           <div className="mt-3 rounded-xl bg-bg-surface">
-            {plate.plateType.wellCount === 24 ? (
-              <WellGrid24 wells={plate.wells} onWellClick={handleWellClick} />
-            ) : (
-              <WellGrid wells={plate.wells} onWellClick={handleWellClick} />
-            )}
+            <WellGrid
+              rows={plate.plateType.rows}
+              cols={plate.plateType.cols}
+              layout={plate.plateType.layout}
+              maxDrops={plate.plateType.maxDrops}
+              wells={plate.wells}
+              onWellClick={handleWellClick}
+            />
           </div>
         </div>
 
@@ -274,19 +285,6 @@ export function PlateDetailClient({
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
-              />
-            </div>
-
-            {/* Sample Name */}
-            <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                {t("sampleNameLabel")}
-              </label>
-              <Input
-                value={editSampleName}
-                onChange={(e) => setEditSampleName(e.target.value)}
-                placeholder="e.g. Lysozyme"
                 className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
               />
             </div>
@@ -402,6 +400,16 @@ export function PlateDetailClient({
           </div>
         )}
 
+        {/* まとめて追加（編集モードだけ。ゴミ箱のプレートでは出さない） */}
+        {editMode && !isTrashed && (
+          <BulkAddDropsForm
+            plateId={plate.id}
+            rows={plate.plateType.rows}
+            cols={plate.plateType.cols}
+            maxDrops={plate.plateType.maxDrops}
+          />
+        )}
+
         {/* Plate Details */}
         <div>
           <SectionHeader label={t("plateDetails")} />
@@ -410,11 +418,6 @@ export function PlateDetailClient({
               icon={FlaskConical}
               title={t("type")}
               description={plate.plateType.name}
-            />
-            <ListRow
-              icon={FlaskConical}
-              title={t("sample")}
-              description={plate.sampleName ?? "-"}
             />
             <ListRow
               icon={Beaker}
@@ -471,23 +474,20 @@ export function PlateDetailClient({
         </div>
       </div>
 
-      {/* Well Detail Modal */}
-      <WellDetailModal
-        well={selectedWell}
-        reservoirCondition={
-          selectedWell
-            ? reservoirConditionMap[selectedWell.position]
-            : undefined
-        }
-        screeningCondition={
-          selectedWell
-            ? screeningConditionMap[selectedWell.position]
-            : undefined
-        }
-        sampleName={plate.sampleName}
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-      />
+      {/* ウェルを押したあとにだけ描く（観察日の初期値を利用者の端末の日付で決めるため） */}
+      {selectedWell && (
+        <WellSheet
+          key={sheetKey}
+          well={selectedWell}
+          layout={plate.plateType.layout}
+          maxDrops={plate.plateType.maxDrops}
+          reservoirCondition={reservoirConditionMap[selectedWell.position]}
+          screeningCondition={screeningConditionMap[selectedWell.position]}
+          readOnly={isTrashed}
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
 
       <ConfirmDialog
         open={trashConfirmOpen}

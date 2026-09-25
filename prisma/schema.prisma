@@ -42,6 +42,11 @@ model PlateType {
   id          String  @id @default(uuid())
   name        String
   wellCount   Int
+  // 形はここから読む。wellCount は rows × cols と同じ値で、いずれ削除する
+  rows        Int
+  cols        Int
+  maxDrops    Int         @default(1)
+  layout      PlateLayout
   description String?
   isDefault   Boolean @default(false)
 
@@ -97,7 +102,43 @@ model Well {
   plateId String
   plate   Plate  @relation(fields: [plateId], references: [id], onDelete: Cascade)
 
+  drops Drop[]
+
   @@unique([plateId, position])
+}
+
+// ウェルの中の1つの置き場所に入れたサンプル
+model Drop {
+  id            String        @id @default(uuid())
+  wellId        String
+  well          Well          @relation(fields: [wellId], references: [id], onDelete: Cascade)
+  // 1〜PlateType.maxDrops。作成後は変えない
+  slot          Int
+  sampleName    String
+  concentration String
+  notes         String?       @db.Text
+  observations  Observation[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([wellId, slot])
+}
+
+// ドロップの観察記録（履歴）
+model Observation {
+  id         String   @id @default(uuid())
+  dropId     String
+  drop       Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  observedAt DateTime @db.Date
+  notes      String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([dropId, observedAt])
+}
+
+enum PlateLayout {
+  SITTING
+  HANGING
 }
 
 enum WellStatus {
