@@ -271,13 +271,13 @@ npm run check               # 全部通る
 
 ### タスク
 
-- [ ] `lib/actions/plates.ts` の `searchPlates` — ドロップのサンプル名で検索する。結果にサンプル名とドロップ数を添える
-- [ ] `app/(app)/samples/` — 検索結果の表示を更新する
-- [ ] マイグレーション — `Plate.sampleName`、`Well` の記録欄、enum `WellStatus`、`PlateType.wellCount` を削除する
-- [ ] `wellCount` の参照を消す: `types/index.ts:4`、`app/(app)/page.tsx:24, 33`、`samples/page.tsx:23, 33`、`dashboard-client.tsx:21, 70`、`samples-client.tsx:20, 62`、`plates/[id]/page.tsx:77`、`plate-detail-client.tsx:44`、`new-plate-sheet.tsx:386`（「◯ wells」の表示は `rows × cols` で出す）
-- [ ] `WellStatus` の参照を消す: `types/index.ts:8-23`、`plates/[id]/page.tsx:36-42`、`prisma/seed.ts:1, 49, 66-73`、`tests/validation-access-control.test.ts:17, 64-68`
-- [ ] `lib/actions/wells.ts` の `updateWell` と、その入力チェック・テストを削除する（役割がドロップに移るため）
-- [ ] `docs/architecture.md` — 2章（コンポーネント）、3章（データモデル）、8章を更新する
+- [x] `lib/actions/plates.ts` の `searchPlates` — ドロップのサンプル名で検索する。結果にサンプル名とドロップ数を添える
+- [x] `app/(app)/samples/` — 検索結果の表示を更新する
+- [x] マイグレーション — `Plate.sampleName`、`Well` の記録欄、enum `WellStatus`、`PlateType.wellCount` を削除する
+- [x] `wellCount` の参照を消す: `types/index.ts:4`、`app/(app)/page.tsx:24, 33`、`samples/page.tsx:23, 33`、`dashboard-client.tsx:21, 70`、`samples-client.tsx:20, 62`、`plates/[id]/page.tsx:77`、`plate-detail-client.tsx:44`、`new-plate-sheet.tsx:386`（「◯ wells」の表示は `rows × cols` で出す）
+- [x] `WellStatus` の参照を消す: `types/index.ts:8-23`、`plates/[id]/page.tsx:36-42`、`prisma/seed.ts:1, 49, 66-73`、`tests/validation-access-control.test.ts:17, 64-68`
+- [x] `lib/actions/wells.ts` の `updateWell` と、その入力チェック・テストを削除する（役割がドロップに移るため）
+- [x] `docs/architecture.md` — 2章（コンポーネント）、3章（データモデル）、8章を更新する
 
 ### 完了条件
 
@@ -287,7 +287,7 @@ npm run check    # 全部通る
 
 本番で、既存のプレートと新しい2種類のプレートを開いて、表示と編集ができること。
 
-列を消すマイグレーションは Vercel のビルド中に走る。そのため、新しいデプロイに切り替わるまでの短いあいだ、古いコードが消えた列を読みに行ってエラーになる。本番はまだ使われていないので許容するが、使われ始めたあとに同じことをするなら、列を読むコードを先に出してから消す2段階にする。
+列を消すマイグレーションは Vercel のビルド中に走る。そのため、新しいデプロイに切り替わるまでの短いあいだ、古いコードが消えた列を読みに行ってエラーになる。Prisma は SELECT で列名をすべて並べるので、壊れるのは一部の書き込みではなく、一覧・サンプル・詳細の全画面だ。しかも列を消したあとで `next build` が落ちると、壊れた古いコードのまま止まり続ける。Vercel の Instant Rollback はコードしか戻さないので、これでは直らない。push の前にローカルで `npm run check`（build まで含む）を通しておく。本番はまだ使われていないので許容するが、使われ始めたあとに同じことをするなら、列を読むコードを先に出してから消す2段階にする。
 
 ---
 
@@ -331,3 +331,16 @@ npm run check    # 全部通る
   - `bulkCreateDrops` の、確認と作成のあいだにゴミ箱へ移されると作ってしまう窓は、画面から届くようになった。作られるのは持ち主本人のドロップなので、引き続き許容する
   - ドロップの追加・編集・削除では `Plate.updatedAt` が変わらない。一覧の並び（更新順）と詳細の「更新日」に反映されないが、今回は見送る
   - デプロイ中、`migrate deploy` が終わってから新しいコードに切り替わるまでのあいだに古いコードでプレートを作ると、使用中のウェルがドロップ無しでできる。本番はまだ使われていないので許容する。出したあとに空に見えるプレートがあれば、これが原因
+- Phase 4（2026-09-25）
+  - 列を消すマイグレーションの SQL は手で書き、`prisma migrate diff` の出力と一致することを確かめた
+  - サンプル画面の最初の一覧は、`getPlates` ではなく `searchPlates("")`（空の検索は全件を返す）で取るようにした。検索前と検索後で同じ形のデータ（サンプル名とドロップ数つき）を出せる。ダッシュボードは件数しか出さないので `getPlates` のまま
+  - 検索結果のサンプル名は、プレートの全ドロップの `sampleName` を引いて、`lib/wells.ts` の `summarizeSamples` で重複を除く。引く行数は1プレートあたり最大96行（96穴の全ウェル、または24穴4ドロップの全置き場所を使ったとき）になる。プレートが数百枚になったら、DB 側で `DISTINCT` を取る形に変える
+  - seed が作り直せることは、使い捨ての DB（`CREATE DATABASE seedtest TEMPLATE template0`）で確かめた。全マイグレーションを最初から流してから seed を流し、使用中のウェル数とドロップ数が一致した。ローカルの DB には seed を流していない
+  - 列を消したあと、起動したままの dev サーバーが古い Prisma クライアントを持ち続け、`The column (not available) does not exist` で全画面が落ちた。本番のデプロイ中に起きる窓（Phase 4 の完了条件の最後の段落）と同じ現象で、ローカルでは dev サーバーを起動し直せば直る。`TaskStop` で止めたのは npm だけで、子の `next dev` が3000番に残っていたので、PID を調べて止めた
+  - Phase 4 のコミットは、別のブランチ `feature/plate-drops-cleanup`（`feature/plate-drops` の `ec16bd2` から分岐）に置いた。同じブランチに積むと、Phase 1〜3 を main に出すときに列の削除まで同じ `migrate deploy` で流れ、移し替えを本番で確かめる前に元の列が消える。出す順番は `feature/plate-drops` → 本番で確かめる → `feature/plate-drops-cleanup`。レビューで見つかった
+  - `searchPlates` は、使わないダッシュボードにもウェルごとのサンプル名を返している。Server Action の結果はそのままブラウザへ送られるので、全ウェルを使ったプレートが100枚あると、検索の1打鍵ごとに数百KBになる。プレートが増えたら、`searchPlates` の中で一覧の形に変換してから返す（3か所の呼び出し元の `map` も消せる）
+- 本番（2026-09-25）
+  - Phase 1〜3 は、計画の2回を1回にまとめて出した（PR #2、`d3ab3d1`）。本番はまだ使われていないので、Phase 1 を単独で出す意味が薄かった
+  - Preview 環境には DB の環境変数が無い（Vercel の環境変数4つはどれも Production だけ）。そのため、PR の Preview ビルドは `npm install` の `prisma generate` で `DIRECT_URL` が読めずに失敗した。DB には接続していないので害は無い
+  - 出す前に本番の `PlateType` を確かめると、`wellCount` はすべて 96 だった。本番のビルドでマイグレーション3本がエラー無しで適用された
+  - 出したあとに SQL Editor で確かめた。`Drop`・`Observation` への `anon`・`authenticated` の権限は0件。種別は共有2つ（新しく入れたもの）と、ユーザーが作った `96well-sitting`（8×12・SITTING）。使用中のウェル1152件と、1番の置き場所のドロップ1152件が一致した

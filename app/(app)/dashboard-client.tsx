@@ -19,7 +19,7 @@ import type { PlateType } from "@/types";
 interface UiPlate {
   id: string;
   name: string;
-  plateType: { name: string; wellCount: number };
+  plateType: { name: string };
   filledWells: number;
   totalWells: number;
 }
@@ -66,10 +66,7 @@ export function DashboardClient({
       results.map((p) => ({
         id: p.id,
         name: p.name,
-        plateType: {
-          name: p.plateType.name,
-          wellCount: p.plateType.wellCount,
-        },
+        plateType: { name: p.plateType.name },
         filledWells: countUsedWells(p.wells),
         totalWells: p.wells.length,
       }))

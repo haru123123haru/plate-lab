@@ -1,6 +1,6 @@
 # PLATE LAB 現状アーキテクチャ
 
-最終更新: 2026-09-24
+最終更新: 2026-09-25
 
 このドキュメントは、PLATE LAB の設計とインフラの現状を一か所にまとめたもの。読者は開発者本人（および引き継ぎを受ける人）を想定している。Next.js の App Router と Prisma の基本は知っている前提で書いた。
 
@@ -12,7 +12,7 @@
 
 研究室で作る結晶化プレートには、どのサンプルをどの条件で仕込んだかという情報が紐付く。プレート自体は物理的に積み上がっていくので、数が増えると「あの条件のプレート」を探せなくなる。PLATE LAB はその情報を Web で管理し、プレートに貼った QR コードから詳細画面（`/plates/[id]`）に飛べるようにする。
 
-扱うプレートは3種類——Hanging Drop の24穴、Sitting Drop の96穴（ロボット作成）、Sitting Drop の手動作成。画面はモバイルファーストで、幅402px を基準に設計されている。実験台でスマホから読む使い方を想定しているため。
+共有のプレート種別は5つある。1ウェルに1ドロップの3種類（Hanging Drop の24穴、Sitting Drop の96穴（ロボット作成）、Sitting Drop の手動作成）と、1ウェルに複数のドロップを置く2種類だ。後者は「24 Well - Sitting 4 Drop」（4×6、1ウェルに小さい溝が4つ）と「15 Well - Hanging 3 Drop」（3×5、1ウェルに最大3ドロップ）。記録はドロップ単位で、サンプル名・濃度・メモと、日付つきの観察の履歴を持つ（→3章）。画面はモバイルファーストで、幅402px を基準に設計されている。実験台でスマホから読む使い方を想定しているため。
 
 本番URL: https://plate-manage-app.vercel.app
 
@@ -37,9 +37,15 @@
 
 セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。
 
-コンポーネントは `components/` 直下にカスタム16個、`components/ui/` に shadcn 由来が10個。ウェルのグリッドだけは3実装に分かれていて、96穴の `well-grid.tsx`、24穴の `well-grid-24.tsx`、新規作成時の選択用 `well-grid-selector.tsx` がある。
+コンポーネントは `components/` 直下にカスタム17個、`components/ui/` に shadcn 由来が10個。ウェルまわりは次の5つで分担している。
 
-サイズで目立つのは `components/new-plate-sheet.tsx` の716行。2番目に大きい `plate-detail-client.tsx`（477行）の1.5倍あり、プレート作成フォームとウェル選択とテンプレート選択が一つのファイルに同居している。手を入れるときは分割から考えたほうがいい。
+- `well-shape.tsx` — 1ウェルの描き方（置き場所の丸、SITTING の溝、HANGING の外の丸）。置き場所の位置をウェルの正方形に対する % で持ち、グリッドの1マスとシートの大きい図の両方がこれを使う
+- `well-grid.tsx` — 詳細画面のグリッド。行数・列数・描き方・最大ドロップ数を受け取り、ドロップのある置き場所を塗る
+- `well-sheet.tsx` — ウェルを押すと下から出るシート。条件の表示、置き場所ごとのドロップの追加・編集・削除、観察の履歴
+- `well-grid-selector.tsx` — ウェルを複数選ぶためのグリッド
+- `bulk-drop-form.tsx` — 選んだウェルと置き場所に、同じサンプルをまとめて入れるフォーム。作成画面と、詳細画面の編集モードで使う
+
+サイズで目立つのは `components/new-plate-sheet.tsx` の653行。ウェル選択とサンプル名の入力は `bulk-drop-form.tsx` に切り出したが、まだプレート作成フォームとテンプレート選択が同居している。2番目は `plate-detail-client.tsx`（503行）。
 
 OAuth のコールバック（`app/auth/callback/route.ts`）だけは少し特殊で、Supabase 側の認証が済んだ直後に Prisma の `User` レコードが無ければ作る。Supabase Auth のユーザーと Prisma の `User` は別テーブルなので、この橋渡しがないと Google ログインしたユーザーがアプリ内で存在しないことになる。
 
@@ -47,26 +53,30 @@ OAuth のコールバック（`app/auth/callback/route.ts`）だけは少し特�
 
 ## 3. 条件は「リザーバー × スクリーニング」の2軸で持つ
 
-Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そこから `Well` がぶら下がる。
+Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well` → `Drop` → `Observation` の順にぶら下がる。
 
 - `User` — 認証ユーザー。`id` は Supabase Auth のユーザーIDをそのまま使う
 - `UserSettings` — `User` と1対1。言語・外観・通知の設定
-- `PlateType` — プレートの種別。穴数を持つ
+- `PlateType` — プレートの種別。形を `rows`・`cols`・`maxDrops`（1ウェルの最大ドロップ数）・`layout`（`SITTING` か `HANGING`）で持つ。描き方があるのは「1ドロップ」「SITTING の4ドロップ」「HANGING の3ドロップ」の3通りだけで、種別作成ではそれ以外を作らせない
 - `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意。`deletedAt` に日時が入っていればゴミ箱にある
-- `Well` — 1ウェル分の記録。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
+- `Well` — ウェルの位置（`position`・`row`・`col`）だけを持つ。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
+- `Drop` — 1ドロップ分の記録。サンプル名と濃度（必須）、メモ（任意）。`slot` は 1〜`maxDrops` の置き場所の番号で、`@@unique([wellId, slot])` で同じ置き場所に2つ入らない
+- `Observation` — ドロップの観察の履歴。観察日（日付だけ）とメモ
 - `ConditionTemplate` — 条件テンプレート。`TemplateWell` を持つ
-- `TemplateWell` — テンプレート内の1ウェル分の組成。検索の対象になる実データ
+- `TemplateWell` — テンプレート内の1ウェル分の組成。詳細画面では、プレートのウェルと同じ位置の行を引いて条件を表示する
 - `ConditionSet` — リザーバーとスクリーニングのテンプレートをセットにしたもの
+
+記録の単位は、2026-09-25 にウェルからドロップへ移した。それまでは記録欄が `Well` に、サンプル名が `Plate.sampleName` にあったが、1ウェルに複数のドロップを置くプレートでは表せない。「使用中のウェル」は「ドロップが1つ以上あるウェル」で、数え方は `lib/wells.ts` の `countUsedWells` に1つにまとめてある。サンプル検索もドロップのサンプル名を見る。観察日はクライアントから `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。`Date` のまま送ると、日本時間の0〜9時は UTC で前日になるためだ。経緯は計画書 `docs/plans/2026-09-24-plate-drops.md`。
 
 当初の設計では `Plate` が持つテンプレートは1本だけで、足りない分はメモのテキストで補う想定だった。実装はそこから離れていて、リザーバー条件とスクリーニング条件を別々の `ConditionTemplate` として持つ形になっている。分岐点はマイグレーション `20260218064000_split_reservoir_screening` で、ここで `templateId` が2つに割れた。
 
 条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、条件を足すときは Markdown の表に行を足す。
 
-プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェルは cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` が各 Action の渡す条件を検査している。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
+プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェル・ドロップ・観察は cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` がゴミ箱まわりの Action の渡す条件を検査している（一覧と検索の `getPlates` / `searchPlates` はテストしていない）。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 
-マイグレーションは10本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。
+マイグレーションは14本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。残りの4本はドロップの導入で、`add_drops_and_plate_shape` で形の欄と `Drop`・`Observation` を足し、`add_multi_drop_plate_types` で新しい2種類を入れ、`move_wells_to_drops` で使用中のウェルを1番の置き場所のドロップへ移し、`drop_well_record_columns` で役割の終わった `Plate.sampleName`・`Well` の記録欄・`WellStatus`・`PlateType.wellCount` を消した。移すときに `Well` の残りの記録欄と観察結果の status は、ドロップのメモへ詰めてある。
 
 ---
 
@@ -74,7 +84,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 ここがこのアプリで一番込み入っていて、一番誤解しやすい部分。
 
-所有権のモデルそのものは `lib/access-control.ts` に集約されている。考え方は単純で、共有カタログ（`isDefault = true`）は全員が読め、自分が作ったもの（`createdById = userId`）は自分が読める。この2条件の OR を Prisma の `where` 句として返す関数が、`PlateType`・`ConditionTemplate`・`ConditionSet` の3種それぞれに用意されている。`Plate` と `Well` はもっと単純で、所有者しか触れない。管理者ロールは存在しないので、共有カタログを編集できる人は誰もいない。
+所有権のモデルそのものは `lib/access-control.ts` に集約されている。考え方は単純で、共有カタログ（`isDefault = true`）は全員が読め、自分が作ったもの（`createdById = userId`）は自分が読める。この2条件の OR を Prisma の `where` 句として返す関数が、`PlateType`・`ConditionTemplate`・`ConditionSet` の3種それぞれに用意されている。`Plate` から下（`Well`・`Drop`・`Observation`）はもっと単純で、プレートの持ち主しか触れない。ゴミ箱にあるプレートのドロップと観察は、読めるが編集できない。ドロップと観察の書き込みは、`editableWellWhere` / `editableDropWhere`（ウェル → プレートとたどって、持ち主でゴミ箱に無いこと）を `where` か `connect` の条件に入れて行う。管理者ロールは存在しないので、共有カタログを編集できる人は誰もいない。
 
 それを実際に適用しているのが `lib/actions/` の各 Server Action。全ファイルが先頭で `getCurrentUserId()`（`lib/auth.ts`。未認証なら `/login` へ redirect）を呼び、取得した userId を `where` 句に必ず混ぜる。丁寧に作られている箇所が2つあって、`getPlateById()` は `where` で絞ったうえで取得後に `plate.userId !== userId` をもう一度確認する。`deleteConditionTemplate()` は「他ユーザーの ConditionSet や Plate から参照されていないか」をトランザクション内で確認してから削除する。
 
@@ -88,7 +98,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、そ�
 
 RLS SQL の末尾には「Prisma は service_role キーで接続するため」というコメントがあるが、これは事実と違う。`SUPABASE_SERVICE_ROLE_KEY` はコードのどこからも参照されていない。Prisma が RLS を受けないのは、`postgres` ロールで直接つないでいるからだ。
 
-テストは2本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりの Action が実際に渡す `where` に `userId` と `deletedAt` の条件が入っているかを検査する。後者があるので、ヘルパーの呼び忘れは検出できる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
+テストは3本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` と `tests/drop-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりとドロップ・観察の Action が実際に渡す `where` / `connect` に、持ち主とゴミ箱の条件が入っているかを検査する。この2本があるので、ヘルパーの呼び忘れは検出できる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
 
 ---
 
@@ -162,7 +172,9 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ## 7. 本番の状態
 
-2026-09-24 時点で、本番は最新のコード（`a5af9d6`）で稼働している。マイグレーション10本はすべて本番DBに適用済み。
+ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。これで、マイグレーション14本がすべて本番DBに適用されている。
+
+本番の共有プレート種別は、ドロップの導入で入れた2つ（`24 Well - Sitting 4 Drop` と `15 Well - Hanging 3 Drop`）だけだ。seed にある `96 Well - Sitting` などの共有種別は、本番には最初から無かった。ほかに、ユーザーが自分で作った `96well-sitting`（8×12）がある。
 
 本番の共有テンプレートは PEG（ID 3）と MPD（ID 4）、共有セットも同名の2つ（ID 3 と 2）がある。セットの名前が seed（`PEG Set` など）と違うので、手作業で作ったらしい。作り方の記録は残っていない。2026-09-24 までは名前だけの行で、条件（`TemplateWell`）が1件も入っていなかった。`TemplateWell` のシーケンスが一度も使われていなかったので、最初から空だったことになる。消された跡は無い。同日、マイグレーション `fill_default_template_wells` で `conditions/*.md` から96ウェルずつ入れた。
 
@@ -198,7 +210,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 サインアップがまだ開いていることも残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
 
-残りは軽い。`components/new-plate-sheet.tsx` が700行を超えており、分割の候補になっている。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
+残りは軽い。`components/new-plate-sheet.tsx` が653行あり、分割の候補になっている。ドロップと観察を足しても `Plate.updatedAt` が変わらないので、一覧の更新順と詳細の「更新日」に反映されない。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
 
 運用面では、Supabase Free が7日間アクセスの無いプロジェクトを一時停止する点に注意がいる。復帰は自動ではなく、ダッシュボードから手動で Resume する。ビルドが本番DBに接続するようになったため、停止中はデプロイもできない。
 
@@ -208,6 +220,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 ## 用語集
 
+- **ドロップ / 置き場所（slot）** — ドロップはウェルの中に置く1滴のサンプルで、記録の単位。置き場所はウェルの中でドロップを置ける位置の番号（1〜`maxDrops`）
 - **リザーバー条件 / スクリーニング条件** — 結晶化で使う2種類の溶液条件。このアプリでは別々の `ConditionTemplate` として管理し、`Plate` がそれぞれを参照する
 - **ConditionSet** — リザーバーとスクリーニングのテンプレートを1組にまとめたもの。プレート作成時に2つを個別に選ぶ手間を省く
 - **isDefault** — 共有カタログであることを示すフラグ。`true` なら全ユーザーが読める。ユーザーは `isDefault = true` のデータを作れない

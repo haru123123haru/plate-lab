@@ -42,7 +42,6 @@ interface PlateDetailClientProps {
     screeningTemplateId: number | null;
     plateType: {
       name: string;
-      wellCount: number;
       rows: number;
       cols: number;
       maxDrops: number;

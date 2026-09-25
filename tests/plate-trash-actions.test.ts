@@ -9,10 +9,6 @@ const prismaMock = vi.hoisted(() => ({
     updateMany: vi.fn(),
     deleteMany: vi.fn(),
   },
-  well: {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  },
 }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
@@ -24,7 +20,6 @@ import {
   restorePlate,
   updatePlate,
 } from "../lib/actions/plates";
-import { updateWell } from "../lib/actions/wells";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -125,31 +120,5 @@ describe("updatePlate", () => {
       id: "plate-1",
       deletedAt: null,
     });
-  });
-});
-
-describe("updateWell", () => {
-  it("does not update a well of a trashed plate", async () => {
-    prismaMock.well.findUnique.mockResolvedValue({
-      id: "well-1",
-      plate: { userId: "user-a", deletedAt: new Date() },
-    });
-
-    const result = await updateWell("well-1", { notes: "x" });
-
-    expect(result).toEqual({ error: "Not found" });
-    expect(prismaMock.well.update).not.toHaveBeenCalled();
-  });
-
-  it("does not update a well of another user's plate", async () => {
-    prismaMock.well.findUnique.mockResolvedValue({
-      id: "well-1",
-      plate: { userId: "user-b", deletedAt: null },
-    });
-
-    const result = await updateWell("well-1", { notes: "x" });
-
-    expect(result).toEqual({ error: "Not found" });
-    expect(prismaMock.well.update).not.toHaveBeenCalled();
   });
 });

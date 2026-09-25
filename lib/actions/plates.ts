@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
+import type { Prisma } from "../../generated/prisma/client";
 import {
   createPlateSchema,
   resourceIdSchema,
@@ -20,6 +21,16 @@ import {
 const wellDropCount = {
   select: { _count: { select: { drops: true } } },
 } as const;
+
+// 検索結果には、件数に加えてサンプル名も添える（summarizeSamples）。
+// サンプル名は出てきた順に並べるので、ウェルとドロップの順を固定する
+const wellDropSamples = {
+  orderBy: [{ row: "asc" }, { col: "asc" }],
+  select: {
+    _count: { select: { drops: true } },
+    drops: { orderBy: { slot: "asc" }, select: { sampleName: true } },
+  },
+} satisfies Prisma.WellFindManyArgs;
 
 export async function getPlates() {
   const userId = await getCurrentUserId();
@@ -246,7 +257,7 @@ export async function searchPlates(query: string) {
         ...activePlateWhere(userId),
         plateType: accessiblePlateTypeWhere(userId),
       },
-      include: { plateType: true, wells: wellDropCount },
+      include: { plateType: true, wells: wellDropSamples },
       orderBy: { updatedAt: "desc" },
     });
   }
@@ -257,8 +268,7 @@ export async function searchPlates(query: string) {
       plateType: accessiblePlateTypeWhere(userId),
       OR: [
         { name: { contains: normalizedQuery, mode: "insensitive" } },
-        { sampleName: { contains: normalizedQuery, mode: "insensitive" } },
-        // 作成画面からは Plate.sampleName が入らなくなったので、ドロップのサンプル名も見る
+        // サンプル名はドロップにだけある。部分一致なので索引は効かない
         {
           wells: {
             some: {
@@ -281,7 +291,7 @@ export async function searchPlates(query: string) {
         { notes: { contains: normalizedQuery, mode: "insensitive" } },
       ],
     },
-    include: { plateType: true, wells: wellDropCount },
+    include: { plateType: true, wells: wellDropSamples },
     orderBy: { updatedAt: "desc" },
   });
 }

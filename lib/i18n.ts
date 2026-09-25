@@ -76,12 +76,7 @@ const translations = {
     polyamine: "Polyamine",
     buffer: "Buffer",
 
-    // Well Status
-    filled: "Filled",
     empty: "Empty",
-    crystal: "Crystal",
-    precipitate: "Precipitate",
-    clearStatus: "Clear",
 
     // My Page
     statistics: "STATISTICS",
@@ -154,6 +149,7 @@ const translations = {
     close: "Close",
     hasDrop: "has a drop",
     bulkAddDrops: "Add Drops in Bulk",
+    drops: "drops",
     dropsAdded: "Added",
     dropsSkipped: "Skipped (already had a drop)",
     dropBatchIncomplete:
@@ -235,12 +231,7 @@ const translations = {
     polyamine: "ポリアミン",
     buffer: "バッファー",
 
-    // Well Status
-    filled: "充填済み",
     empty: "空",
-    crystal: "結晶",
-    precipitate: "沈殿",
-    clearStatus: "クリア",
 
     // My Page
     statistics: "統計",
@@ -312,6 +303,7 @@ const translations = {
     close: "閉じる",
     hasDrop: "ドロップあり",
     bulkAddDrops: "まとめて追加",
+    drops: "ドロップ",
     dropsAdded: "追加",
     dropsSkipped: "スキップ（使用中）",
     dropBatchIncomplete:

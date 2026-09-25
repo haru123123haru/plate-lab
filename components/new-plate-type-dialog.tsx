@@ -84,7 +84,6 @@ export function NewPlateTypeDialog({
       onAdd({
         id: result.id,
         name: result.name,
-        wellCount: result.wellCount,
         rows: result.rows,
         cols: result.cols,
         maxDrops: result.maxDrops,

@@ -92,20 +92,6 @@ export const updatePlateSchema = z
   })
   .strict();
 
-export const updateWellSchema = z
-  .object({
-    status: z
-      .enum(["FILLED", "EMPTY", "CRYSTAL", "PRECIPITATE", "CLEAR"])
-      .optional(),
-    protein: z.string().max(200).nullable().optional(),
-    concentration: z.string().max(100).nullable().optional(),
-    buffer: z.string().max(200).nullable().optional(),
-    ph: z.string().max(50).nullable().optional(),
-    precipitant: z.string().max(500).nullable().optional(),
-    notes: z.string().max(2000).nullable().optional(),
-  })
-  .strict();
-
 // 観察日は日付だけ。Date で送ると日本時間の0〜9時が UTC で前日になるので文字列で受ける
 export const addObservationSchema = z.object({
   dropId: z.string().trim().min(1).max(100),

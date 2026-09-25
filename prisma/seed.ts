@@ -1,4 +1,4 @@
-import { PrismaClient, WellStatus } from "../generated/prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import fs from "fs";
 import path from "path";
@@ -38,49 +38,26 @@ function parseConditionMd(
   return results;
 }
 
+// 先頭から filledCount 個のウェルを使用中にする。使用中のウェルは1番の置き場所にドロップを持つ
 function generateWells(
   rows: number,
   cols: number,
   filledCount: number,
   sampleName: string
-): {
-  position: string;
-  row: number;
-  col: number;
-  status: WellStatus;
-  protein?: string;
-  concentration?: string;
-  buffer?: string;
-  ph?: string;
-  precipitant?: string;
-  drops?: {
-    create: { slot: number; sampleName: string; concentration: string }[];
-  };
-}[] {
-  const wells: ReturnType<typeof generateWells> = [];
+) {
+  const wells = [];
   const rowLabels = "ABCDEFGH";
-  let filled = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const isFilled = filled < filledCount;
+      const isFilled = r * cols + c < filledCount;
       wells.push({
         position: `${rowLabels[r]}${c + 1}`,
         row: r,
         col: c,
-        status: isFilled ? WellStatus.FILLED : WellStatus.EMPTY,
-        ...(isFilled && {
-          protein: "Lysozyme",
-          concentration: "10 mg/mL",
-          buffer: "Tris-HCl",
-          ph: "7.5",
-          precipitant: "NaCl 1M",
-          // 記録の単位はドロップ。使用中のウェルは1番の置き場所にドロップを持つ
-          drops: {
-            create: [{ slot: 1, sampleName, concentration: "10 mg/mL" }],
-          },
-        }),
+        drops: isFilled
+          ? { create: [{ slot: 1, sampleName, concentration: "10 mg/mL" }] }
+          : undefined,
       });
-      filled++;
     }
   }
   return wells;
@@ -122,7 +99,6 @@ async function main() {
   const pt96Sitting = await prisma.plateType.create({
     data: {
       name: "96 Well - Sitting",
-      wellCount: 96,
       rows: 8,
       cols: 12,
       layout: "SITTING",
@@ -134,7 +110,6 @@ async function main() {
   const pt24Hanging = await prisma.plateType.create({
     data: {
       name: "24 Well - Hanging",
-      wellCount: 24,
       rows: 4,
       cols: 6,
       layout: "HANGING",
@@ -146,7 +121,6 @@ async function main() {
   await prisma.plateType.create({
     data: {
       name: "Sitting Manual",
-      wellCount: 96,
       rows: 8,
       cols: 12,
       layout: "SITTING",
@@ -159,7 +133,6 @@ async function main() {
   await prisma.plateType.create({
     data: {
       name: "24 Well - Sitting 4 Drop",
-      wellCount: 24,
       rows: 4,
       cols: 6,
       maxDrops: 4,
@@ -172,7 +145,6 @@ async function main() {
   await prisma.plateType.create({
     data: {
       name: "15 Well - Hanging 3 Drop",
-      wellCount: 15,
       rows: 3,
       cols: 5,
       maxDrops: 3,
@@ -304,13 +276,14 @@ async function main() {
   ];
 
   for (const pd of platesData) {
-    const { rows, cols, filled, ...plateFields } = pd;
+    // サンプル名はプレートではなくドロップに入れる
+    const { rows, cols, filled, sampleName, ...plateFields } = pd;
     await prisma.plate.create({
       data: {
         ...plateFields,
         userId: user.id,
         wells: {
-          create: generateWells(rows, cols, filled, plateFields.sampleName),
+          create: generateWells(rows, cols, filled, sampleName),
         },
       },
     });
