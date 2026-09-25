@@ -34,7 +34,9 @@ export function WellGridSelector({
   return (
     <div className="p-4">
       {/* Column headers */}
-      <div className={cn("flex pl-4", gap)}>
+      <div className={cn("flex", gap)}>
+        {/* 行ラベルと同じ幅。gap も行と同じだけ入るので列がそろう */}
+        <div className="w-4 shrink-0" />
         {Array.from({ length: cols }, (_, i) => (
           <div
             key={i}
