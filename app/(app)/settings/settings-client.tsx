@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Globe, Moon, Info, Menu, LayoutGrid } from "lucide-react";
+import {
+  Globe,
+  Moon,
+  Info,
+  Menu,
+  LayoutGrid,
+  FlaskConical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -102,6 +109,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               icon={LayoutGrid}
               title={t("plateTypes")}
               onClick={() => router.push("/settings/plate-types")}
+            />
+            <ListRow
+              icon={FlaskConical}
+              title={t("conditions")}
+              onClick={() => router.push("/settings/conditions")}
             />
           </div>
         </div>

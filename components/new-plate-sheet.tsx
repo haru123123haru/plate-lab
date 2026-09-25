@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X, Plus } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,14 +20,9 @@ import {
   toDropBatchInput,
 } from "@/components/bulk-drop-form";
 import { createPlate } from "@/lib/actions/plates";
-import {
-  createConditionTemplate,
-  deleteConditionTemplate,
-  createConditionSet,
-  deleteConditionSet,
-} from "@/lib/actions/condition-templates";
 import { cn, today } from "@/lib/utils";
 import { plateShapeLabel } from "@/lib/wells";
+import { TemplateChips } from "@/components/template-chips";
 import { useTranslation } from "@/components/locale-provider";
 import type { PlateType } from "@/types";
 import type { UiConditionSet } from "@/app/(app)/dashboard-client";
@@ -57,9 +52,6 @@ export function NewPlateSheet({
   const { t } = useTranslation();
   const [plateName, setPlateName] = useState("");
   const [setupDate, setSetupDate] = useState(today);
-  const [allTemplates, setAllTemplates] =
-    useState<ConditionTemplateItem[]>(conditionTemplates);
-  const [allSets, setAllSets] = useState<UiConditionSet[]>(conditionSets);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   // 作成と同時に入れるドロップ（ウェル・置き場所・サンプル名・濃度）
   const [dropBatch, setDropBatch] = useState(emptyDropBatch);
@@ -71,77 +63,9 @@ export function NewPlateSheet({
   const [customScreeningId, setCustomScreeningId] = useState<number | null>(
     null
   );
-  const [customSetName, setCustomSetName] = useState("");
-  const [savingSet, setSavingSet] = useState(false);
   const [notes, setNotes] = useState("");
-  const [newTemplateName, setNewTemplateName] = useState("");
-  const [addingTemplate, setAddingTemplate] = useState(false);
-  const [deletingTemplateId, setDeletingTemplateId] = useState<number | null>(
-    null
-  );
-  const [deletingSetId, setDeletingSetId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
-
-  const handleAddTemplate = async () => {
-    const name = newTemplateName.trim();
-    if (!name || addingTemplate) return;
-    setAddingTemplate(true);
-    setError("");
-    try {
-      const created = await createConditionTemplate({ name });
-      setAllTemplates((prev) => [...prev, created]);
-      setNewTemplateName("");
-    } catch {
-      setError("Unable to add template.");
-    } finally {
-      setAddingTemplate(false);
-    }
-  };
-
-  const handleDeleteTemplate = async (id: number) => {
-    if (deletingTemplateId !== null) return;
-    setDeletingTemplateId(id);
-    setError("");
-    try {
-      const result = await deleteConditionTemplate(id);
-      if ("error" in result) {
-        setError("Unable to delete template.");
-        return;
-      }
-      setAllTemplates((prev) => prev.filter((t) => t.id !== id));
-      if (customReservoirId === id) setCustomReservoirId(null);
-      if (customScreeningId === id) setCustomScreeningId(null);
-      setAllSets((prev) =>
-        prev.filter(
-          (s) => s.reservoirTemplateId !== id && s.screeningTemplateId !== id
-        )
-      );
-    } catch {
-      setError("Unable to delete template.");
-    } finally {
-      setDeletingTemplateId(null);
-    }
-  };
-
-  const handleDeleteSet = async (id: number) => {
-    if (deletingSetId !== null) return;
-    setDeletingSetId(id);
-    setError("");
-    try {
-      const result = await deleteConditionSet(id);
-      if ("error" in result) {
-        setError("Unable to delete condition set.");
-        return;
-      }
-      setAllSets((prev) => prev.filter((s) => s.id !== id));
-      if (selectedSetId === id) setSelectedSetId(null);
-    } catch {
-      setError("Unable to delete condition set.");
-    } finally {
-      setDeletingSetId(null);
-    }
-  };
 
   const selectedPlateType = useMemo(
     () => plateTypes.find((pt) => pt.id === selectedType),
@@ -159,42 +83,6 @@ export function NewPlateSheet({
     }));
   };
 
-  const handleRegisterSet = async () => {
-    if (
-      savingSet ||
-      !customSetName.trim() ||
-      !customReservoirId ||
-      !customScreeningId
-    )
-      return;
-    setSavingSet(true);
-    setError("");
-    try {
-      const created = await createConditionSet({
-        name: customSetName.trim(),
-        reservoirTemplateId: customReservoirId,
-        screeningTemplateId: customScreeningId,
-      });
-      const newSet: UiConditionSet = {
-        id: created.id,
-        name: created.name,
-        isDefault: false,
-        reservoirTemplateId: created.reservoirTemplateId,
-        screeningTemplateId: created.screeningTemplateId,
-        reservoirTemplateName: created.reservoirTemplate.name,
-        screeningTemplateName: created.screeningTemplate.name,
-      };
-      setAllSets((prev) => [...prev, newSet]);
-      setSelectedSetId(created.id);
-      setConditionMode("sets");
-      setCustomSetName("");
-    } catch {
-      setError("Unable to register condition set.");
-    } finally {
-      setSavingSet(false);
-    }
-  };
-
   useEffect(() => {
     if (!open) {
       setPlateName("");
@@ -205,15 +93,11 @@ export function NewPlateSheet({
       setSelectedSetId(null);
       setCustomReservoirId(null);
       setCustomScreeningId(null);
-      setCustomSetName("");
       setNotes("");
       setCreating(false);
       setError("");
-    } else {
-      setAllTemplates(conditionTemplates);
-      setAllSets(conditionSets);
     }
-  }, [open, conditionTemplates, conditionSets]);
+  }, [open]);
 
   const handleCreate = async () => {
     if (
@@ -231,7 +115,7 @@ export function NewPlateSheet({
     let scrId: number | null = null;
 
     if (conditionMode === "sets" && selectedSetId) {
-      const set = allSets.find((s) => s.id === selectedSetId);
+      const set = conditionSets.find((s) => s.id === selectedSetId);
       if (set) {
         resId = set.reservoirTemplateId;
         scrId = set.screeningTemplateId;
@@ -421,58 +305,45 @@ export function NewPlateSheet({
                         : "bg-transparent text-text-secondary"
                     )}
                   >
-                    {t("newSet")}
+                    {t("pickIndividually")}
                   </button>
                 </div>
 
                 {/* Sets */}
                 {conditionMode === "sets" && (
                   <div className="space-y-2">
-                    {allSets.map((s) => (
-                      <div
+                    {conditionSets.map((s) => (
+                      <button
+                        type="button"
                         key={s.id}
-                        className="flex items-center gap-2 rounded-xl bg-bg-surface p-4"
+                        onClick={() => setSelectedSetId(s.id)}
+                        aria-pressed={selectedSetId === s.id}
+                        className="flex w-full cursor-pointer items-center gap-3 rounded-xl bg-bg-surface p-4 text-left"
                       >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedSetId(s.id)}
-                          className="flex flex-1 cursor-pointer items-center gap-3 text-left"
+                        <div
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded-full",
+                            selectedSetId === s.id
+                              ? "bg-text-primary"
+                              : "border-2 border-border-default"
+                          )}
                         >
-                          <div
-                            className={cn(
-                              "flex size-5 shrink-0 items-center justify-center rounded-full",
-                              selectedSetId === s.id
-                                ? "bg-text-primary"
-                                : "border-2 border-border-default"
-                            )}
-                          >
-                            {selectedSetId === s.id && (
-                              <div className="size-2 rounded-full bg-white" />
-                            )}
+                          {selectedSetId === s.id && (
+                            <div className="size-2 rounded-full bg-white" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-[15px] font-medium text-text-primary">
+                            {s.name}
                           </div>
-                          <div>
-                            <div className="text-[15px] font-medium text-text-primary">
-                              {s.name}
-                            </div>
-                            <div className="text-[13px] text-text-secondary">
-                              {t("reservoir")}: {s.reservoirTemplateName} /{" "}
-                              {t("screening")}: {s.screeningTemplateName}
-                            </div>
+                          <div className="text-[13px] text-text-secondary">
+                            {t("reservoir")}: {s.reservoirTemplateName} /{" "}
+                            {t("screening")}: {s.screeningTemplateName}
                           </div>
-                        </button>
-                        {!s.isDefault && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSet(s.id)}
-                            disabled={deletingSetId !== null}
-                            className="shrink-0 cursor-pointer rounded-lg p-1.5 text-text-tertiary transition-colors hover:text-accent-negative"
-                          >
-                            <X className="size-4" />
-                          </button>
-                        )}
-                      </div>
+                        </div>
+                      </button>
                     ))}
-                    {allSets.length === 0 && (
+                    {conditionSets.length === 0 && (
                       <p className="py-4 text-center text-[13px] text-text-tertiary">
                         {t("noConditionSets")}
                       </p>
@@ -480,149 +351,30 @@ export function NewPlateSheet({
                   </div>
                 )}
 
-                {/* New Set */}
+                {/* Pick individually（保存はしない） */}
                 {conditionMode === "custom" && (
                   <div className="space-y-4 rounded-xl bg-bg-surface p-4">
-                    <div className="space-y-1.5">
-                      <div className="text-[12px] font-semibold uppercase tracking-[1.5px] text-text-tertiary">
-                        {t("setName")}
-                      </div>
-                      <Input
-                        value={customSetName}
-                        onChange={(e) => setCustomSetName(e.target.value)}
-                        placeholder="e.g. PEG + MPD Mix"
-                        className="h-10 rounded-xl border-border-default bg-bg-primary text-[14px]"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="text-[12px] font-semibold uppercase tracking-[1.5px] text-text-tertiary">
-                        {t("addTemplate")}
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          value={newTemplateName}
-                          onChange={(e) => setNewTemplateName(e.target.value)}
-                          placeholder="e.g. Ammonium Sulfate"
-                          className="h-10 flex-1 rounded-xl border-border-default bg-bg-primary text-[14px]"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddTemplate();
-                            }
-                          }}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-10 rounded-xl px-3"
-                          onClick={handleAddTemplate}
-                          disabled={addingTemplate || !newTemplateName.trim()}
-                        >
-                          <Plus className="size-4" />
-                          {t("add")}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Reservoir */}
-                    <div className="space-y-1.5">
-                      <div className="text-[12px] font-semibold uppercase tracking-[1.5px] text-text-tertiary">
-                        {t("reservoir")}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {allTemplates.map((ct) => (
-                          <div key={ct.id} className="flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => setCustomReservoirId(ct.id)}
-                              className={cn(
-                                "cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
-                                !ct.description && "rounded-r-none",
-                                customReservoirId === ct.id
-                                  ? "bg-text-primary text-white"
-                                  : "border border-border-default bg-bg-primary text-text-primary"
-                              )}
-                            >
-                              {ct.name}
-                            </button>
-                            {!ct.description && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteTemplate(ct.id)}
-                                disabled={deletingTemplateId !== null}
-                                className={cn(
-                                  "cursor-pointer rounded-r-lg border-l-0 px-1.5 py-1.5 text-[11px] transition-colors",
-                                  customReservoirId === ct.id
-                                    ? "bg-text-primary text-white/60 hover:text-white"
-                                    : "border border-l-0 border-border-default bg-bg-primary text-text-tertiary hover:text-accent-negative"
-                                )}
-                              >
-                                <X className="size-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Screening */}
-                    <div className="space-y-1.5">
-                      <div className="text-[12px] font-semibold uppercase tracking-[1.5px] text-text-tertiary">
-                        {t("screening")}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {allTemplates.map((ct) => (
-                          <div key={ct.id} className="flex items-center">
-                            <button
-                              type="button"
-                              onClick={() => setCustomScreeningId(ct.id)}
-                              className={cn(
-                                "cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
-                                !ct.description && "rounded-r-none",
-                                customScreeningId === ct.id
-                                  ? "bg-text-primary text-white"
-                                  : "border border-border-default bg-bg-primary text-text-primary"
-                              )}
-                            >
-                              {ct.name}
-                            </button>
-                            {!ct.description && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteTemplate(ct.id)}
-                                disabled={deletingTemplateId !== null}
-                                className={cn(
-                                  "cursor-pointer rounded-r-lg border-l-0 px-1.5 py-1.5 text-[11px] transition-colors",
-                                  customScreeningId === ct.id
-                                    ? "bg-text-primary text-white/60 hover:text-white"
-                                    : "border border-l-0 border-border-default bg-bg-primary text-text-tertiary hover:text-accent-negative"
-                                )}
-                              >
-                                <X className="size-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      className="h-10 w-full rounded-xl text-[14px] font-semibold"
-                      onClick={handleRegisterSet}
-                      disabled={
-                        savingSet ||
-                        !customSetName.trim() ||
-                        !customReservoirId ||
-                        !customScreeningId
-                      }
-                    >
-                      {savingSet ? t("saving") : t("registerSet")}
-                    </Button>
+                    <TemplateChips
+                      label={t("reservoir")}
+                      templates={conditionTemplates}
+                      value={customReservoirId}
+                      onChange={setCustomReservoirId}
+                    />
+                    <TemplateChips
+                      label={t("screening")}
+                      templates={conditionTemplates}
+                      value={customScreeningId}
+                      onChange={setCustomScreeningId}
+                    />
                   </div>
                 )}
+
+                <Link
+                  href="/settings/conditions"
+                  className="inline-block text-[13px] text-text-secondary underline underline-offset-2"
+                >
+                  {t("manageConditions")}
+                </Link>
               </div>
 
               {/* Notes */}

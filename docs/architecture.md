@@ -31,6 +31,7 @@
 | `/trash`                  | `app/(app)/trash/page.tsx`        | ゴミ箱。復元と完全削除           |
 | `/settings`               | `app/(app)/settings/page.tsx`     | 言語と外観の設定                 |
 | `/settings/plate-types`   | `app/(app)/settings/plate-types/` | プレートタイプの一覧・追加・削除 |
+| `/settings/conditions`    | `app/(app)/settings/conditions/`  | 条件テンプレートとセットの一覧・追加・削除 |
 | `/login`, `/register`     | `app/(auth)/`                     | 認証フォーム                     |
 | `/auth/callback`          | `app/auth/callback/route.ts`      | OAuth のコード交換               |
 
@@ -40,7 +41,7 @@
 
 セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。
 
-コンポーネントは `components/` 直下にカスタム17個、`components/ui/` に shadcn 由来が10個。ウェルまわりは次の5つで分担している。
+コンポーネントは `components/` 直下にカスタム18個、`components/ui/` に shadcn 由来が10個。ウェルまわりは次の5つで分担している。
 
 - `well-shape.tsx` — 1ウェルの描き方（置き場所の丸、SITTING の溝、HANGING の外の丸）。置き場所の位置をウェルの正方形に対する % で持ち、グリッドの1マスとシートの大きい図の両方がこれを使う
 - `well-grid.tsx` — 詳細画面のグリッド。行数・列数・描き方・最大ドロップ数を受け取り、ドロップのある置き場所を塗る
@@ -68,6 +69,8 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 - `ConditionTemplate` — 条件テンプレート。`TemplateWell` を持つ
 - `TemplateWell` — テンプレート内の1ウェル分の組成。詳細画面では、プレートのウェルと同じ位置の行を引いて条件を表示する
 - `ConditionSet` — リザーバーとスクリーニングのテンプレートをセットにしたもの
+
+テンプレートとセットの追加・削除は `/settings/conditions` でやる。2026-09-25 までは作成画面の「新規セット」の中でやっていたが、作成画面は選ぶだけにした。作成画面の条件の欄は「セット／個別に選ぶ」の切り替えで、「個別に選ぶ」はその場で使うだけで保存しない。プレートが持つのはテンプレートの ID だけで、どのセットから選んだかは残らない。テンプレートを消すと、それを使う自分のセットも消え、自分のプレートのその条件は空になる（`deleteConditionTemplate`）。
 
 記録の単位は、2026-09-25 にウェルからドロップへ移した。それまでは記録欄が `Well` に、サンプル名が `Plate.sampleName` にあったが、1ウェルに複数のドロップを置くプレートでは表せない。「使用中のウェル」は「ドロップが1つ以上あるウェル」で、数え方は `lib/wells.ts` の `countUsedWells` に1つにまとめてある。サンプル検索もドロップのサンプル名を見る。観察日はクライアントから `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。`Date` のまま送ると、日本時間の0〜9時は UTC で前日になるためだ。経緯は計画書 `docs/plans/2026-09-24-plate-drops.md`。
 

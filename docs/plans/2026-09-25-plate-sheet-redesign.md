@@ -138,11 +138,11 @@
 
 ### タスク
 
-- [ ] `app/(app)/settings/conditions/page.tsx`・`conditions-client.tsx` — テンプレートとセットの一覧・追加・削除（確認あり）。消せるかどうかは `isDefault` で決める。`deleteConditionTemplate` が返す「ほかのセット・プレートが使っている」エラーも i18n を通して出す
-- [ ] `app/(app)/settings/settings-client.tsx` — 「データ」の欄に条件の行を足す
-- [ ] `components/new-plate-sheet.tsx` — 条件の欄を「セット／個別に選ぶ」にし、保存・追加・削除とそのための状態を外す。管理ページへのリンクを置く
-- [ ] `lib/i18n.ts` — `newSet` を `pickIndividually` に替え、`noConditionSets` を管理ページへの案内に書き換え、使わなくなった文言を消し、増えた文言を足す
-- [ ] `docs/architecture.md` — 条件を管理する場所が変わったことを書く
+- [x] `app/(app)/settings/conditions/page.tsx`・`conditions-client.tsx` — テンプレートとセットの一覧・追加・削除（確認あり）。消せるかどうかは `isDefault` で決める。`deleteConditionTemplate` が返す「ほかのセット・プレートが使っている」エラーも i18n を通して出す
+- [x] `app/(app)/settings/settings-client.tsx` — 「データ」の欄に条件の行を足す
+- [x] `components/new-plate-sheet.tsx` — 条件の欄を「セット／個別に選ぶ」にし、保存・追加・削除とそのための状態を外す。管理ページへのリンクを置く
+- [x] `lib/i18n.ts` — `newSet` を `pickIndividually` に替え、`noConditionSets` を管理ページへの案内に書き換え、使わなくなった文言を消し、増えた文言を足す
+- [x] `docs/architecture.md` — 条件を管理する場所が変わったことを書く
 
 ### 完了条件
 
@@ -153,3 +153,16 @@
   - 作成画面で「個別に選ぶ」を使って作ったプレートの詳細に、選んだリザーバーとスクリーニングが出る
   - セットを選んで作ったプレートも、今までどおり条件が入る
   - 作成画面に、条件を保存・追加・削除する操作が残っていない
+
+### 実装してみて分かったこと（2026-09-25）
+
+- PR #8 はマージ済みだったので、main を最新にしてから `feature/plate-sheet-redesign` を切り直した
+- i18n の `newSet` は消さずに残し、`pickIndividually` を足した。管理ページの「＋ 新規セット」とダイアログの見出しで、同じ意味のまま使えるからだ。`setName` と `registerSet` もダイアログで使い回している。消したのは `addTemplate` だけ
+- リザーバーとスクリーニングのチップは、作成画面と管理ページのダイアログで計4回出る。`components/template-chips.tsx` に1つにまとめた。作成画面からは、`!ct.description` で共有かどうかを見分けていた ✕ も一緒に消えた
+- `deleteConditionTemplate` のエラーは英語の文で返る。サーバーアクションには手を入れない方針なので、画面側で `includes("condition set")` と `includes("plate")` で見分けて i18n の文言に出し直している。サーバー側の文を変えたら、ここも直す
+- 戻り値の型は `{ error: string } | { success: boolean }` の和になり、`"error" in result` では絞り込めない（`tsc` が `result.error` を undefined かもしれないと言う）。`const { error } = await …` で受けて `if (error)` で分けた
+- 削除の確認文面に出すセットの件数は、手元の一覧から「自分の非共有セットで、そのテンプレートを使うもの」を数えている。サーバーが一緒に消す範囲と同じ条件だ
+- ブラウザでは、テンプレートを消したあと、そのテンプレートを使うセットで作ったプレート「P2C BySet」の詳細が「- / PEG」になった。確認文面の「プレートの条件は空になります」どおりの動きだ
+- ローカルのテストユーザーに、確認で作ったプレート「P2C Individual」「P2C BySet」「P2C BySet3」とセット「P2C Set3」が残っている
+- コードレビューで2点直した。1つは、テンプレート名の入力欄で IME の変換を確定する Enter でも追加されていたこと（`e.nativeEvent.isComposing` を見て止める）。もう1つは、確認ダイアログが閉じるアニメーションの途中で文面がセット用に変わっていたこと。消す対象を閉じても残し、開閉は別の状態で持つようにした
+- 作成画面の「条件を管理」リンクも、Phase 1 のタイプのリンクと同じく、押すと入力途中の内容が消える。セットが無くて作りに行く、という使い方ではここが痛い。困る声が出たら、入力があるときだけ確認を挟むか、新しいタブで開く
