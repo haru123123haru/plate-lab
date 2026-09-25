@@ -26,6 +26,10 @@ import {
   updateDrop,
 } from "../lib/actions/drops";
 import { createPlate } from "../lib/actions/plates";
+import {
+  isDropBatchComplete,
+  toDropBatchInput,
+} from "../components/bulk-drop-form";
 import { countUsedWells, summarizeSamples } from "../lib/wells";
 
 const editablePlate = { userId: "user-a", deletedAt: null };
@@ -150,8 +154,11 @@ describe("bulkCreateDrops", () => {
   const input = {
     plateId: "plate-1",
     positions: ["A1", "A2"],
-    slots: [1, 2],
-    ...dropInput,
+    sampleName: "Lysozyme",
+    drops: [
+      { slot: 1, concentration: "10 mg/mL" },
+      { slot: 2, concentration: "20 mg/mL" },
+    ],
   };
 
   it("checks the plate owner and reports skipped duplicates", async () => {
@@ -171,6 +178,21 @@ describe("bulkCreateDrops", () => {
     const args = prismaMock.drop.createMany.mock.calls[0][0];
     expect(args.skipDuplicates).toBe(true);
     expect(args.data).toHaveLength(4);
+    // 置き場所ごとの濃度で作る
+    expect(args.data.slice(0, 2)).toEqual([
+      {
+        wellId: "well-1",
+        slot: 1,
+        sampleName: "Lysozyme",
+        concentration: "10 mg/mL",
+      },
+      {
+        wellId: "well-1",
+        slot: 2,
+        sampleName: "Lysozyme",
+        concentration: "20 mg/mL",
+      },
+    ]);
   });
 
   it("does nothing for a plate it cannot edit", async () => {
@@ -195,6 +217,54 @@ describe("bulkCreateDrops", () => {
     });
     expect(await bulkCreateDrops(input)).toEqual({ error: "Invalid slot" });
     expect(prismaMock.drop.createMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects the same slot twice before touching the database", async () => {
+    const slot1 = { slot: 1, concentration: "10 mg/mL" };
+    expect(await bulkCreateDrops({ ...input, drops: [slot1, slot1] })).toEqual({
+      error: "Duplicate slot",
+    });
+    expect(prismaMock.plate.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe("drop batch form helpers", () => {
+  const batch = {
+    positions: new Set(["1-2"]),
+    sampleName: " Lysozyme ",
+    drops: [
+      { slot: 3, concentration: " 5 mg/mL " },
+      { slot: 1, concentration: "10 mg/mL" },
+    ],
+  };
+
+  it("converts to the server shape with trimmed values in slot order", () => {
+    expect(toDropBatchInput(batch)).toEqual({
+      positions: ["B3"],
+      sampleName: "Lysozyme",
+      drops: [
+        { slot: 1, concentration: "10 mg/mL" },
+        { slot: 3, concentration: "5 mg/mL" },
+      ],
+    });
+    expect(
+      toDropBatchInput({ ...batch, positions: new Set() })
+    ).toBeUndefined();
+  });
+
+  it("is incomplete without a slot or with a blank concentration", () => {
+    expect(isDropBatchComplete(batch)).toBe(true);
+    expect(isDropBatchComplete({ ...batch, drops: [] })).toBe(false);
+    expect(
+      isDropBatchComplete({
+        ...batch,
+        drops: [{ slot: 1, concentration: " " }],
+      })
+    ).toBe(false);
+    // ウェルを選ばなければ空のままでよい
+    expect(
+      isDropBatchComplete({ ...batch, positions: new Set(), drops: [] })
+    ).toBe(true);
   });
 });
 
@@ -246,8 +316,11 @@ describe("deleteObservation", () => {
 describe("createPlate", () => {
   const batch = {
     positions: ["A1", "B2"],
-    slots: [1, 3],
-    ...dropInput,
+    sampleName: "Lysozyme",
+    drops: [
+      { slot: 1, concentration: "10 mg/mL" },
+      { slot: 3, concentration: "5 mg/mL" },
+    ],
   };
 
   beforeEach(() => {
@@ -273,21 +346,37 @@ describe("createPlate", () => {
       "B2",
     ]);
     expect(withDrops[0].drops.create).toEqual([
-      { slot: 1, ...dropInput },
-      { slot: 3, ...dropInput },
+      { slot: 1, sampleName: "Lysozyme", concentration: "10 mg/mL" },
+      { slot: 3, sampleName: "Lysozyme", concentration: "5 mg/mL" },
     ]);
   });
 
-  it("ignores duplicate positions and slots instead of hitting the unique constraint", async () => {
+  it("ignores duplicate positions and rejects duplicate slots", async () => {
     await createPlate({
       name: "P",
       plateTypeId: "type-1",
-      drops: { ...batch, positions: ["A1", "A1"], slots: [1, 1] },
+      drops: { ...batch, positions: ["A1", "A1"] },
     });
 
     const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
-    const a1 = wells.find((w: { position: string }) => w.position === "A1");
-    expect(a1.drops.create).toEqual([{ slot: 1, ...dropInput }]);
+    const a1 = wells.filter((w: { position: string }) => w.position === "A1");
+    expect(a1).toHaveLength(1);
+    expect(a1[0].drops.create).toHaveLength(2);
+
+    // 同じ置き場所に2つの濃度が来たら、どちらを採るか決められない
+    expect(
+      await createPlate({
+        name: "P",
+        plateTypeId: "type-1",
+        drops: {
+          ...batch,
+          drops: [
+            { slot: 1, concentration: "10 mg/mL" },
+            { slot: 1, concentration: "5 mg/mL" },
+          ],
+        },
+      })
+    ).toEqual({ error: "Duplicate slot" });
   });
 
   it("creates an empty plate without drops", async () => {
@@ -302,7 +391,7 @@ describe("createPlate", () => {
       await createPlate({
         name: "P",
         plateTypeId: "type-1",
-        drops: { ...batch, slots: [5] },
+        drops: { ...batch, drops: [{ slot: 5, concentration: "1 mg/mL" }] },
       })
     ).toEqual({ error: "Invalid slot" });
     expect(

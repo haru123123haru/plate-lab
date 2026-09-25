@@ -14,17 +14,16 @@ import type { PlateLayout } from "@/types";
 export type DropBatch = {
   // WellGridSelector の形式（"行-列"、0始まり）
   positions: Set<string>;
-  slots: Set<number>;
   sampleName: string;
-  concentration: string;
+  // 選んだ置き場所と、その濃度
+  drops: { slot: number; concentration: string }[];
 };
 
 export function emptyDropBatch(): DropBatch {
   return {
     positions: new Set(),
-    slots: new Set([1]),
     sampleName: "",
-    concentration: "",
+    drops: [{ slot: 1, concentration: "" }],
   };
 }
 
@@ -39,19 +38,23 @@ export function toDropBatchInput(batch: DropBatch) {
       const [row, col] = key.split("-").map(Number);
       return `${ROW_LABELS[row]}${col + 1}`;
     }),
-    slots: [...batch.slots].sort((a, b) => a - b),
     sampleName: batch.sampleName.trim(),
-    concentration: batch.concentration.trim(),
+    drops: batch.drops
+      .map(({ slot, concentration }) => ({
+        slot,
+        concentration: concentration.trim(),
+      }))
+      .sort((a, b) => a.slot - b.slot),
   };
 }
 
-// ウェルを選んだなら、置き場所・サンプル名・濃度がそろっていること
+// ウェルを選んだなら、置き場所・サンプル名・置き場所ごとの濃度がそろっていること
 export function isDropBatchComplete(batch: DropBatch) {
   return (
     batch.positions.size === 0 ||
-    (batch.slots.size > 0 &&
+    (batch.drops.length > 0 &&
       batch.sampleName.trim() !== "" &&
-      batch.concentration.trim() !== "")
+      batch.drops.every(({ concentration }) => concentration.trim() !== ""))
   );
 }
 
@@ -83,6 +86,23 @@ export function BulkDropFields({
     if (!next.delete(item)) next.add(item);
     return next;
   };
+  const slots = new Set(value.drops.map(({ slot }) => slot));
+  const toggleSlot = (slot: number) =>
+    onChange({
+      ...value,
+      drops: slots.has(slot)
+        ? value.drops.filter((d) => d.slot !== slot)
+        : [...value.drops, { slot, concentration: "" }].sort(
+            (a, b) => a.slot - b.slot
+          ),
+    });
+  const setConcentration = (slot: number, concentration: string) =>
+    onChange({
+      ...value,
+      drops: value.drops.map((d) =>
+        d.slot === slot ? { ...d, concentration } : d
+      ),
+    });
 
   const selectAll = () => {
     const all = new Set<string>();
@@ -103,7 +123,7 @@ export function BulkDropFields({
             layout={layout}
             maxDrops={maxDrops}
             filledPositions={value.positions}
-            selectedSlots={value.slots}
+            selectedSlots={slots}
             onToggle={(key) =>
               onChange({ ...value, positions: toggle(value.positions, key) })
             }
@@ -143,10 +163,8 @@ export function BulkDropFields({
             <WellShape
               layout={layout}
               maxDrops={maxDrops}
-              filledSlots={value.slots}
-              onSlotClick={(slot) =>
-                onChange({ ...value, slots: toggle(value.slots, slot) })
-              }
+              filledSlots={slots}
+              onSlotClick={toggleSlot}
               slotLabel={(slot) => `${t("slot")} ${slot}`}
               className="mx-auto w-32"
             />
@@ -166,20 +184,26 @@ export function BulkDropFields({
           className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
         />
       </div>
-      <div className="space-y-2">
-        <label htmlFor={`${fieldId}-concentration`} className={labelClassName}>
-          {t("concentration")}
-        </label>
-        <Input
-          id={`${fieldId}-concentration`}
-          value={value.concentration}
-          onChange={(e) =>
-            onChange({ ...value, concentration: e.target.value })
-          }
-          placeholder="e.g. 10 mg/mL"
-          className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
-        />
-      </div>
+      {/* 置き場所ごとに1つ。1ドロップの種別では置き場所の番号を出さない */}
+      {value.drops.map(({ slot, concentration }) => (
+        <div key={slot} className="space-y-2">
+          <label
+            htmlFor={`${fieldId}-concentration-${slot}`}
+            className={labelClassName}
+          >
+            {maxDrops > 1
+              ? `${t("concentration")} · ${t("slot")} ${slot}`
+              : t("concentration")}
+          </label>
+          <Input
+            id={`${fieldId}-concentration-${slot}`}
+            value={concentration}
+            onChange={(e) => setConcentration(slot, e.target.value)}
+            placeholder="e.g. 10 mg/mL"
+            className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
+          />
+        </div>
+      ))}
       {/* 送信ボタンが押せない理由を出す */}
       {!isDropBatchComplete(value) && (
         <p className="text-[13px] text-accent-negative">

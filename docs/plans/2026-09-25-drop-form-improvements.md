@@ -62,11 +62,11 @@
 
 ### タスク
 
-- [ ] `lib/validations.ts` — `dropBatchSchema` を `positions`・`sampleName`・`drops` の形にする。置き場所の重複を拒否する
-- [ ] `lib/actions/plates.ts`（`createPlate`）と `lib/actions/drops.ts`（`bulkCreateDrops`）— `drops` からドロップを作る
-- [ ] `components/bulk-drop-form.tsx` — 置き場所ごとの濃度の欄を出し、そろっていなければ送れないようにする
-- [ ] `lib/i18n.ts` — 文言
-- [ ] テスト — スキーマ（重複の拒否）と、2つの Action が置き場所ごとの濃度でドロップを作ること
+- [x] `lib/validations.ts` — `dropBatchSchema` を `positions`・`sampleName`・`drops` の形にする。置き場所の重複を拒否する
+- [x] `lib/actions/plates.ts`（`createPlate`）と `lib/actions/drops.ts`（`bulkCreateDrops`）— `drops` からドロップを作る
+- [x] `components/bulk-drop-form.tsx` — 置き場所ごとの濃度の欄を出し、そろっていなければ送れないようにする
+- [x] `lib/i18n.ts` — 文言
+- [x] テスト — スキーマ（重複の拒否）と、2つの Action が置き場所ごとの濃度でドロップを作ること
 
 ### 完了条件
 
@@ -80,3 +80,9 @@
   - ハンギング3ドロップの座標は、本人が描いた図から割合を取った（大きい丸に対して、1番は中心の少し上、2番・3番は下の左右）。向きの縦線は、丸の上端をまたいで少し内側まで描く
   - `WellShape` の置き場所ボタンの `aria-pressed` は、`selectedSlot` を渡さない使い方（作成画面で複数を選ぶ）では「塗られているか」を表す。シートのように1つを選ぶ使い方では、今までどおり選んだ置き場所だけが押された状態になる
   - 作成画面で、置き場所を1つも選んでいないときは塗る所が無いので、選んだウェルに枠を付けて見分ける
+- Phase 2（2026-09-25）
+  - フォームの状態も、サーバーへ送る形に合わせて `drops: { slot, concentration }[]` にした。置き場所を外すとその濃度も消え、付け直すと空欄から始まる
+  - 同じ置き場所の重複は、スキーマで拒否するようにした。そのため Action 側で置き場所を `Set` にまとめる処理は消した（ウェルの位置の重複は、今までどおり Action でまとめる）
+  - 作成画面で種別を変えると、置き場所と一緒に濃度も戻る。今までは濃度を残していたが、置き場所ごとの値になったので、形の違う種別へは持ち越さない。サンプル名は今までどおり残す
+  - 濃度の欄の見出しは「濃度 · 置き場所 1」の形にした。1ドロップの種別では「濃度」だけ
+  - レビューで、選んでいる種別のカードを押し直すと入力が全部消えることが分かった。同じ種別なら何もしないようにした。フォームの純関数（`toDropBatchInput`・`isDropBatchComplete`）のテストも足した
