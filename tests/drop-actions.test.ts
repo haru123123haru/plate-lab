@@ -334,7 +334,12 @@ describe("createPlate", () => {
   });
 
   it("creates drops only in the chosen wells and slots", async () => {
-    await createPlate({ name: "P", plateTypeId: "type-1", drops: batch });
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      setupDate: "2026-09-25",
+      drops: batch,
+    });
 
     const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
     expect(wells).toHaveLength(24);
@@ -355,6 +360,7 @@ describe("createPlate", () => {
     await createPlate({
       name: "P",
       plateTypeId: "type-1",
+      setupDate: "2026-09-25",
       drops: { ...batch, positions: ["A1", "A1"] },
     });
 
@@ -368,6 +374,7 @@ describe("createPlate", () => {
       await createPlate({
         name: "P",
         plateTypeId: "type-1",
+        setupDate: "2026-09-25",
         drops: {
           ...batch,
           drops: [
@@ -380,10 +387,32 @@ describe("createPlate", () => {
   });
 
   it("creates an empty plate without drops", async () => {
-    await createPlate({ name: "P", plateTypeId: "type-1" });
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      setupDate: "2026-09-25",
+    });
 
     const wells = prismaMock.plate.create.mock.calls[0][0].data.wells.create;
     expect(wells.every((w: { drops?: unknown }) => !w.drops)).toBe(true);
+  });
+
+  it("stores the setup date as UTC midnight and rejects a malformed one", async () => {
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      setupDate: "2026-09-25",
+    });
+
+    const { data } = prismaMock.plate.create.mock.calls[0][0];
+    expect(data.setupDate.toISOString()).toBe("2026-09-25T00:00:00.000Z");
+    expect(
+      await createPlate({
+        name: "P",
+        plateTypeId: "type-1",
+        setupDate: "2026/09/25",
+      })
+    ).toHaveProperty("error");
   });
 
   it("rejects slots beyond maxDrops and positions outside the plate", async () => {
@@ -391,6 +420,7 @@ describe("createPlate", () => {
       await createPlate({
         name: "P",
         plateTypeId: "type-1",
+        setupDate: "2026-09-25",
         drops: { ...batch, drops: [{ slot: 5, concentration: "1 mg/mL" }] },
       })
     ).toEqual({ error: "Invalid slot" });
@@ -398,6 +428,7 @@ describe("createPlate", () => {
       await createPlate({
         name: "P",
         plateTypeId: "type-1",
+        setupDate: "2026-09-25",
         drops: { ...batch, positions: ["A1", "H12"] },
       })
     ).toEqual({ error: "Invalid well position" });

@@ -48,7 +48,7 @@ interface PlateDetailClientProps {
       layout: PlateLayout;
     };
     wells: WellData[];
-    createdAt: string;
+    setupDate: string;
     updatedAt: string;
     deletedAt: string | null;
   };
@@ -68,6 +68,7 @@ export function PlateDetailClient({
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(plate.name);
   const [editNotes, setEditNotes] = useState(plate.notes ?? "");
+  const [editSetupDate, setEditSetupDate] = useState(plate.setupDate);
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
   >(plate.reservoirTemplateId);
@@ -130,6 +131,7 @@ export function PlateDetailClient({
   const handleCancelEdit = () => {
     setEditName(plate.name);
     setEditNotes(plate.notes ?? "");
+    setEditSetupDate(plate.setupDate);
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
     setError("");
@@ -144,6 +146,7 @@ export function PlateDetailClient({
       const result = await updatePlate(plate.id, {
         name: editName,
         notes: editNotes || undefined,
+        setupDate: editSetupDate,
         reservoirTemplateId: editReservoirTemplateId,
         screeningTemplateId: editScreeningTemplateId,
       });
@@ -222,7 +225,8 @@ export function PlateDetailClient({
             type="button"
             variant={editMode ? "default" : "ghost"}
             size="icon"
-            onClick={() => setEditMode(!editMode)}
+            // 閉じるときはキャンセルと同じく入力途中の値を戻す
+            onClick={() => (editMode ? handleCancelEdit() : setEditMode(true))}
             aria-label={t("edit")}
           >
             <Pencil className="size-5" />
@@ -284,6 +288,22 @@ export function PlateDetailClient({
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-plate-setup-date"
+                className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
+              >
+                {t("setupDate")}
+              </label>
+              <Input
+                id="edit-plate-setup-date"
+                type="date"
+                value={editSetupDate}
+                onChange={(e) => setEditSetupDate(e.target.value)}
                 className="h-12 rounded-xl border-border-default bg-bg-primary text-[15px]"
               />
             </div>
@@ -382,7 +402,7 @@ export function PlateDetailClient({
               <Button
                 className="flex-1 h-11 rounded-xl"
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !editSetupDate}
               >
                 {saving ? t("saving") : t("saveChanges")}
               </Button>
@@ -439,8 +459,8 @@ export function PlateDetailClient({
             />
             <ListRow
               icon={Calendar}
-              title={t("created")}
-              description={plate.createdAt}
+              title={t("setupDate")}
+              description={plate.setupDate}
             />
             <ListRow
               icon={Clock}

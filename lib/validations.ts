@@ -61,6 +61,8 @@ export const createPlateSchema = z.object({
   reservoirTemplateId: z.number().int().positive().nullable().optional(),
   screeningTemplateId: z.number().int().positive().nullable().optional(),
   notes: z.string().max(2000).optional(),
+  // 観察日と同じく日付だけなので文字列で受ける（addObservationSchema）
+  setupDate: z.iso.date(),
   // 作成と同時に入れるドロップ。ウェルを選ばなければ省く
   drops: dropBatchSchema.optional(),
 });
@@ -99,6 +101,7 @@ export const updatePlateSchema = z
   .object({
     name: z.string().trim().min(1).max(200).optional(),
     notes: z.string().max(2000).nullable().optional(),
+    setupDate: z.iso.date().optional(),
     reservoirTemplateId: z.number().int().positive().nullable().optional(),
     screeningTemplateId: z.number().int().positive().nullable().optional(),
   })

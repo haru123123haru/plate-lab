@@ -32,7 +32,7 @@ const translations = {
     sample: "Sample",
     reservoir: "Reservoir",
     screening: "Screening",
-    created: "Created",
+    setupDate: "Set up",
     updated: "Updated",
     notes: "NOTES",
 
@@ -186,7 +186,7 @@ const translations = {
     sample: "サンプル",
     reservoir: "リザーバー",
     screening: "スクリーニング",
-    created: "作成日",
+    setupDate: "仕込み日",
     updated: "更新日",
     notes: "メモ",
 

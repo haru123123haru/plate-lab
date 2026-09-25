@@ -121,4 +121,27 @@ describe("updatePlate", () => {
       deletedAt: null,
     });
   });
+
+  it("stores the setup date as UTC midnight and leaves it alone when omitted", async () => {
+    prismaMock.plate.findFirst.mockResolvedValue({ id: "plate-1" });
+    prismaMock.plate.update.mockResolvedValue({ id: "plate-1" });
+
+    await updatePlate("plate-1", { setupDate: "2026-09-25" });
+    await updatePlate("plate-1", { name: "renamed" });
+
+    const [first, second] = prismaMock.plate.update.mock.calls;
+    expect(first[0].data.setupDate.toISOString()).toBe(
+      "2026-09-25T00:00:00.000Z"
+    );
+    expect(second[0].data).not.toHaveProperty("setupDate");
+  });
+
+  it("rejects a malformed or empty setup date", async () => {
+    for (const setupDate of ["2026/09/25", ""]) {
+      expect(await updatePlate("plate-1", { setupDate })).toHaveProperty(
+        "error"
+      );
+    }
+    expect(prismaMock.plate.update).not.toHaveBeenCalled();
+  });
 });

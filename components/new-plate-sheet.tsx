@@ -26,7 +26,7 @@ import {
   createConditionSet,
   deleteConditionSet,
 } from "@/lib/actions/condition-templates";
-import { cn } from "@/lib/utils";
+import { cn, today } from "@/lib/utils";
 import { useTranslation } from "@/components/locale-provider";
 import type { PlateType } from "@/types";
 import type { UiConditionSet } from "@/app/(app)/dashboard-client";
@@ -55,6 +55,7 @@ export function NewPlateSheet({
   const router = useRouter();
   const { t } = useTranslation();
   const [plateName, setPlateName] = useState("");
+  const [setupDate, setSetupDate] = useState(today);
   const [allPlateTypes, setAllPlateTypes] = useState<PlateType[]>(plateTypes);
   const [allTemplates, setAllTemplates] =
     useState<ConditionTemplateItem[]>(conditionTemplates);
@@ -203,6 +204,7 @@ export function NewPlateSheet({
   useEffect(() => {
     if (!open) {
       setPlateName("");
+      setSetupDate(today());
       setSelectedType(null);
       setDropBatch(emptyDropBatch());
       setConditionMode("sets");
@@ -224,6 +226,7 @@ export function NewPlateSheet({
     if (
       creating ||
       !plateName.trim() ||
+      !setupDate ||
       !selectedType ||
       !isDropBatchComplete(dropBatch)
     )
@@ -252,6 +255,7 @@ export function NewPlateSheet({
         reservoirTemplateId: resId,
         screeningTemplateId: scrId,
         notes: notes.trim() || undefined,
+        setupDate,
         drops: toDropBatchInput(dropBatch),
       });
       if (result && "error" in result) {
@@ -316,6 +320,23 @@ export function NewPlateSheet({
                   value={plateName}
                   onChange={(e) => setPlateName(e.target.value)}
                   placeholder="e.g. Plate A-001"
+                  className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
+                />
+              </div>
+
+              {/* Setup Date */}
+              <div className="space-y-2">
+                <Label
+                  htmlFor="new-plate-setup-date"
+                  className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium"
+                >
+                  {t("setupDate")}
+                </Label>
+                <Input
+                  id="new-plate-setup-date"
+                  type="date"
+                  value={setupDate}
+                  onChange={(e) => setSetupDate(e.target.value)}
                   className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
                 />
               </div>
@@ -630,6 +651,7 @@ export function NewPlateSheet({
                 disabled={
                   creating ||
                   !plateName.trim() ||
+                  !setupDate ||
                   !selectedType ||
                   !isDropBatchComplete(dropBatch)
                 }
