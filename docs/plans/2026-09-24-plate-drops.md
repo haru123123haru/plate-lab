@@ -339,3 +339,8 @@ npm run check    # 全部通る
   - 列を消したあと、起動したままの dev サーバーが古い Prisma クライアントを持ち続け、`The column (not available) does not exist` で全画面が落ちた。本番のデプロイ中に起きる窓（Phase 4 の完了条件の最後の段落）と同じ現象で、ローカルでは dev サーバーを起動し直せば直る。`TaskStop` で止めたのは npm だけで、子の `next dev` が3000番に残っていたので、PID を調べて止めた
   - Phase 4 のコミットは、別のブランチ `feature/plate-drops-cleanup`（`feature/plate-drops` の `ec16bd2` から分岐）に置いた。同じブランチに積むと、Phase 1〜3 を main に出すときに列の削除まで同じ `migrate deploy` で流れ、移し替えを本番で確かめる前に元の列が消える。出す順番は `feature/plate-drops` → 本番で確かめる → `feature/plate-drops-cleanup`。レビューで見つかった
   - `searchPlates` は、使わないダッシュボードにもウェルごとのサンプル名を返している。Server Action の結果はそのままブラウザへ送られるので、全ウェルを使ったプレートが100枚あると、検索の1打鍵ごとに数百KBになる。プレートが増えたら、`searchPlates` の中で一覧の形に変換してから返す（3か所の呼び出し元の `map` も消せる）
+- 本番（2026-09-25）
+  - Phase 1〜3 は、計画の2回を1回にまとめて出した（PR #2、`d3ab3d1`）。本番はまだ使われていないので、Phase 1 を単独で出す意味が薄かった
+  - Preview 環境には DB の環境変数が無い（Vercel の環境変数4つはどれも Production だけ）。そのため、PR の Preview ビルドは `npm install` の `prisma generate` で `DIRECT_URL` が読めずに失敗した。DB には接続していないので害は無い
+  - 出す前に本番の `PlateType` を確かめると、`wellCount` はすべて 96 だった。本番のビルドでマイグレーション3本がエラー無しで適用された
+  - 出したあとに SQL Editor で確かめた。`Drop`・`Observation` への `anon`・`authenticated` の権限は0件。種別は共有2つ（新しく入れたもの）と、ユーザーが作った `96well-sitting`（8×12・SITTING）。使用中のウェル1152件と、1番の置き場所のドロップ1152件が一致した
