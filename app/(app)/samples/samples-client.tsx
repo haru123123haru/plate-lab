@@ -21,7 +21,7 @@ interface UiPlate {
   plateType: { name: string };
   filledWells: number;
   totalWells: number;
-  createdAt: string;
+  setupDate: string;
   samples: { names: string[]; dropCount: number };
 }
 
@@ -63,7 +63,7 @@ export function SamplesClient({
         filledWells: countUsedWells(p.wells),
         samples: summarizeSamples(p.wells),
         totalWells: p.wells.length,
-        createdAt: new Date(p.createdAt).toLocaleDateString(),
+        setupDate: p.setupDate.toISOString().slice(0, 10),
       }))
     );
   }, []);

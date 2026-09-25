@@ -60,7 +60,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 - `User` — 認証ユーザー。`id` は Supabase Auth のユーザーIDをそのまま使う
 - `UserSettings` — `User` と1対1。言語・外観・通知の設定
 - `PlateType` — プレートの種別。形を `rows`・`cols`・`maxDrops`（1ウェルの最大ドロップ数）・`layout`（`SITTING` か `HANGING`）で持つ。描き方があるのは「1ドロップ」「SITTING の4ドロップ」「HANGING の3ドロップ」の3通りだけで、種別作成ではそれ以外を作らせない
-- `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意。`deletedAt` に日時が入っていればゴミ箱にある
+- `Plate` — プレート本体。`plateType` が必須、`reservoirTemplate` と `screeningTemplate` がそれぞれ任意。`deletedAt` に日時が入っていればゴミ箱にある。`setupDate` は実験を仕込んだ日（日付だけ）で、作成時に利用者が選び、あとから直せる。アプリを使う前からあるプレートも登録できるよう、記録を作った時刻（`createdAt`）とは別に持つ。画面に出す日付はこちらで、`createdAt` は出さない。観察日と同じく `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。2026-09-25 に足したときは、既存のプレートに `createdAt` を日本時間に直した日付を入れた
 - `Well` — ウェルの位置（`position`・`row`・`col`）だけを持つ。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
 - `Drop` — 1ドロップ分の記録。サンプル名と濃度（必須）、メモ（任意）。`slot` は 1〜`maxDrops` の置き場所の番号で、`@@unique([wellId, slot])` で同じ置き場所に2つ入らない
 - `Observation` — ドロップの観察の履歴。観察日（日付だけ）とメモ

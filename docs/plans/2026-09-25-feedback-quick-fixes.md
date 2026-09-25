@@ -85,7 +85,7 @@ DB の既定値は付けない。作成時は必ずサーバーが値を渡す�
 
 ### タスク
 
-- [x] `prisma/migrations/20260926000000_add_96_well_plate_type/migration.sql` — 96 Well - Sitting を共有種別として入れる（同名の共有種別があれば入れない）
+- [x] `prisma/migrations/20260925040000_add_96_well_plate_type/migration.sql` — 96 Well - Sitting を共有種別として入れる（同名の共有種別があれば入れない）
 - [x] `app/(app)/loading.tsx` — グレーの箱のスケルトンを作る
 - [x] `app/(app)/mypage/edit/loading.tsx` — 同じスケルトンを再エクスポートする（実測を見て足した）
 - [x] `docs/architecture.md` — 本番の共有種別が3つになったことと、loading.tsx の置き場所を書く
@@ -116,28 +116,45 @@ DB の既定値は付けない。作成時は必ずサーバーが値を渡す�
 
 ### タスク
 
-- [ ] `prisma/schema.prisma` — `Plate.setupDate` を足す
-- [ ] `prisma/migrations/20260926010000_add_plate_setup_date/migration.sql` — 列を足し、既存のプレートに日本時間の作成日を入れてから NOT NULL にする
-- [ ] `lib/validations.ts` — `createPlateSchema` に `setupDate: z.iso.date()`（必須）、`updatePlateSchema` に任意で足す
-- [ ] `lib/actions/plates.ts` — `createPlate` と `updatePlate` で `setupDate` を受け、`Date` に直して保存する
-- [ ] `lib/utils.ts` — `today()` を `components/well-sheet.tsx` から移す
-- [ ] `components/new-plate-sheet.tsx` — プレート名の下に `<input type="date">` の仕込み日を足す（初期値は今日）
-- [ ] `app/(app)/plates/[id]/page.tsx`・`plate-detail-client.tsx` — 表示を仕込み日に替え、編集モードに日付の欄を足す
-- [ ] `app/(app)/samples/page.tsx`・`samples-client.tsx` — 一覧も検索結果も仕込み日を `"YYYY-MM-DD"` で渡す
-- [ ] `components/plate-card.tsx` — `new Date()` で読み直すのをやめ、受け取った文字列を `/` 区切りで出す
-- [ ] `lib/i18n.ts` — `created` を `setupDate` に替える
-- [ ] `types/index.ts` — `Plate.createdAt` を `setupDate` に替える（どこからも import されていないが、実態に合わせておく）
-- [ ] `prisma/seed.ts` — プレートを作る所に、`createdAt` と同じ値で `setupDate` を足す
-- [ ] `tests/drop-actions.test.ts` — `createPlate` の呼び出し全部に `setupDate` を足す。`plate.create` に `2026-09-25T00:00:00.000Z` の `Date` が渡ることを確かめるテストを1本足す（観察日のテストと同じ形）
-- [ ] `tests/validation-access-control.test.ts` — 既存の fixture に `setupDate` を足す。`createPlateSchema` が仕込み日の無い入力と、日付でない文字列を拒むことを確かめる
-- [ ] `docs/architecture.md` — `Plate` の列の説明に仕込み日を足す
+- [x] `prisma/schema.prisma` — `Plate.setupDate` を足す
+- [x] `prisma/migrations/20260925050000_add_plate_setup_date/migration.sql` — 列を足し、既存のプレートに日本時間の作成日を入れてから NOT NULL にする
+- [x] `lib/validations.ts` — `createPlateSchema` に `setupDate: z.iso.date()`（必須）、`updatePlateSchema` に任意で足す
+- [x] `lib/actions/plates.ts` — `createPlate` と `updatePlate` で `setupDate` を受け、`Date` に直して保存する
+- [x] `lib/utils.ts` — `today()` を `components/well-sheet.tsx` から移す
+- [x] `components/new-plate-sheet.tsx` — プレート名の下に `<input type="date">` の仕込み日を足す（初期値は今日）
+- [x] `app/(app)/plates/[id]/page.tsx`・`plate-detail-client.tsx` — 表示を仕込み日に替え、編集モードに日付の欄を足す
+- [x] `app/(app)/samples/page.tsx`・`samples-client.tsx` — 一覧も検索結果も仕込み日を `"YYYY-MM-DD"` で渡す
+- [x] `components/plate-card.tsx` — `new Date()` で読み直すのをやめ、受け取った文字列を `/` 区切りで出す
+- [x] `lib/i18n.ts` — `created` を `setupDate` に替える
+- [x] `types/index.ts` — `Plate.createdAt` を `setupDate` に替える（どこからも import されていないが、実態に合わせておく）
+- [x] `prisma/seed.ts` — プレートを作る所に、`createdAt` と同じ値で `setupDate` を足す
+- [x] `tests/drop-actions.test.ts` — `createPlate` の呼び出し全部に `setupDate` を足す。`plate.create` に `2026-09-25T00:00:00.000Z` の `Date` が渡ることを確かめるテストを1本足す（観察日のテストと同じ形）
+- [x] `tests/plate-trash-actions.test.ts` — `updatePlate` が仕込み日を UTC の0時の `Date` にして渡し、渡さなければ触らず、不正な値と空文字は拒むことを確かめる（実装時に足した）
+- [x] `tests/validation-access-control.test.ts` — 既存の fixture に `setupDate` を足す。`createPlateSchema` が仕込み日の無い入力と、日付でない文字列を拒むことを確かめる
+- [x] `docs/architecture.md` — `Plate` の列の説明に仕込み日を足す
 
 ### 完了条件
 
 - `npm run check` が通る
-- 手で書いたマイグレーションとスキーマがずれていない。ローカルでマイグレーションを流したあと `npx prisma migrate dev --create-only` を実行し、新しいマイグレーションが作られないことで確かめる（`migrate diff --from-migrations` は `prisma.config.ts` に無いシャドウ DB の指定が要るので使わない）
+- 手で書いたマイグレーションとスキーマがずれていない。ローカルでマイグレーションを流したあと `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` を実行し、差分が無いことで確かめる（ローカル DB とスキーマを直接比べるので、シャドウ DB が要らない。`template1` の照合順序の不一致に左右されない）
 - ローカルで、日本時間の0〜9時に作ったプレートを1つ用意してからマイグレーションを流し、仕込み日が前日になっていない
 - ブラウザ（402px 幅）で確かめる
   - 作成フォームの仕込み日の初期値が今日で、過去の日付を選んで作れる
   - 詳細画面に仕込み日が出て、編集モードで直せる
   - サンプル画面の一覧と検索結果で、カードの日付が同じ形で出る
+
+### 実測（2026-09-25、ローカルの本番ビルド、端末のタイムゾーンは Asia/Tokyo）
+
+- マイグレーション後、UTC 09-24 20:00（日本時間 09-25 05:00）に作ったプレートの仕込み日は 09-25 になった。前日にはずれていない
+- `migrate diff --from-config-datasource` の差分は無し
+- 作成フォームの初期値は今日（2026-09-25）。欄を空にすると作成ボタンが押せない。2025-01-15 を選んで作れた
+- サンプル画面の一覧と検索結果のカードは、どちらも `2025/01/15` と出る
+- 詳細画面に「Set up 2025-01-15」と出て、編集モードで 2025-02-01 に直せた。欄を空にすると保存ボタンが押せない。鉛筆ボタンで閉じて開き直すと、元の値に戻る
+
+計画とずれた点:
+
+- マイグレーション名の日付を、Phase 1 の分も含めて `20260926…` と翌日にしていた。今日のうちに次のマイグレーションを作ると名前順でこれより前に並び、新しい DB では列より先に流れてしまう。コードレビューで見つかり、`20260925040000`・`20260925050000` に改名した。ローカルの `_prisma_migrations` の名前も書き換えた（本番にはまだ出していない）
+- ずれの確認は `migrate dev --create-only` の代わりに `migrate diff --from-config-datasource` で行った。`template1` の照合順序の不一致は直していない
+- 詳細の編集モードで仕込み日を空にしたときは、黙って元の値を残す案だった。保存しても欄が空のまま残るので、作成フォームと同じく保存ボタンを押せなくした。あわせて、鉛筆ボタンで閉じたときに入力途中の値が残る前からの漏れも直した
+- 詳細画面の「更新日」とゴミ箱の削除日は、今もタイムスタンプを UTC の日付で出している。日本時間の0〜9時に更新・削除したものは前日に見える。今回の範囲外なので、バックログに回す
+

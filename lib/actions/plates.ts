@@ -112,6 +112,7 @@ export async function createPlate(data: {
   reservoirTemplateId?: number | null;
   screeningTemplateId?: number | null;
   notes?: string;
+  setupDate: string;
   drops?: {
     positions: string[];
     sampleName: string;
@@ -182,6 +183,7 @@ export async function createPlate(data: {
       reservoirTemplateId: parsed.data.reservoirTemplateId ?? null,
       screeningTemplateId: parsed.data.screeningTemplateId ?? null,
       notes: parsed.data.notes,
+      setupDate: new Date(`${parsed.data.setupDate}T00:00:00Z`),
       userId,
       wells: { create: wells },
     },
@@ -197,6 +199,7 @@ export async function updatePlate(
   data: {
     name?: string;
     notes?: string | null;
+    setupDate?: string;
     reservoirTemplateId?: number | null;
     screeningTemplateId?: number | null;
   }
@@ -235,10 +238,16 @@ export async function updatePlate(
     return { error: "Not found" };
   }
 
+  // 仕込み日は "YYYY-MM-DD" のままでは DateTime の列に入らないので Date に直す
+  const { setupDate, ...rest } = parsed.data;
+
   // 確認と更新の間にゴミ箱へ移された場合は更新しない
   return prisma.plate.update({
     where: { id: parsedId.data, deletedAt: null },
-    data: parsed.data,
+    data: {
+      ...rest,
+      ...(setupDate && { setupDate: new Date(`${setupDate}T00:00:00Z`) }),
+    },
     include: {
       plateType: true,
       wells: true,

@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { WellShape } from "@/components/well-shape";
 import { useTranslation } from "@/components/locale-provider";
+import { today } from "@/lib/utils";
 import {
   addObservation,
   createDrop,
@@ -52,11 +53,6 @@ const inputClassName =
   "h-11 rounded-xl border-border-default bg-bg-primary text-[15px]";
 const textareaClassName =
   "w-full rounded-xl border border-border-default bg-bg-primary p-3 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none resize-none";
-
-// 利用者の端末の今日を "YYYY-MM-DD" で返す（sv-SE はこの形式で日付を出す）
-function today() {
-  return new Date().toLocaleDateString("sv-SE");
-}
 
 function hasError(result: unknown) {
   return typeof result === "object" && result !== null && "error" in result;

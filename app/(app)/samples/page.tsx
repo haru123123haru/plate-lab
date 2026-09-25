@@ -24,7 +24,8 @@ export default async function SamplesPage() {
     filledWells: countUsedWells(p.wells),
     samples: summarizeSamples(p.wells),
     totalWells: p.wells.length,
-    createdAt: p.createdAt.toISOString().split("T")[0],
+    // setupDate は日付だけの列なので、UTC の日付として読む
+    setupDate: p.setupDate.toISOString().slice(0, 10),
   }));
 
   const uiPlateTypes = plateTypes.map((pt) => ({

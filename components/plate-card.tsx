@@ -11,7 +11,8 @@ interface PlateCardPlate {
   plateType: { name: string };
   filledWells: number;
   totalWells: number;
-  createdAt: string;
+  // "YYYY-MM-DD"
+  setupDate: string;
   // サンプル画面だけが渡す
   samples?: { names: string[]; dropCount: number };
 }
@@ -23,11 +24,8 @@ interface PlateCardProps {
 
 export function PlateCard({ plate, onClick }: PlateCardProps) {
   const { t } = useTranslation();
-  const dateStr = new Date(plate.createdAt).toLocaleDateString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+  // Date に読み直すと UTC の0時になり、UTC より西の端末で前日に見えるので文字列のまま出す
+  const dateStr = plate.setupDate.replaceAll("-", "/");
 
   return (
     <Card

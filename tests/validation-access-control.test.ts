@@ -45,13 +45,24 @@ describe("validation schemas", () => {
   });
 
   it("requires a complete drop batch when creating a plate with drops", () => {
-    const plate = { name: "Plate A", plateTypeId: "plate-type-1" };
+    const plate = {
+      name: "Plate A",
+      plateTypeId: "plate-type-1",
+      setupDate: "2026-09-25",
+    };
     const drops = {
       positions: ["A1", "H12"],
       sampleName: "Lysozyme",
       drops: [{ slot: 1, concentration: "10 mg/mL" }],
     };
     expect(createPlateSchema.safeParse(plate).success).toBe(true);
+    // 仕込み日は必須で、"YYYY-MM-DD" だけ受ける
+    expect(
+      createPlateSchema.safeParse({ ...plate, setupDate: undefined }).success
+    ).toBe(false);
+    expect(
+      createPlateSchema.safeParse({ ...plate, setupDate: "2026/09/25" }).success
+    ).toBe(false);
     expect(createPlateSchema.safeParse({ ...plate, drops }).success).toBe(true);
     // 位置は "A1" 形式だけ。WellGridSelector の "0-0" 形式はフォーム側で変換する
     expect(

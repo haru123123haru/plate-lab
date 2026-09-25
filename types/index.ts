@@ -42,7 +42,8 @@ export type Plate = {
   wells: WellData[];
   filledWells: number;
   totalWells: number;
-  createdAt: string;
+  // "YYYY-MM-DD"（UTC の日付）
+  setupDate: string;
   updatedAt: string;
   notes?: string;
   reservoirTemplate?: string;
