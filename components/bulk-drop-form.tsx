@@ -143,7 +143,14 @@ export function BulkDropFields({
             </button>
             <button
               type="button"
-              onClick={() => onChange({ ...value, positions: new Set() })}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  positions: new Set(),
+                  // 置き場所も外す。1ドロップの種別は選ぶ図が無いので1番を残す
+                  drops: maxDrops > 1 ? [] : value.drops,
+                })
+              }
               className="cursor-pointer text-[13px] font-medium text-text-secondary underline underline-offset-2"
             >
               {t("clear")}
@@ -166,7 +173,7 @@ export function BulkDropFields({
               filledSlots={slots}
               onSlotClick={toggleSlot}
               slotLabel={(slot) => `${t("slot")} ${slot}`}
-              className="mx-auto w-32"
+              className="mx-auto w-48"
             />
           </div>
         </div>
