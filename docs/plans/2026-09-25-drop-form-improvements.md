@@ -46,9 +46,9 @@
 
 ### タスク
 
-- [ ] `components/well-shape.tsx` — `HANGING-3` を三角形の配置にし、向きの縦線を足す
-- [ ] `components/well-grid-selector.tsx` — `layout`・`maxDrops`・選んだ置き場所を受け取り、`WellShape` で描く
-- [ ] `components/bulk-drop-form.tsx` — 置き場所の選択を大きい図に置き換える
+- [x] `components/well-shape.tsx` — `HANGING-3` を三角形の配置にし、向きの縦線を足す
+- [x] `components/well-grid-selector.tsx` — `layout`・`maxDrops`・選んだ置き場所を受け取り、`WellShape` で描く
+- [x] `components/bulk-drop-form.tsx` — 置き場所の選択を大きい図に置き換える
 
 ### 完了条件
 
@@ -75,3 +75,8 @@
 ## 実測との差分
 
 （実装しながら、計画と違ったことをここに書き足す）
+
+- Phase 1（2026-09-25）
+  - ハンギング3ドロップの座標は、本人が描いた図から割合を取った（大きい丸に対して、1番は中心の少し上、2番・3番は下の左右）。向きの縦線は、丸の上端をまたいで少し内側まで描く
+  - `WellShape` の置き場所ボタンの `aria-pressed` は、`selectedSlot` を渡さない使い方（作成画面で複数を選ぶ）では「塗られているか」を表す。シートのように1つを選ぶ使い方では、今までどおり選んだ置き場所だけが押された状態になる
+  - 作成画面で、置き場所を1つも選んでいないときは塗る所が無いので、選んだウェルに枠を付けて見分ける

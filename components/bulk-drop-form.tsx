@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WellGridSelector } from "@/components/well-grid-selector";
+import { WellShape } from "@/components/well-shape";
 import { useTranslation } from "@/components/locale-provider";
 import { bulkCreateDrops } from "@/lib/actions/drops";
-import { cn } from "@/lib/utils";
+import type { PlateLayout } from "@/types";
 
 // 同じサンプルを、選んだウェルの選んだ置き場所へまとめて入れる内容
 export type DropBatch = {
@@ -60,6 +61,7 @@ const labelClassName =
 interface BulkDropFieldsProps {
   rows: number;
   cols: number;
+  layout: PlateLayout;
   maxDrops: number;
   value: DropBatch;
   onChange: (value: DropBatch) => void;
@@ -68,6 +70,7 @@ interface BulkDropFieldsProps {
 export function BulkDropFields({
   rows,
   cols,
+  layout,
   maxDrops,
   value,
   onChange,
@@ -97,7 +100,10 @@ export function BulkDropFields({
           <WellGridSelector
             rows={rows}
             cols={cols}
+            layout={layout}
+            maxDrops={maxDrops}
             filledPositions={value.positions}
+            selectedSlots={value.slots}
             onToggle={(key) =>
               onChange({ ...value, positions: toggle(value.positions, key) })
             }
@@ -132,29 +138,18 @@ export function BulkDropFields({
           <div id={`${fieldId}-slots`} className={labelClassName}>
             {t("slot")}
           </div>
-          <div
-            role="group"
-            aria-labelledby={`${fieldId}-slots`}
-            className="flex gap-2"
-          >
-            {Array.from({ length: maxDrops }, (_, i) => i + 1).map((slot) => (
-              <button
-                type="button"
-                key={slot}
-                aria-pressed={value.slots.has(slot)}
-                onClick={() =>
-                  onChange({ ...value, slots: toggle(value.slots, slot) })
-                }
-                className={cn(
-                  "size-10 cursor-pointer rounded-full text-[14px] font-semibold",
-                  value.slots.has(slot)
-                    ? "bg-text-primary text-white"
-                    : "bg-bg-surface text-text-primary"
-                )}
-              >
-                {slot}
-              </button>
-            ))}
+          {/* 詳細画面のシートと同じ図。押した置き場所を選ぶ／外す */}
+          <div role="group" aria-labelledby={`${fieldId}-slots`}>
+            <WellShape
+              layout={layout}
+              maxDrops={maxDrops}
+              filledSlots={value.slots}
+              onSlotClick={(slot) =>
+                onChange({ ...value, slots: toggle(value.slots, slot) })
+              }
+              slotLabel={(slot) => `${t("slot")} ${slot}`}
+              className="mx-auto w-32"
+            />
           </div>
         </div>
       )}
@@ -199,6 +194,7 @@ interface BulkAddDropsFormProps {
   plateId: string;
   rows: number;
   cols: number;
+  layout: PlateLayout;
   maxDrops: number;
 }
 
@@ -207,6 +203,7 @@ export function BulkAddDropsForm({
   plateId,
   rows,
   cols,
+  layout,
   maxDrops,
 }: BulkAddDropsFormProps) {
   const router = useRouter();
@@ -254,6 +251,7 @@ export function BulkAddDropsForm({
       <BulkDropFields
         rows={rows}
         cols={cols}
+        layout={layout}
         maxDrops={maxDrops}
         value={batch}
         onChange={setBatch}

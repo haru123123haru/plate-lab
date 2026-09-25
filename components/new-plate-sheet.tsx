@@ -368,6 +368,7 @@ export function NewPlateSheet({
                 <BulkDropFields
                   rows={selectedPlateType.rows}
                   cols={selectedPlateType.cols}
+                  layout={selectedPlateType.layout}
                   maxDrops={selectedPlateType.maxDrops}
                   value={dropBatch}
                   onChange={setDropBatch}
