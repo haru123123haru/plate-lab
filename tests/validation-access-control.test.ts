@@ -48,9 +48,8 @@ describe("validation schemas", () => {
     const plate = { name: "Plate A", plateTypeId: "plate-type-1" };
     const drops = {
       positions: ["A1", "H12"],
-      slots: [1],
       sampleName: "Lysozyme",
-      concentration: "10 mg/mL",
+      drops: [{ slot: 1, concentration: "10 mg/mL" }],
     };
     expect(createPlateSchema.safeParse(plate).success).toBe(true);
     expect(createPlateSchema.safeParse({ ...plate, drops }).success).toBe(true);
@@ -68,8 +67,27 @@ describe("validation schemas", () => {
       }).success
     ).toBe(false);
     expect(
-      createPlateSchema.safeParse({ ...plate, drops: { ...drops, slots: [] } })
+      createPlateSchema.safeParse({ ...plate, drops: { ...drops, drops: [] } })
         .success
+    ).toBe(false);
+    // 置き場所ごとの濃度は空にできず、同じ置き場所は2回来ない
+    expect(
+      createPlateSchema.safeParse({
+        ...plate,
+        drops: { ...drops, drops: [{ slot: 1, concentration: " " }] },
+      }).success
+    ).toBe(false);
+    expect(
+      createPlateSchema.safeParse({
+        ...plate,
+        drops: {
+          ...drops,
+          drops: [
+            { slot: 1, concentration: "10 mg/mL" },
+            { slot: 1, concentration: "5 mg/mL" },
+          ],
+        },
+      }).success
     ).toBe(false);
   });
 

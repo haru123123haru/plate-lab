@@ -114,9 +114,8 @@ export async function createPlate(data: {
   notes?: string;
   drops?: {
     positions: string[];
-    slots: number[];
     sampleName: string;
-    concentration: string;
+    drops: { slot: number; concentration: string }[];
   };
 }) {
   const userId = await getCurrentUserId();
@@ -136,8 +135,9 @@ export async function createPlate(data: {
   const { rows, cols, maxDrops } = plateType;
   const batch = parsed.data.drops;
   const dropPositions = new Set(batch?.positions);
-  const slots = [...new Set(batch?.slots)];
-  if (slots.some((slot) => slot > maxDrops)) return { error: "Invalid slot" };
+  if (batch?.drops.some(({ slot }) => slot > maxDrops)) {
+    return { error: "Invalid slot" };
+  }
 
   const templateIds = [
     parsed.data.reservoirTemplateId,
@@ -162,10 +162,10 @@ export async function createPlate(data: {
         drops:
           batch && dropPositions.delete(position)
             ? {
-                create: slots.map((slot) => ({
+                create: batch.drops.map(({ slot, concentration }) => ({
                   slot,
                   sampleName: batch.sampleName,
-                  concentration: batch.concentration,
+                  concentration,
                 })),
               }
             : undefined,

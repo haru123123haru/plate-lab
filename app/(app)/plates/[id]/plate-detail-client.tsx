@@ -405,6 +405,7 @@ export function PlateDetailClient({
             plateId={plate.id}
             rows={plate.plateType.rows}
             cols={plate.plateType.cols}
+            layout={plate.plateType.layout}
             maxDrops={plate.plateType.maxDrops}
           />
         )}

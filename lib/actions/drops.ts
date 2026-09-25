@@ -107,18 +107,16 @@ export async function deleteDrop(id: string) {
 export async function bulkCreateDrops(data: {
   plateId: string;
   positions: string[];
-  slots: number[];
   sampleName: string;
-  concentration: string;
+  drops: { slot: number; concentration: string }[];
 }) {
   const userId = await getCurrentUserId();
   const parsed = bulkCreateDropsSchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { plateId, sampleName, concentration } = parsed.data;
+  const { plateId, sampleName, drops: slotDrops } = parsed.data;
   const positions = [...new Set(parsed.data.positions)];
-  const slots = [...new Set(parsed.data.slots)];
 
   // ウェル ID ではなくプレート ID で受けるので、持ち主の確認はここの1回で済む
   const plate = await prisma.plate.findFirst({
@@ -135,13 +133,18 @@ export async function bulkCreateDrops(data: {
   if (plate.wells.length !== positions.length) {
     return { error: "Invalid well position" };
   }
-  if (slots.some((slot) => slot > plate.plateType.maxDrops)) {
+  if (slotDrops.some(({ slot }) => slot > plate.plateType.maxDrops)) {
     return { error: "Invalid slot" };
   }
 
   // ponytail: 確認と作成のあいだにゴミ箱へ移されると作ってしまう。気になったらトランザクションで行ロックを取る
   const drops = plate.wells.flatMap((well) =>
-    slots.map((slot) => ({ wellId: well.id, slot, sampleName, concentration }))
+    slotDrops.map(({ slot, concentration }) => ({
+      wellId: well.id,
+      slot,
+      sampleName,
+      concentration,
+    }))
   );
   const { count } = await prisma.drop.createMany({
     data: drops,

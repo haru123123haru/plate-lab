@@ -12,6 +12,8 @@ type ShapeSpec = {
   reservoir?: boolean;
   // HANGING の複数ドロップ: 大きい丸（カバーガラスの下のウェル）の中にドロップ
   outerCircle?: boolean;
+  // 丸の上に出す短い縦線。ウェルの向き（1番の置き場所の側）を示す
+  orientationMark?: boolean;
 };
 
 const SINGLE: ShapeSpec = { slots: [{ x: 50, y: 50, d: 100 }] };
@@ -27,13 +29,15 @@ const SHAPES: Record<string, ShapeSpec> = {
     ],
     reservoir: true,
   },
+  // 上に1つ（1番）、下に左右2つ（2番・3番）の三角形に置く
   "HANGING-3": {
     slots: [
-      { x: 24, y: 50, d: 22 },
-      { x: 50, y: 50, d: 22 },
-      { x: 76, y: 50, d: 22 },
+      { x: 50, y: 29, d: 27 },
+      { x: 28, y: 62, d: 27 },
+      { x: 72, y: 62, d: 27 },
     ],
     outerCircle: true,
+    orientationMark: true,
   },
 };
 
@@ -46,8 +50,9 @@ interface WellShapeProps {
   layout: PlateLayout;
   maxDrops: number;
   filledSlots: ReadonlySet<number>;
-  // 渡したときだけ置き場所を押せるボタンにする（ウェルのシート用）
+  // 渡したときだけ置き場所を押せるボタンにする（ウェルのシート・作成画面用）
   onSlotClick?: (slot: number) => void;
+  // 1つを選ぶ使い方（シート）で渡す。渡さなければ、塗った置き場所を「選択中」とする
   selectedSlot?: number;
   slotLabel?: (slot: number) => string;
   className?: string;
@@ -68,6 +73,9 @@ export function WellShape({
     <div className={cn("relative aspect-square", className)}>
       {shape.outerCircle && (
         <div className="absolute inset-0 rounded-full border border-border-default" />
+      )}
+      {shape.orientationMark && (
+        <div className="absolute left-1/2 top-[-4%] h-[16%] w-px -translate-x-1/2 bg-text-tertiary" />
       )}
       {shape.reservoir && (
         <div className="absolute inset-x-[10%] top-[72%] h-[18%] rounded-full border border-border-default" />
@@ -93,7 +101,11 @@ export function WellShape({
             type="button"
             key={slot}
             aria-label={slotLabel?.(slot)}
-            aria-pressed={selectedSlot === slot}
+            aria-pressed={
+              selectedSlot === undefined
+                ? filledSlots.has(slot)
+                : selectedSlot === slot
+            }
             onClick={() => onSlotClick(slot)}
             className={cn(
               slotClassName,

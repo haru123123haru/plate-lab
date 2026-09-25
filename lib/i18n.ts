@@ -153,7 +153,7 @@ const translations = {
     dropsAdded: "Added",
     dropsSkipped: "Skipped (already had a drop)",
     dropBatchIncomplete:
-      "Choose a position and enter the sample name and concentration for the selected wells.",
+      "Choose a position and enter the sample name and a concentration for each position.",
   },
   ja: {
     // Navigation
@@ -307,7 +307,7 @@ const translations = {
     dropsAdded: "追加",
     dropsSkipped: "スキップ（使用中）",
     dropBatchIncomplete:
-      "選んだウェルに入れる置き場所・サンプル名・濃度を入れてください。",
+      "選んだウェルに入れる置き場所・サンプル名と、置き場所ごとの濃度を入れてください。",
   },
 } as const;
 

@@ -34,9 +34,21 @@ const dropBatchSchema = z.object({
     .array(z.string().regex(/^[A-H](?:[1-9]|1[0-2])$/, "Invalid well position"))
     .min(1)
     .max(96),
-  slots: z.array(slotSchema).min(1).max(4),
   sampleName: dropFieldsSchema.shape.sampleName,
-  concentration: dropFieldsSchema.shape.concentration,
+  // 置き場所ごとの濃度。同じ置き場所が2回来たらどちらを採るか決められないので拒否する
+  drops: z
+    .array(
+      z.object({
+        slot: slotSchema,
+        concentration: dropFieldsSchema.shape.concentration,
+      })
+    )
+    .min(1)
+    .max(4)
+    .refine(
+      (drops) => new Set(drops.map((d) => d.slot)).size === drops.length,
+      { message: "Duplicate slot" }
+    ),
 });
 
 export const bulkCreateDropsSchema = dropBatchSchema.extend({

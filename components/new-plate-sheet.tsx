@@ -148,13 +148,14 @@ export function NewPlateSheet({
     [allPlateTypes, selectedType]
   );
 
-  // 種別を変えたら形が変わるので、選んだウェルと置き場所だけ戻す（サンプル名と濃度は残す）
+  // 種別を変えたら形が変わるので、選んだウェルと置き場所（とその濃度）を戻す。サンプル名は残す
   const selectPlateType = (id: string) => {
+    if (id === selectedType) return;
     setSelectedType(id);
     setDropBatch((prev) => ({
       ...prev,
       positions: new Set(),
-      slots: new Set([1]),
+      drops: emptyDropBatch().drops,
     }));
   };
 
@@ -368,6 +369,7 @@ export function NewPlateSheet({
                 <BulkDropFields
                   rows={selectedPlateType.rows}
                   cols={selectedPlateType.cols}
+                  layout={selectedPlateType.layout}
                   maxDrops={selectedPlateType.maxDrops}
                   value={dropBatch}
                   onChange={setDropBatch}
