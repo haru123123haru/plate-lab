@@ -35,6 +35,8 @@
 
 各画面は例外なく同じ形をとる。`page.tsx` は Server Component としてデータ取得と整形だけを行い、`*-client.tsx` に渡す。状態とインタラクションはすべて Client 側。この分離のおかげで、DB アクセスがクライアントバンドルに混ざる事故が構造的に起きない。
 
+読み込み中の表示は `app/(app)/loading.tsx` の1つだけで、グレーの箱を点滅させる。`(app)` の直下の画面が入れ替わる遷移で、データがそろうまでこれが出る。ヘッダーは各ページが描いているので、読み込み中は画面全体が置き換わる。`/mypage` → `/mypage/edit` は入れ子の遷移で `(app)` の境界が作り直されないため、`app/(app)/mypage/edit/loading.tsx` で同じスケルトンを再エクスポートしている。
+
 セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。
 
 コンポーネントは `components/` 直下にカスタム17個、`components/ui/` に shadcn 由来が10個。ウェルまわりは次の5つで分担している。
@@ -174,7 +176,7 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。これで、マイグレーション14本がすべて本番DBに適用されている。
 
-本番の共有プレート種別は、ドロップの導入で入れた2つ（`24 Well - Sitting 4 Drop` と `15 Well - Hanging 3 Drop`）だけだ。seed にある `96 Well - Sitting` などの共有種別は、本番には最初から無かった。ほかに、ユーザーが自分で作った `96well-sitting`（8×12）がある。
+本番の共有プレート種別は3つある。ドロップの導入で入れた2つ（`24 Well - Sitting 4 Drop` と `15 Well - Hanging 3 Drop`）と、2026-09-25 にマイグレーション `add_96_well_plate_type` で入れた `96 Well - Sitting`（8×12、1ドロップ）だ。seed にあるほかの共有種別（`24 Well - Hanging` など）は、本番には最初から無い。ほかに、ユーザーが自分で作った `96well-sitting`（8×12）がある。
 
 本番の共有テンプレートは PEG（ID 3）と MPD（ID 4）、共有セットも同名の2つ（ID 3 と 2）がある。セットの名前が seed（`PEG Set` など）と違うので、手作業で作ったらしい。作り方の記録は残っていない。2026-09-24 までは名前だけの行で、条件（`TemplateWell`）が1件も入っていなかった。`TemplateWell` のシーケンスが一度も使われていなかったので、最初から空だったことになる。消された跡は無い。同日、マイグレーション `fill_default_template_wells` で `conditions/*.md` から96ウェルずつ入れた。
 

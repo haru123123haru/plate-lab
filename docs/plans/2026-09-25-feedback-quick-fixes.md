@@ -26,7 +26,9 @@
 
 `20260925010000_add_multi_drop_plate_types` と同じ書き方にする。値は `prisma/seed.ts` の `96 Well - Sitting`（8×12・SITTING・1ドロップ、説明 `Standard 96-well sitting drop plate`）に合わせる。同じ名前の共有種別（`isDefault` が true）がすでにあれば入れない。ローカルは seed で入っているので、ローカルでは何も起きないのが正しい動きになる。
 
-新しい種別を足すだけなので、アプリのコードは変えない。ただし 96 Well は本番で初めて使われる形なので、402px 幅で表示が崩れないかは確かめる（完了条件）。条件テンプレートは 24 ウェル分の位置しか持っていないものが多いはずで、E 行以降や 7 列目以降に条件が出ないのは想定どおりとする。
+新しい種別を足すだけなので、アプリのコードは変えない。ただし 96 Well は本番で初めて使われる形なので、402px 幅で表示が崩れないかは確かめる（完了条件）。
+
+（実装時に確認）計画時は「条件テンプレートは24ウェル分しか無いはず」と書いていたが、外れていた。本番の PEG・MPD は `conditions/*.md` から96ウェル分入っているので、96 Well では全ウェルに条件が出る。
 
 ### 読み込み中の表示は `(app)` に1つ置く
 
@@ -38,8 +40,8 @@
 
 ハマりどころが2つある。
 
-- ヘッダーやタブバーは各ページが自分で描いている（`app/(app)/layout.tsx` は `<main>` だけ）。そのため読み込み中は、タブバーも含めて画面全体がスケルトンに置き換わる。これを嫌うならタブバーを layout に移すことになるが、今回はやらない
-- 画面の移動には2種類ある。タブバー（`components/tab-bar.tsx`）とメニュー（`components/menu-sheet.tsx`）は `<Link>` で、本番では loading 境界までが先読みされるので、押せばすぐスケルトンが出る。一覧の行やボタン（`dashboard-client.tsx`・`samples-client.tsx`・`mypage-client.tsx`・`trash-client.tsx`）は `router.push` で先読みが無く、押してからスケルトンが出るまでにサーバーとの往復が1回ある。データがそろうのを待つよりは早いはずだが、止まって見えるなら `router.prefetch` を足す。どちらになったかは実測して計画書に書き残す
+- ヘッダーは各ページが自分で描いている（`app/(app)/layout.tsx` は `<main>` だけ）。そのため読み込み中は、ヘッダーも含めて画面全体がスケルトンに置き換わる。これを嫌うならヘッダーを layout に移すことになるが、今回はやらない
+- 画面の移動には2種類ある。メニュー（`components/menu-sheet.tsx`）は `<Link>` で、本番では loading 境界までが先読みされるので、押せばすぐスケルトンが出る。一覧の行やボタン（`dashboard-client.tsx`・`samples-client.tsx`・`mypage-client.tsx`・`trash-client.tsx`）は `router.push` で先読みが無く、押してからスケルトンが出るまでにサーバーとの往復が1回ある。データがそろうのを待つよりは早いはずだが、止まって見えるなら `router.prefetch` を足す。どちらになったかは実測して計画書に書き残す
 - dev サーバーでは先読みが効かず、ページもその場でコンパイルされるので、見え方が本番と違う。読み込み中の表示は `npm run build && npm run start` か本番で確かめる
 
 ### 仕込み日は日付だけの列にする
@@ -83,9 +85,10 @@ DB の既定値は付けない。作成時は必ずサーバーが値を渡す�
 
 ### タスク
 
-- [ ] `prisma/migrations/20260926000000_add_96_well_plate_type/migration.sql` — 96 Well - Sitting を共有種別として入れる（同名の共有種別があれば入れない）
-- [ ] `app/(app)/loading.tsx` — グレーの箱のスケルトンを作る
-- [ ] `docs/architecture.md` — 本番の共有種別が3つになったことと、loading.tsx の置き場所を書く
+- [x] `prisma/migrations/20260926000000_add_96_well_plate_type/migration.sql` — 96 Well - Sitting を共有種別として入れる（同名の共有種別があれば入れない）
+- [x] `app/(app)/loading.tsx` — グレーの箱のスケルトンを作る
+- [x] `app/(app)/mypage/edit/loading.tsx` — 同じスケルトンを再エクスポートする（実測を見て足した）
+- [x] `docs/architecture.md` — 本番の共有種別が3つになったことと、loading.tsx の置き場所を書く
 
 ### 完了条件
 
@@ -93,8 +96,21 @@ DB の既定値は付けない。作成時は必ずサーバーが値を渡す�
 - ローカルで `npx prisma migrate dev` を流しても、96 Well が2つにならない（seed の分があるので何も入らない）
 - ブラウザ（402px 幅）で確かめる
   - 96 Well のプレートを作れて、作成画面のウェル選択と詳細のグリッドが横にはみ出さない
-  - `npm run build && npm run start` で、ホーム → 詳細、ホーム → サンプル、マイページ → ゴミ箱、タブの切り替えで、押したあとにスケルトンが出る。DevTools の通信制限（Slow 4G）をかけて見る。`/mypage` → `/mypage/edit` で止まって見えるかも見ておく
+  - `npm run build && npm run start` で、ホーム → 詳細、ホーム → サンプル、マイページ → ゴミ箱、メニューからの移動で、押したあとにスケルトンが出る。DevTools の通信制限（Slow 4G）をかけて見る。`/mypage` → `/mypage/edit` で止まって見えるかも見ておく
 - 本番に出したあと、新しく作ったユーザーの作成画面に 96 Well が出る
+
+### 実測（2026-09-25、ローカルの本番ビルド、Slow 4G 相当）
+
+- ローカル DB に流すと 96 Well は1つのまま（seed の分があり、マイグレーションは何も入れない）
+- 96 Well は作成画面のウェル選択も詳細のグリッドも 402px に収まる。1ウェルは直径約22px で、押しやすさは実機で見る
+- 押してからスケルトンが出るまで: メニューの `<Link>` で約0.1〜0.4秒、`router.push`（ホーム → 詳細、マイページ → ゴミ箱）で約0.9秒。`router.prefetch` は足さない
+- `/mypage` → `/mypage/edit` は、予想どおりスケルトンが出ず約3秒止まった。1行の `mypage/edit/loading.tsx` を足して出るようにした
+
+計画とずれた点:
+
+- `components/tab-bar.tsx` はどこからも使われていなかった。画面の行き来は各ページのヘッダーから開くメニューで行う
+- `npx prisma migrate deploy` は、接続先がローカルでもコマンド名から本番へのデプロイと判定され、Claude からは流せなかった。ユーザーが `!` で流した。`npm run build` も中で同じコマンドを呼ぶので、確認は `npx next build` で行った
+- `npx prisma migrate dev` は、ローカル Postgres の `template1` で照合順序のバージョン不一致（`collation version mismatch`）が出てシャドウ DB を作れない。Phase 2 の「`migrate dev --create-only` でずれを確かめる」は、これを直さないと使えない
 
 ## Phase 2: 仕込み日
 
