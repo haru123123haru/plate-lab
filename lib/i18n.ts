@@ -45,10 +45,12 @@ const translations = {
     createPlate: "Create Plate",
     sets: "Sets",
     newSet: "New Set",
+    pickIndividually: "Pick individually",
     setName: "Set Name",
     registerSet: "Register Set",
-    addTemplate: "Add Template",
-    noConditionSets: 'No condition sets yet. Create one with "New Set".',
+    noConditionSets:
+      'No condition sets yet. Create one in "Manage conditions".',
+    manageConditions: "Manage conditions",
     selectAll: "Select All",
     clear: "Clear",
     add: "Add",
@@ -79,6 +81,21 @@ const translations = {
     plateTypeInUse:
       "Used by {count} plate(s), including those in the trash. It can't be deleted.",
     plateTypeInUseNoCount: "Plates use this type, so it can't be deleted.",
+
+    // Conditions
+    conditions: "Conditions",
+    templates: "Templates",
+    templateName: "Template name",
+    deleteTemplateConfirmTitle: "Delete this template?",
+    deleteTemplateConfirmBody:
+      "{count} set(s) using this template will be deleted too. Plates using it will lose this condition. This cannot be undone.",
+    deleteSetConfirmTitle: "Delete this condition set?",
+    deleteSetConfirmBody:
+      "Plates created with it keep their conditions. This cannot be undone.",
+    templateUsedBySet:
+      "A shared or another user's set uses this template, so it can't be deleted.",
+    templateUsedByPlate:
+      "Another user's plate uses this template, so it can't be deleted.",
 
     // Settings
     general: "General",
@@ -225,11 +242,12 @@ const translations = {
     createPlate: "プレートを作成",
     sets: "セット",
     newSet: "新規セット",
+    pickIndividually: "個別に選ぶ",
     setName: "セット名",
     registerSet: "セットを登録",
-    addTemplate: "テンプレート追加",
     noConditionSets:
-      "条件セットがありません。「新規セット」で作成してください。",
+      "条件セットがありません。「条件を管理」から作成してください。",
+    manageConditions: "条件を管理",
     selectAll: "すべて選択",
     clear: "クリア",
     add: "追加",
@@ -259,6 +277,20 @@ const translations = {
     plateTypeInUse:
       "{count} 枚のプレートで使っています（ゴミ箱を含む）。削除できません。",
     plateTypeInUseNoCount: "プレートで使っているため、削除できません。",
+
+    // Conditions
+    conditions: "条件",
+    templates: "テンプレート",
+    templateName: "テンプレート名",
+    deleteTemplateConfirmTitle: "このテンプレートを削除しますか？",
+    deleteTemplateConfirmBody:
+      "このテンプレートを使うセット {count} 件も消えます。使っているプレートの条件は空になります。元に戻せません。",
+    deleteSetConfirmTitle: "この条件セットを削除しますか？",
+    deleteSetConfirmBody:
+      "このセットで作ったプレートの条件はそのまま残ります。元に戻せません。",
+    templateUsedBySet:
+      "共有セットか他の人のセットが使っているため、削除できません。",
+    templateUsedByPlate: "他の人のプレートが使っているため、削除できません。",
 
     // Settings
     general: "一般",
