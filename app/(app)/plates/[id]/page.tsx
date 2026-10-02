@@ -1,6 +1,7 @@
 import { getPlateById } from "@/lib/actions/plates";
 import { getConditionTemplates } from "@/lib/actions/condition-templates";
 import { PlateDetailClient } from "./plate-detail-client";
+import { toTokyoDate } from "@/lib/utils";
 import type { WellData } from "@/types";
 
 export type WellCondition = {
@@ -87,7 +88,7 @@ export default async function PlateDetailPage({
     wells: uiWells,
     // setupDate は日付だけの列なので、UTC の日付として読む
     setupDate: plate.setupDate.toISOString().slice(0, 10),
-    updatedAt: plate.updatedAt.toISOString().split("T")[0],
+    updatedAt: toTokyoDate(plate.updatedAt),
     deletedAt: plate.deletedAt?.toISOString() ?? null,
   };
 

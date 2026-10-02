@@ -1,5 +1,6 @@
 import { getTrashedPlates } from "@/lib/actions/plates";
 import { TrashClient } from "./trash-client";
+import { toTokyoDate } from "@/lib/utils";
 
 export default async function TrashPage() {
   const plates = await getTrashedPlates();
@@ -9,7 +10,7 @@ export default async function TrashPage() {
     name: p.name,
     plateTypeName: p.plateType.name,
     // trashedPlateWhere で取っているので deletedAt は必ず入っている
-    deletedAt: p.deletedAt?.toISOString().split("T")[0] ?? "",
+    deletedAt: p.deletedAt ? toTokyoDate(p.deletedAt) : "",
   }));
 
   return <TrashClient plates={uiPlates} />;
