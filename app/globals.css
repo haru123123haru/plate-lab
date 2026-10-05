@@ -105,9 +105,10 @@
   --border-subtle: #1A1A1A;
   --accent-positive: #4ADE80;
   --accent-negative: #EF4444;
-  --mark-possible: #FACC15;
-  --mark-crystal: #4ADE80;
-  --mark-harvested: #60A5FA;
+  /* 輪は白っぽい塗りの内側に描くので、ライトより濃くする */
+  --mark-possible: #D97706;
+  --mark-crystal: #16A34A;
+  --mark-harvested: #2563EB;
 
   --background: #121212;
   --foreground: #F0F0F0;

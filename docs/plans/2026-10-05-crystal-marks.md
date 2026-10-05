@@ -66,21 +66,21 @@ model Observation {
 
 ### タスク
 
-- [ ] `prisma/schema.prisma` — `CrystalMark` と `Observation.mark` を足す
-- [ ] `prisma/migrations/20261005000000_add_observation_mark/migration.sql` — enum と列を足し、`Status: CRYSTAL` を観察として移す
-- [ ] `lib/validations.ts` — `addObservationSchema` に `mark` を足し、目印かメモのどちらかを必須にする
-- [ ] `lib/actions/drops.ts` — `addObservation` で `mark` を受けて保存する
-- [ ] `lib/wells.ts` — `bestMark` を足す
-- [ ] `types/index.ts` — `ObservationData.mark`・`DropData.bestMark` を足す
-- [ ] `app/(app)/plates/[id]/page.tsx` — 観察の目印と、ドロップごとの `bestMark` を渡す
-- [ ] `components/well-shape.tsx` — 置き場所ごとの目印を受け取り、輪を描く
-- [ ] `components/well-grid.tsx` — 目印を `WellShape` に渡し、凡例と `aria-label` を足す
-- [ ] `components/well-sheet.tsx` — 観察の追加欄に目印のチップ、履歴にバッジ、大きい図に輪
-- [ ] `app/globals.css` — 目印の色3つをライトとダークで足す
-- [ ] `lib/i18n.ts` — 目印の名前（ja: 怪しい／結晶あり／結晶取り済み、en: Possible / Crystal / Harvested）
-- [ ] `tests/drop-actions.test.ts` — `addObservation` が `mark` を渡すこと、目印だけの観察を作れること、`bestMark` の順位
-- [ ] `tests/validation-access-control.test.ts` — 目印もメモも無い観察と、知らない目印を拒むこと
-- [ ] `docs/architecture.md` — `Observation` の説明に目印を足し、マイグレーションの本数を直す
+- [x] `prisma/schema.prisma` — `CrystalMark` と `Observation.mark` を足す
+- [x] `prisma/migrations/20261005000000_add_observation_mark/migration.sql` — enum と列を足し、`Status: CRYSTAL` を観察として移す
+- [x] `lib/validations.ts` — `addObservationSchema` に `mark` を足し、目印かメモのどちらかを必須にする
+- [x] `lib/actions/drops.ts` — `addObservation` で `mark` を受けて保存する
+- [x] `lib/wells.ts` — `bestMark` を足す
+- [x] `types/index.ts` — `ObservationData.mark`・`DropData.bestMark` を足す
+- [x] `app/(app)/plates/[id]/page.tsx` — 観察の目印と、ドロップごとの `bestMark` を渡す
+- [x] `components/well-shape.tsx` — 置き場所ごとの目印を受け取り、輪を描く
+- [x] `components/well-grid.tsx` — 目印を `WellShape` に渡し、凡例と `aria-label` を足す
+- [x] `components/well-sheet.tsx` — 観察の追加欄に目印のチップ、履歴にバッジ、大きい図に輪
+- [x] `app/globals.css` — 目印の色3つをライトとダークで足す
+- [x] `lib/i18n.ts` — 目印の名前（ja: 怪しい／結晶あり／結晶取り済み、en: Possible / Crystal / Harvested）
+- [x] `tests/drop-actions.test.ts` — `addObservation` が `mark` を渡すこと、目印だけの観察を作れること、`bestMark` の順位
+- [x] `tests/validation-access-control.test.ts` — 目印もメモも無い観察と、知らない目印を拒むこと
+- [x] `docs/architecture.md` — `Observation` の説明に目印を足し、マイグレーションの本数を直す
 
 ### 完了条件
 
@@ -92,3 +92,18 @@ model Observation {
   - 24 Well・4ドロップ・3ドロップ・96 Well のグリッドで、輪が見分けられる
   - 「結晶あり」のあとに印の無い観察を足しても、グリッドの輪は残る
 - 本番に出したあと、移した観察の件数を SQL Editor で数えて記録する
+
+### 実測（2026-10-05、ローカルの dev サーバー、Playwright の Chromium、402px 幅）
+
+- このクローンは新しく立てたローカル環境で、`supabase start` が `supabase/migrations` の統合SQLで古いスキーマを作る。本番と同じく最初の4本を `prisma migrate resolve --applied` で baseline してから `migrate deploy` を流した
+- `migrate diff --from-config-datasource` の差分は無し
+- メモに `Status: CRYSTAL\nBuffer: Tris`・`Status: PRECIPITATE`・`see Status: CRYSTAL later` を持つドロップで移す部分を流すと、1つ目だけに仕込み日の「結晶あり」の観察ができた。2回目は0件。PGlite で行頭・行末の両方の位置も確かめた
+- 24 Well の4ドロップ・15 Well の3ドロップ・96 Well のグリッドで、3色の輪が見分けられる。凡例はプレートに出ている目印だけが出る
+- 「結晶あり」のあとに印の無い観察を足したドロップ（4ドロップの A2 の1番）も、輪が残る
+- シートで「結晶取り済み」を押すと、追加ボタンがメモ空のまま押せるようになり、追加後はグリッドと読み上げ（`Well A3, 結晶取り済み`）に反映され、チップは外れる。メモの無い観察は日付と目印だけが出る
+- シートの大きい図では、選択中の輪（外側）と目印の輪（内側）が重なっても両方見える
+
+計画とずれた点:
+
+- ダークでは置き場所の塗りが白に近い（`--text-primary: #F0F0F0`）ので、明るい黄・緑・青の輪が塗りに溶けた。ダークの目印の色はライトより濃くした（`#D97706`・`#16A34A`・`#2563EB`）
+- 新しく作ったユーザーは `UserSettings` が無く、外観がライト固定になる。ダークの確認は、テスト用ユーザーの外観を DB で `system` にして行った
