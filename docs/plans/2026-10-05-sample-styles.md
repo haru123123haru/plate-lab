@@ -61,7 +61,7 @@ model Sample {
 - `getSamples()` — 自分のゴミ箱に入っていないプレートのドロップから、名前ごとのドロップ数を `groupBy` で数え、`Sample` の見た目を重ねて名前順で返す
 - `getSampleStyles()` — 自分の `Sample` の行を名前→見た目の形で返す。サンプル画面のカードが使う
 - `updateSample({ name, newName, icon, color, merge })` — 見た目と名前をまとめて変える。1つのトランザクションで次を行う
-  1. `newName` が `name` と違い、`newName` のドロップか `Sample` の行がすでにあって `merge` が無ければ、何も変えず `{ needsMerge: true }` を返す（画面が確認ダイアログを出し、`merge: true` で送り直す）
+  1. `newName` が `name` と違い、`newName` のドロップ（ゴミ箱も含む）がすでにあって `merge` が無ければ、何も変えず `{ needsMerge: true }` を返す（画面が確認ダイアログを出し、`merge: true` で送り直す）。見た目の行だけが残っている名前（ドロップが無い）は一覧に出ないので、まとめずに選んだ見た目で上書きする
   2. 自分のプレート（**ゴミ箱も含む**）の `sampleName = name` のドロップを `newName` に書き換える。ゴミ箱は書き込めない決まりだが（`editableDropWhere`）、ここで外すと、復元したプレートだけ古い名前の別のサンプルになるので含める
   3. 見た目は、まとめるときは変更先の行を残して元の行を消す。まとめないときは元の行を `newName` に付け替えて見た目を書き込む（無ければ作る）
 
@@ -117,6 +117,8 @@ model Sample {
 計画とずれた点:
 
 - 色を `style` の `var(--sample-…)` で当てたら、色が出なかった。Tailwind v4 は、どのクラスからも使われていない CSS 変数を出力から落とす。`@theme` に `--color-sample-<色>-bg/-fg` を登録し、`bg-sample-red-bg` のようなクラス名を `components/sample-chip.tsx` に書き切る形にした（目印の色と同じ作り）
+- コードレビューで、ドロップが無くなって見た目の行だけ残った名前に変えると、一覧に無いサンプルへの「まとめる」確認が出て、選んだ見た目が捨てられると分かった。まとめるかどうかはドロップの有無だけで決めるようにした
+- まとめる確認の件数は、ゴミ箱のドロップも数える。一覧の件数（ゴミ箱を除く）より多く出ることがあるが、名前が変わる件数としては正しいのでそのままにした
 - `User` との関係は、ほかのモデルと同じく `onDelete` を付けない形にした
 - 動いていた dev サーバーは、Prisma クライアントを作り直す前に起動していたので、`globalThis` に残った古いクライアント（`sample` が無い）でエラーになった。スキーマを変えたら dev サーバーを立て直す
 
@@ -124,9 +126,9 @@ model Sample {
 
 ### タスク
 
-- [ ] `components/plate-card.tsx` — サンプル名をチップの並びにする
-- [ ] `app/(app)/samples/page.tsx`・`samples-client.tsx` — 見た目の対応表を引いてカードに渡す
-- [ ] `tests/drop-actions.test.ts` — 必要なら `summarizeSamples` の形の変更に合わせる
+- [x] `components/plate-card.tsx` — サンプル名をチップの並びにする
+- [x] `app/(app)/samples/page.tsx`・`samples-client.tsx` — 見た目の対応表を引いてカードに渡す
+- [x] `tests/drop-actions.test.ts` — 必要なら `summarizeSamples` の形の変更に合わせる → `summarizeSamples` は変えずに済んだので不要
 
 ### 完了条件
 
@@ -134,6 +136,13 @@ model Sample {
 - ブラウザ（402px 幅、ライトとダーク）で、サンプル画面のカードにチップが出る。見た目を変えていないサンプルはフラスコ・グレー。サンプルが多いカードは折り返す
 - 検索したあとのカードにも同じチップが出る
 - 本番に出したあと、`Sample` に `anon`・`authenticated` の権限が無いことを SQL Editor で確かめる
+
+### 実測（2026-10-05、ローカルの dev サーバー、Playwright の Chromium、402px 幅）
+
+- Lysozyme を DNA・青にした状態で、サンプル画面のカードは Lysozyme が青いチップ、Thaumatin がフラスコ・グレーのチップになる。ライトとダークの両方で確かめた
+- 「Test 4-Drop」のドロップ3件を一時的に別の名前（Thaumatin・Glucose isomerase・Proteinase K）にすると、チップ4つとドロップ数が2行に折り返す。確かめたあと SQL で戻した
+- 「Lysozyme」で検索したあとのカードにも、同じチップが出る
+- 本番の権限の確認は、出したあとに行う
 
 ## リスク
 
