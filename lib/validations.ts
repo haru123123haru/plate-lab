@@ -107,12 +107,18 @@ export const updatePlateSchema = z
   })
   .strict();
 
-// 観察日は日付だけ。Date で送ると日本時間の0〜9時が UTC で前日になるので文字列で受ける
-export const addObservationSchema = z.object({
-  dropId: z.string().trim().min(1).max(100),
-  observedAt: z.iso.date(),
-  notes: z.string().trim().min(1).max(2000),
-});
+// 観察日は日付だけ。Date で送ると日本時間の0〜9時が UTC で前日になるので文字列で受ける。
+// 目印だけ付けてメモを書かない観察もあるので、目印かメモのどちらかがあればよい
+export const addObservationSchema = z
+  .object({
+    dropId: z.string().trim().min(1).max(100),
+    observedAt: z.iso.date(),
+    notes: z.string().trim().max(2000),
+    mark: z.enum(["POSSIBLE", "CRYSTAL", "HARVESTED"]).nullable().optional(),
+  })
+  .refine((data) => data.notes.length > 0 || data.mark, {
+    message: "Add a note or a mark",
+  });
 
 export const updateUserSettingsSchema = z
   .object({

@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { WellShape } from "@/components/well-shape";
+import { CRYSTAL_MARKS, MarkDot, WellShape } from "@/components/well-shape";
 import { useTranslation } from "@/components/locale-provider";
-import { today } from "@/lib/utils";
+import { cn, today } from "@/lib/utils";
 import {
   addObservation,
   createDrop,
@@ -24,7 +24,7 @@ import {
   deleteObservation,
   updateDrop,
 } from "@/lib/actions/drops";
-import type { PlateLayout, WellData } from "@/types";
+import type { CrystalMark, PlateLayout, WellData } from "@/types";
 
 export type WellCondition = {
   salt: string;
@@ -116,6 +116,9 @@ export function WellSheet({
   const [dropNotes, setDropNotes] = useState("");
   const [observedAt, setObservedAt] = useState(today);
   const [observationNotes, setObservationNotes] = useState("");
+  const [observationMark, setObservationMark] = useState<CrystalMark | null>(
+    null
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -128,10 +131,20 @@ export function WellSheet({
   // 編集中に別の画面でドロップが消されたら、編集をやめて追加フォームに戻す
   const isEditing = editing && drop !== undefined;
   const filledSlots = new Set(well.drops.map((d) => d.slot));
+  const marks = new Map<number, CrystalMark>();
+  for (const d of well.drops) if (d.bestMark) marks.set(d.slot, d.bestMark);
   const rowLabel = ROW_LABELS[well.row] ?? String(well.row);
   const slotName = (slot: number) => `${t("slot")} ${slot}`;
-  const slotAriaLabel = (slot: number) =>
-    `${slotName(slot)} (${filledSlots.has(slot) ? t("hasDrop") : t("empty")})`;
+  const slotAriaLabel = (slot: number) => {
+    const mark = marks.get(slot);
+    const state = filledSlots.has(slot) ? t("hasDrop") : t("empty");
+    return `${slotName(slot)} (${mark ? `${state}, ${t(`mark${mark}`)}` : state})`;
+  };
+
+  const resetObservationForm = () => {
+    setObservationNotes("");
+    setObservationMark(null);
+  };
 
   const resetDropForm = () => {
     setEditing(false);
@@ -146,7 +159,7 @@ export function WellSheet({
     if (busy) return;
     setSelectedSlot(slot);
     resetDropForm();
-    setObservationNotes("");
+    resetObservationForm();
   };
 
   const startEditing = () => {
@@ -210,16 +223,21 @@ export function WellSheet({
     setDeleteConfirmOpen(false);
   };
 
+  // 目印だけ付けてメモを書かない観察もある
+  const canAddObservation =
+    !!observedAt && (!!observationNotes.trim() || observationMark !== null);
+
   const handleAddObservation = () => {
-    if (!drop || !observedAt || !observationNotes.trim()) return;
+    if (!drop || !canAddObservation) return;
     void run(
       () =>
         addObservation({
           dropId: drop.id,
           observedAt,
           notes: observationNotes,
+          mark: observationMark,
         }),
-      () => setObservationNotes("")
+      resetObservationForm
     );
   };
 
@@ -275,6 +293,7 @@ export function WellSheet({
           layout={layout}
           maxDrops={maxDrops}
           filledSlots={filledSlots}
+          marks={marks}
           onSlotClick={handleSlotClick}
           selectedSlot={selectedSlot}
           slotLabel={slotAriaLabel}
@@ -413,12 +432,20 @@ export function WellSheet({
               {drop.observations.map((o) => (
                 <div key={o.id} className="flex items-start gap-3">
                   <div className="flex-1">
-                    <div className="text-[13px] text-text-secondary">
+                    <div className="flex items-center gap-3 text-[13px] text-text-secondary">
                       {o.observedAt}
+                      {o.mark && (
+                        <span className="flex items-center gap-1.5 text-text-primary">
+                          <MarkDot mark={o.mark} />
+                          {t(`mark${o.mark}`)}
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-0.5 whitespace-pre-wrap text-[15px] text-text-primary">
-                      {o.notes}
-                    </div>
+                    {o.notes && (
+                      <div className="mt-0.5 whitespace-pre-wrap text-[15px] text-text-primary">
+                        {o.notes}
+                      </div>
+                    )}
                   </div>
                   {!readOnly && (
                     <button
@@ -457,6 +484,33 @@ export function WellSheet({
                     className="h-11 rounded-xl border-border-default bg-bg-surface text-[15px]"
                   />
                 </div>
+                <div className="space-y-2">
+                  <div className={labelClassName}>{t("mark")}</div>
+                  {/* もう一度押すと外れる */}
+                  <div className="flex flex-wrap gap-2">
+                    {CRYSTAL_MARKS.map((mark) => (
+                      <button
+                        type="button"
+                        key={mark}
+                        aria-pressed={observationMark === mark}
+                        onClick={() =>
+                          setObservationMark((current) =>
+                            current === mark ? null : mark
+                          )
+                        }
+                        className={cn(
+                          "flex h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-[13px]",
+                          observationMark === mark
+                            ? "border-border-strong bg-bg-surface text-text-primary"
+                            : "border-border-default bg-bg-surface text-text-secondary"
+                        )}
+                      >
+                        <MarkDot mark={mark} />
+                        {t(`mark${mark}`)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <textarea
                   value={observationNotes}
                   onChange={(e) => setObservationNotes(e.target.value)}
@@ -468,7 +522,7 @@ export function WellSheet({
                   type="button"
                   className="h-11 w-full rounded-xl"
                   onClick={handleAddObservation}
-                  disabled={busy || !observedAt || !observationNotes.trim()}
+                  disabled={busy || !canAddObservation}
                 >
                   {busy ? t("adding") : t("addObservation")}
                 </Button>

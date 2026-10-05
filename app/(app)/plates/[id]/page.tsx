@@ -2,6 +2,7 @@ import { getPlateById } from "@/lib/actions/plates";
 import { getConditionTemplates } from "@/lib/actions/condition-templates";
 import { PlateDetailClient } from "./plate-detail-client";
 import { toTokyoDate } from "@/lib/utils";
+import { bestMark } from "@/lib/wells";
 import type { WellData } from "@/types";
 
 export type WellCondition = {
@@ -45,7 +46,9 @@ export default async function PlateDetailPage({
         // observedAt は日付だけの列なので、UTC の日付として読む
         observedAt: o.observedAt.toISOString().slice(0, 10),
         notes: o.notes,
+        mark: o.mark,
       })),
+      bestMark: bestMark(d.observations),
     })),
   }));
 

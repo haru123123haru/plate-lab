@@ -10,6 +10,7 @@ import {
   trashedPlateWhere,
 } from "../lib/access-control";
 import {
+  addObservationSchema,
   createPlateSchema,
   createPlateTypeSchema,
   updatePlateSchema,
@@ -129,6 +130,21 @@ describe("validation schemas", () => {
     expect(
       updateUserSettingsSchema.safeParse({ appearance: "sepia" }).success
     ).toBe(false);
+  });
+
+  it("requires an observation to have a note or a mark, and only known marks", () => {
+    const parse = (fields: object) =>
+      addObservationSchema.safeParse({
+        dropId: "drop-1",
+        observedAt: "2026-10-05",
+        ...fields,
+      }).success;
+
+    expect(parse({ notes: "needles" })).toBe(true);
+    expect(parse({ notes: "", mark: "HARVESTED" })).toBe(true);
+    expect(parse({ notes: " ", mark: null })).toBe(false);
+    expect(parse({ notes: "" })).toBe(false);
+    expect(parse({ notes: "x", mark: "PRECIPITATE" })).toBe(false);
   });
 });
 

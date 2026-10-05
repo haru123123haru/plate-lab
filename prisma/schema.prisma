@@ -122,7 +122,9 @@ model Observation {
   dropId     String
   drop       Drop     @relation(fields: [dropId], references: [id], onDelete: Cascade)
   observedAt DateTime @db.Date
+  // 目印だけの観察は空文字
   notes      String   @db.Text
+  mark       CrystalMark?
   createdAt  DateTime @default(now())
 
   @@index([dropId, observedAt])
@@ -131,6 +133,13 @@ model Observation {
 enum PlateLayout {
   SITTING
   HANGING
+}
+
+// 観察で付ける結晶化の目印。良い順は HARVESTED > CRYSTAL > POSSIBLE（lib/wells.ts の bestMark）
+enum CrystalMark {
+  POSSIBLE
+  CRYSTAL
+  HARVESTED
 }
 
 // 条件セット（Reservoir + Screening テンプレートのペア）

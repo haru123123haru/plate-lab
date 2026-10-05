@@ -1,8 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { WellShape } from "@/components/well-shape";
-import type { PlateLayout, WellData } from "@/types";
+import { CRYSTAL_MARKS, MarkDot, WellShape } from "@/components/well-shape";
+import { useTranslation } from "@/components/locale-provider";
+import type { CrystalMark, PlateLayout, WellData } from "@/types";
 
 interface WellGridProps {
   rows: number;
@@ -15,6 +16,15 @@ interface WellGridProps {
 
 const ROW_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
+// 置き場所の番号 → そのドロップのいちばん良い目印
+function marksOf(well: WellData | undefined) {
+  const marks = new Map<number, CrystalMark>();
+  for (const drop of well?.drops ?? []) {
+    if (drop.bestMark) marks.set(drop.slot, drop.bestMark);
+  }
+  return marks;
+}
+
 export function WellGrid({
   rows,
   cols,
@@ -23,12 +33,17 @@ export function WellGrid({
   wells,
   onWellClick,
 }: WellGridProps) {
+  const { t } = useTranslation();
   const wellMap = new Map<string, WellData>();
   for (const well of wells) {
     wellMap.set(`${well.row}-${well.col}`, well);
   }
   // 1ドロップは今までどおり詰めて並べ、複数ドロップは中が見えるよう間を空ける
   const gap = maxDrops > 1 ? "gap-2" : "gap-[3px]";
+  // 凡例は、プレートに出ている目印だけを出す
+  const usedMarks = new Set(
+    wells.flatMap((well) => well.drops.map((drop) => drop.bestMark))
+  );
 
   return (
     <div className="p-4">
@@ -58,12 +73,21 @@ export function WellGrid({
             {Array.from({ length: cols }, (_, colIdx) => {
               const well = wellMap.get(`${rowIdx}-${colIdx}`);
               const filledSlots = new Set(well?.drops.map((d) => d.slot));
+              const marks = marksOf(well);
+              // 目印は読み上げにも足す（例: 「Well A1, 結晶あり」）
+              const markNames = [...new Set(marks.values())]
+                .sort(
+                  (a, b) => CRYSTAL_MARKS.indexOf(b) - CRYSTAL_MARKS.indexOf(a)
+                )
+                .map((mark) => t(`mark${mark}`));
 
               return (
                 <button
                   type="button"
                   key={colIdx}
-                  aria-label={`Well ${label}${colIdx + 1}`}
+                  aria-label={[`Well ${label}${colIdx + 1}`, ...markNames].join(
+                    ", "
+                  )}
                   onClick={() => well && onWellClick?.(well)}
                   className="flex-1 cursor-pointer"
                 >
@@ -71,6 +95,7 @@ export function WellGrid({
                     layout={layout}
                     maxDrops={maxDrops}
                     filledSlots={filledSlots}
+                    marks={marks}
                   />
                 </button>
               );
@@ -78,6 +103,17 @@ export function WellGrid({
           </div>
         ))}
       </div>
+
+      {CRYSTAL_MARKS.some((mark) => usedMarks.has(mark)) && (
+        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-text-secondary">
+          {CRYSTAL_MARKS.filter((mark) => usedMarks.has(mark)).map((mark) => (
+            <div key={mark} className="flex items-center gap-1.5">
+              <MarkDot mark={mark} />
+              {t(`mark${mark}`)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

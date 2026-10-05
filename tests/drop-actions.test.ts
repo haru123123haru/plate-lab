@@ -30,7 +30,7 @@ import {
   isDropBatchComplete,
   toDropBatchInput,
 } from "../components/bulk-drop-form";
-import { countUsedWells, summarizeSamples } from "../lib/wells";
+import { bestMark, countUsedWells, summarizeSamples } from "../lib/wells";
 
 const editablePlate = { userId: "user-a", deletedAt: null };
 const editableWell = { plate: editablePlate };
@@ -281,6 +281,22 @@ describe("addObservation", () => {
     const { data } = prismaMock.observation.create.mock.calls[0][0];
     expect(data.drop).toEqual({ connect: { id: "drop-1", ...editableDrop } });
     expect(data.observedAt.toISOString()).toBe("2026-09-25T00:00:00.000Z");
+    expect(data.mark).toBeNull();
+  });
+
+  it("stores a mark, and accepts a mark without a note", async () => {
+    prismaMock.observation.create.mockResolvedValue({ id: "obs-1" });
+
+    await addObservation({
+      dropId: "drop-1",
+      observedAt: "2026-09-25",
+      notes: " ",
+      mark: "CRYSTAL",
+    });
+
+    const { data } = prismaMock.observation.create.mock.calls[0][0];
+    expect(data.mark).toBe("CRYSTAL");
+    expect(data.notes).toBe("");
   });
 
   it("rejects a malformed date and an empty note", async () => {
@@ -445,6 +461,19 @@ describe("countUsedWells", () => {
         { _count: { drops: 4 } },
       ])
     ).toBe(2);
+  });
+});
+
+describe("bestMark", () => {
+  it("returns the best mark regardless of order, and keeps it after unmarked observations", () => {
+    expect(
+      bestMark([{ mark: null }, { mark: "CRYSTAL" }, { mark: "POSSIBLE" }])
+    ).toBe("CRYSTAL");
+    expect(bestMark([{ mark: "HARVESTED" }, { mark: "CRYSTAL" }])).toBe(
+      "HARVESTED"
+    );
+    expect(bestMark([{ mark: null }])).toBeNull();
+    expect(bestMark([])).toBeNull();
   });
 });
 

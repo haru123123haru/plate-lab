@@ -1,7 +1,33 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { PlateLayout } from "@/types";
+import type { CrystalMark, PlateLayout } from "@/types";
+
+// 結晶化の目印は、置き場所の内側の輪で出す。塗りはあとでサンプルの色に使うので空けておく
+export const MARK_RING: Record<CrystalMark, string> = {
+  POSSIBLE: "inset-ring-mark-possible",
+  CRYSTAL: "inset-ring-mark-crystal",
+  HARVESTED: "inset-ring-mark-harvested",
+};
+
+// 凡例とチップに並べる順
+export const CRYSTAL_MARKS: CrystalMark[] = [
+  "POSSIBLE",
+  "CRYSTAL",
+  "HARVESTED",
+];
+
+// 目印の名前の前に付ける、グリッドと同じ輪の小さい丸
+export function MarkDot({ mark }: { mark: CrystalMark }) {
+  return (
+    <span
+      className={cn(
+        "size-3 shrink-0 rounded-full bg-text-primary inset-ring-2",
+        MARK_RING[mark]
+      )}
+    />
+  );
+}
 
 // 置き場所の中心（x, y）と直径（d）を、ウェルの正方形に対する % で持つ
 type SlotPosition = { x: number; y: number; d: number };
@@ -50,6 +76,8 @@ interface WellShapeProps {
   layout: PlateLayout;
   maxDrops: number;
   filledSlots: ReadonlySet<number>;
+  // 置き場所の番号 → そのドロップのいちばん良い目印
+  marks?: ReadonlyMap<number, CrystalMark>;
   // 渡したときだけ置き場所を押せるボタンにする（ウェルのシート・作成画面用）
   onSlotClick?: (slot: number) => void;
   // 1つを選ぶ使い方（シート）で渡す。渡さなければ、塗った置き場所を「選択中」とする
@@ -62,6 +90,7 @@ export function WellShape({
   layout,
   maxDrops,
   filledSlots,
+  marks,
   onSlotClick,
   selectedSlot,
   slotLabel,
@@ -88,9 +117,15 @@ export function WellShape({
           width: `${pos.d}%`,
           height: `${pos.d}%`,
         };
+        const mark = marks?.get(slot);
         const slotClassName = cn(
           "absolute rounded-full",
-          filledSlots.has(slot) ? "bg-text-primary" : "bg-border-default"
+          filledSlots.has(slot) ? "bg-text-primary" : "bg-border-default",
+          // シートの大きい図は太く、グリッドの小さい置き場所は細く
+          mark && [
+            MARK_RING[mark],
+            onSlotClick ? "inset-ring-4" : "inset-ring-2",
+          ]
         );
 
         if (!onSlotClick) {
