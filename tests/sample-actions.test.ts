@@ -11,7 +11,6 @@ const prismaMock = vi.hoisted(() => {
     },
     sample: {
       findMany: vi.fn(),
-      findUnique: vi.fn(),
       deleteMany: vi.fn(),
       upsert: vi.fn(),
     },
@@ -48,7 +47,6 @@ const input = {
 beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.drop.findFirst.mockResolvedValue(null);
-  prismaMock.sample.findUnique.mockResolvedValue(null);
 });
 
 describe("getSamples", () => {
@@ -149,18 +147,23 @@ describe("updateSample", () => {
     expect(prismaMock.sample.upsert).not.toHaveBeenCalled();
   });
 
-  it("also asks when only the style row of the target exists", async () => {
-    prismaMock.sample.findUnique.mockResolvedValue({ id: "sample-9" });
-    prismaMock.drop.count.mockResolvedValue(1);
-
-    expect(await updateSample(input)).toEqual({
-      needsMerge: true,
-      dropCount: 1,
+  it("overwrites a leftover style row of a name with no drops instead of merging", async () => {
+    expect(await updateSample(input)).toEqual({ success: true });
+    expect(prismaMock.drop.count).not.toHaveBeenCalled();
+    expect(prismaMock.sample.upsert).toHaveBeenCalledWith({
+      where: { userId_name: { userId: "user-a", name: "Lysozyme" } },
+      create: {
+        userId: "user-a",
+        name: "Lysozyme",
+        icon: "dna",
+        color: "blue",
+      },
+      update: { icon: "dna", color: "blue" },
     });
   });
 
   it("merges and keeps the target's style", async () => {
-    prismaMock.sample.findUnique.mockResolvedValue({ id: "sample-9" });
+    prismaMock.drop.findFirst.mockResolvedValue({ id: "drop-9" });
 
     expect(await updateSample({ ...input, merge: true })).toEqual({
       success: true,

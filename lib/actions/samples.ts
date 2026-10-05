@@ -70,14 +70,13 @@ export async function updateSample(data: {
 
   return prisma.$transaction(async (tx) => {
     if (newName !== name) {
-      const [targetDrop, targetRow] = await Promise.all([
-        tx.drop.findFirst({ where: ownDrops(newName), select: { id: true } }),
-        tx.sample.findUnique({
-          where: { userId_name: { userId, name: newName } },
-          select: { id: true },
-        }),
-      ]);
-      const targetExists = targetDrop !== null || targetRow !== null;
+      // 変更先が「ある」とみなすのはドロップがあるときだけ。見た目の行だけ残った名前は
+      // 一覧に出ないので、まとめずに選んだ見た目で上書きする
+      const targetDrop = await tx.drop.findFirst({
+        where: ownDrops(newName),
+        select: { id: true },
+      });
+      const targetExists = targetDrop !== null;
       if (targetExists && !merge) {
         const dropCount = await tx.drop.count({ where: ownDrops(name) });
         return { needsMerge: true as const, dropCount };
