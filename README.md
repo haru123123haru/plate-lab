@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PLATE LAB
 
-## Getting Started
+DNA結晶化プレートの情報を Web で管理し、プレートに貼った QR コードから詳細画面に飛べるようにするアプリ。実験台でスマホから使う前提の、モバイルファーストの画面になっている。
 
-First, run the development server:
+本番: https://plate-manage-app.vercel.app
+
+## 構成
+
+Next.js 16（App Router）・React 19・Prisma 7・Supabase（PostgreSQL と認証）・Tailwind CSS 4・shadcn/ui。Vercel にデプロイしていて、`main` への push で本番に出る。
+
+設計とインフラの詳細は [`docs/architecture.md`](docs/architecture.md) にまとめてある。機能ごとの計画書は `docs/plans/` にある。
+
+## ローカルで動かす
+
+Docker Desktop を起動してから、次を実行する。手順の詳細と、しばらく触っていない状態から再開するときの注意は `docs/architecture.md` の6章にある。
 
 ```bash
+npx supabase start
+npx prisma migrate deploy
+npx prisma generate
+npx prisma db seed   # データが無いときだけ。本番では絶対に実行しない
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザでは `http://127.0.0.1:3000` を開く（`localhost` ではない）。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## チェック
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run check   # format・lint・typecheck・test・build を順に流す
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`build` は `prisma migrate deploy` を含むので、`.env` の `DIRECT_URL` が指す DB にマイグレーションが適用される。

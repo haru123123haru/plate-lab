@@ -1,6 +1,6 @@
 # PLATE LAB 現状アーキテクチャ
 
-最終更新: 2026-09-25
+最終更新: 2026-10-05
 
 このドキュメントは、PLATE LAB の設計とインフラの現状を一か所にまとめたもの。読者は開発者本人（および引き継ぎを受ける人）を想定している。Next.js の App Router と Prisma の基本は知っている前提で書いた。
 
@@ -49,7 +49,7 @@
 - `well-grid-selector.tsx` — ウェルを複数選ぶためのグリッド
 - `bulk-drop-form.tsx` — 選んだウェルと置き場所に、同じサンプルをまとめて入れるフォーム。作成画面と、詳細画面の編集モードで使う
 
-サイズで目立つのは `components/new-plate-sheet.tsx` の653行。ウェル選択とサンプル名の入力は `bulk-drop-form.tsx` に切り出したが、まだプレート作成フォームとテンプレート選択が同居している。2番目は `plate-detail-client.tsx`（503行）。
+サイズで目立つのは `app/(app)/plates/[id]/plate-detail-client.tsx` の524行。2番目は `components/new-plate-sheet.tsx`（418行）で、653行あったものを、ウェル選択とサンプル名の入力を `bulk-drop-form.tsx` に、プレートタイプと条件の追加を設定の管理ページに出して減らした。
 
 OAuth のコールバック（`app/auth/callback/route.ts`）だけは少し特殊で、Supabase 側の認証が済んだ直後に Prisma の `User` レコードが無ければ作る。Supabase Auth のユーザーと Prisma の `User` は別テーブルなので、この橋渡しがないと Google ログインしたユーザーがアプリ内で存在しないことになる。
 
@@ -74,6 +74,8 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 記録の単位は、2026-09-25 にウェルからドロップへ移した。それまでは記録欄が `Well` に、サンプル名が `Plate.sampleName` にあったが、1ウェルに複数のドロップを置くプレートでは表せない。「使用中のウェル」は「ドロップが1つ以上あるウェル」で、数え方は `lib/wells.ts` の `countUsedWells` に1つにまとめてある。サンプル検索もドロップのサンプル名を見る。観察日はクライアントから `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。`Date` のまま送ると、日本時間の0〜9時は UTC で前日になるためだ。経緯は計画書 `docs/plans/2026-09-24-plate-drops.md`。
 
+画面に出す日付は、元の値の種類で出し方が分かれる。仕込み日と観察日は「UTC の0時」で保存した日付なので、`toISOString().slice(0, 10)` で切ればそのまま正しい。詳細画面の「更新日」やゴミ箱の削除日のようなタイムスタンプは、`lib/utils.ts` の `toTokyoDate` で日本時間を指定して日付にする。サーバー（Vercel）は UTC で動くので、タイムスタンプを `slice` で切ると日本時間の0〜9時が前日に見える（2026-10-02 に直した）。
+
 当初の設計では `Plate` が持つテンプレートは1本だけで、足りない分はメモのテキストで補う想定だった。実装はそこから離れていて、リザーバー条件とスクリーニング条件を別々の `ConditionTemplate` として持つ形になっている。分岐点はマイグレーション `20260218064000_split_reservoir_screening` で、ここで `templateId` が2つに割れた。
 
 条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、条件を足すときは Markdown の表に行を足す。
@@ -82,7 +84,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 
-マイグレーションは14本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。残りの4本はドロップの導入で、`add_drops_and_plate_shape` で形の欄と `Drop`・`Observation` を足し、`add_multi_drop_plate_types` で新しい2種類を入れ、`move_wells_to_drops` で使用中のウェルを1番の置き場所のドロップへ移し、`drop_well_record_columns` で役割の終わった `Plate.sampleName`・`Well` の記録欄・`WellStatus`・`PlateType.wellCount` を消した。移すときに `Well` の残りの記録欄と観察結果の status は、ドロップのメモへ詰めてある。
+マイグレーションは16本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。残りの4本はドロップの導入で、`add_drops_and_plate_shape` で形の欄と `Drop`・`Observation` を足し、`add_multi_drop_plate_types` で新しい2種類を入れ、`move_wells_to_drops` で使用中のウェルを1番の置き場所のドロップへ移し、`drop_well_record_columns` で役割の終わった `Plate.sampleName`・`Well` の記録欄・`WellStatus`・`PlateType.wellCount` を消した。移すときに `Well` の残りの記録欄と観察結果の status は、ドロップのメモへ詰めてある。最後の2本は使ってみて気になった点の対応で、`add_96_well_plate_type` で `96 Well - Sitting` を共有種別に入れ、`add_plate_setup_date` で `Plate.setupDate` を足した。
 
 ---
 
@@ -104,7 +106,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 RLS SQL の末尾には「Prisma は service_role キーで接続するため」というコメントがあるが、これは事実と違う。`SUPABASE_SERVICE_ROLE_KEY` はコードのどこからも参照されていない。Prisma が RLS を受けないのは、`postgres` ロールで直接つないでいるからだ。
 
-テストは3本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` と `tests/drop-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりとドロップ・観察の Action が実際に渡す `where` / `connect` に、持ち主とゴミ箱の条件が入っているかを検査する。この2本があるので、ヘルパーの呼び忘れは検出できる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
+テストは5本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` と `tests/drop-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりとドロップ・観察の Action が実際に渡す `where` / `connect` に、持ち主とゴミ箱の条件が入っているかを検査する。`tests/plate-type-actions.test.ts` も同じやり方で、プレートタイプの削除が自分の種別に限られ、使っているプレートがあれば拒むことを検査する。この3本があるので、ヘルパーの呼び忘れは検出できる。残りの `tests/utils.test.ts` は `toTokyoDate` の日付の切り方を確かめる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
 
 ---
 
@@ -178,7 +180,7 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ## 7. 本番の状態
 
-ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。これで、マイグレーション14本がすべて本番DBに適用されている。
+ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。そのあとのマイグレーションも含め、16本すべてが本番DBに適用されている。
 
 本番の共有プレート種別は3つある。ドロップの導入で入れた2つ（`24 Well - Sitting 4 Drop` と `15 Well - Hanging 3 Drop`）と、2026-09-25 にマイグレーション `add_96_well_plate_type` で入れた `96 Well - Sitting`（8×12、1ドロップ）だ。seed にあるほかの共有種別（`24 Well - Hanging` など）は、本番には最初から無い。ほかに、ユーザーが自分で作った `96well-sitting`（8×12）がある。
 
@@ -212,11 +214,11 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 ひとつは、個人テンプレートに中身を登録できないこと。`createConditionTemplate` は名前と説明しか受け取らず、`TemplateWell` を作る経路がどこにも無い。つまり、共有の PEG・MPD 以外の条件は、実質的に登録できない。
 
-もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書は `docs/plans/2026-09-24-db-integration-tests.md`（未着手）。
+もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書はまだ無い。
 
 サインアップがまだ開いていることも残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
 
-残りは軽い。`components/new-plate-sheet.tsx` が653行あり、分割の候補になっている。ドロップと観察を足しても `Plate.updatedAt` が変わらないので、一覧の更新順と詳細の「更新日」に反映されない。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
+残りは軽い。`plate-detail-client.tsx` が524行あり、分割の候補になっている。ドロップと観察を足しても `Plate.updatedAt` が変わらないので、一覧の更新順と詳細の「更新日」に反映されない。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
 
 運用面では、Supabase Free が7日間アクセスの無いプロジェクトを一時停止する点に注意がいる。復帰は自動ではなく、ダッシュボードから手動で Resume する。ビルドが本番DBに接続するようになったため、停止中はデプロイもできない。
 
