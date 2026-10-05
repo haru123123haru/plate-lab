@@ -66,6 +66,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 - `Well` — ウェルの位置（`position`・`row`・`col`）だけを持つ。`plate` に対して cascade delete、`@@unique([plateId, position])` で位置の重複を防ぐ
 - `Drop` — 1ドロップ分の記録。サンプル名と濃度（必須）、メモ（任意）。`slot` は 1〜`maxDrops` の置き場所の番号で、`@@unique([wellId, slot])` で同じ置き場所に2つ入らない
 - `Observation` — ドロップの観察の履歴。観察日（日付だけ）とメモに、結晶化の目印（`mark`。怪しい `POSSIBLE`・結晶あり `CRYSTAL`・結晶取り済み `HARVESTED`、無くてもよい）。目印だけの観察はメモが空文字。詳細画面のグリッドは、ドロップの観察の中でいちばん良い目印（`lib/wells.ts` の `bestMark`）を置き場所の内側の輪で描く。塗りは、あとで作るサンプルの色のために空けてある
+- `Sample` — サンプルの見た目（アイコンと色）。(ユーザー, サンプル名) で一意で、ドロップとは `Drop.sampleName` の文字列で結ぶ。見た目を変えたサンプルだけ行があり、無ければフラスコ・グレーで出す。サンプルの一覧（設定の `/settings/samples`）はドロップの名前から組み立て、行は見た目を重ねるためだけに使う。名前を変えると、そのサンプルのドロップもゴミ箱のプレートを含めてまとめて書き換え、変更先の名前がすでにあれば確認のうえまとめる（`lib/actions/samples.ts`）。候補は `lib/samples.ts`
 - `ConditionTemplate` — 条件テンプレート。`TemplateWell` を持つ
 - `TemplateWell` — テンプレート内の1ウェル分の組成。詳細画面では、プレートのウェルと同じ位置の行を引いて条件を表示する
 - `ConditionSet` — リザーバーとスクリーニングのテンプレートをセットにしたもの
@@ -84,7 +85,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 
-マイグレーションは17本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。残りの4本はドロップの導入で、`add_drops_and_plate_shape` で形の欄と `Drop`・`Observation` を足し、`add_multi_drop_plate_types` で新しい2種類を入れ、`move_wells_to_drops` で使用中のウェルを1番の置き場所のドロップへ移し、`drop_well_record_columns` で役割の終わった `Plate.sampleName`・`Well` の記録欄・`WellStatus`・`PlateType.wellCount` を消した。移すときに `Well` の残りの記録欄と観察結果の status は、ドロップのメモへ詰めてある。その次の2本は使ってみて気になった点の対応で、`add_96_well_plate_type` で `96 Well - Sitting` を共有種別に入れ、`add_plate_setup_date` で `Plate.setupDate` を足した。最後の `add_observation_mark` は観察に結晶化の目印を足し、ドロップのメモに残っていた `Status: CRYSTAL` を「結晶あり」の観察として移した。
+マイグレーションは18本。`init` で全体を作り、`split_reservoir_screening` で条件を2軸化、`add_condition_set` でセットを追加、`remove_completed_status` で `PlateStatus` から `COMPLETED` を削除、`add_condition_ownership` で所有権のカラムを足した。`add_plate_soft_delete` で `deletedAt` を足し、`archive_to_trash` でアーカイブ済みをゴミ箱へ移し、`drop_plate_status` で `status` と `PlateStatus` を削除した。最後の2本はスキーマを変えていない。`revoke_data_api_access` は権限を外し（→4章）、`fill_default_template_wells` は本番の共有テンプレートに条件を入れた（→7章）。残りの4本はドロップの導入で、`add_drops_and_plate_shape` で形の欄と `Drop`・`Observation` を足し、`add_multi_drop_plate_types` で新しい2種類を入れ、`move_wells_to_drops` で使用中のウェルを1番の置き場所のドロップへ移し、`drop_well_record_columns` で役割の終わった `Plate.sampleName`・`Well` の記録欄・`WellStatus`・`PlateType.wellCount` を消した。移すときに `Well` の残りの記録欄と観察結果の status は、ドロップのメモへ詰めてある。その次の2本は使ってみて気になった点の対応で、`add_96_well_plate_type` で `96 Well - Sitting` を共有種別に入れ、`add_plate_setup_date` で `Plate.setupDate` を足した。その次の `add_observation_mark` は観察に結晶化の目印を足し、ドロップのメモに残っていた `Status: CRYSTAL` を「結晶あり」の観察として移した。最後の `add_sample` はサンプルの見た目の `Sample` を足した。
 
 ---
 
@@ -92,7 +93,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 ここがこのアプリで一番込み入っていて、一番誤解しやすい部分。
 
-所有権のモデルそのものは `lib/access-control.ts` に集約されている。考え方は単純で、共有カタログ（`isDefault = true`）は全員が読め、自分が作ったもの（`createdById = userId`）は自分が読める。この2条件の OR を Prisma の `where` 句として返す関数が、`PlateType`・`ConditionTemplate`・`ConditionSet` の3種それぞれに用意されている。`Plate` から下（`Well`・`Drop`・`Observation`）はもっと単純で、プレートの持ち主しか触れない。ゴミ箱にあるプレートのドロップと観察は、読めるが編集できない。ドロップと観察の書き込みは、`editableWellWhere` / `editableDropWhere`（ウェル → プレートとたどって、持ち主でゴミ箱に無いこと）を `where` か `connect` の条件に入れて行う。管理者ロールは存在しないので、共有カタログを編集できる人は誰もいない。
+所有権のモデルそのものは `lib/access-control.ts` に集約されている。考え方は単純で、共有カタログ（`isDefault = true`）は全員が読め、自分が作ったもの（`createdById = userId`）は自分が読める。この2条件の OR を Prisma の `where` 句として返す関数が、`PlateType`・`ConditionTemplate`・`ConditionSet` の3種それぞれに用意されている。`Plate` から下（`Well`・`Drop`・`Observation`）はもっと単純で、プレートの持ち主しか触れない。ゴミ箱にあるプレートのドロップと観察は、読めるが編集できない。ドロップと観察の書き込みは、`editableWellWhere` / `editableDropWhere`（ウェル → プレートとたどって、持ち主でゴミ箱に無いこと）を `where` か `connect` の条件に入れて行う。例外はサンプル名の変更（`updateSample`）だけで、復元したプレートだけ古い名前にならないよう、ゴミ箱のプレートのドロップも書き換える。`Sample` は持ち主（`userId`）で絞る。管理者ロールは存在しないので、共有カタログを編集できる人は誰もいない。
 
 それを実際に適用しているのが `lib/actions/` の各 Server Action。全ファイルが先頭で `getCurrentUserId()`（`lib/auth.ts`。未認証なら `/login` へ redirect）を呼び、取得した userId を `where` 句に必ず混ぜる。丁寧に作られている箇所が2つあって、`getPlateById()` は `where` で絞ったうえで取得後に `plate.userId !== userId` をもう一度確認する。`deleteConditionTemplate()` は「他ユーザーの ConditionSet や Plate から参照されていないか」をトランザクション内で確認してから削除する。
 

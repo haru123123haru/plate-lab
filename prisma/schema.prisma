@@ -22,6 +22,7 @@ model User {
   plateTypes PlateType[]
   conditionTemplates ConditionTemplate[]
   conditionSets      ConditionSet[]
+  samples    Sample[]
   settings   UserSettings?
 }
 
@@ -114,6 +115,20 @@ model Drop {
   updatedAt     DateTime      @updatedAt
 
   @@unique([wellId, slot])
+}
+
+// サンプルの見た目。ドロップとは名前（Drop.sampleName）で結ぶ。
+// 見た目を変えたサンプルだけ行がある。行が無ければ既定の見た目（lib/samples.ts）
+model Sample {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  name   String
+  // lib/samples.ts の候補のキー。知らない値は既定の見た目で出す
+  icon   String
+  color  String
+
+  @@unique([userId, name])
 }
 
 // ドロップの観察記録（履歴）

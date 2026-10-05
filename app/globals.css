@@ -51,6 +51,22 @@
   --color-mark-possible: var(--mark-possible);
   --color-mark-crystal: var(--mark-crystal);
   --color-mark-harvested: var(--mark-harvested);
+  --color-sample-gray-bg: var(--sample-gray-bg);
+  --color-sample-gray-fg: var(--sample-gray-fg);
+  --color-sample-red-bg: var(--sample-red-bg);
+  --color-sample-red-fg: var(--sample-red-fg);
+  --color-sample-orange-bg: var(--sample-orange-bg);
+  --color-sample-orange-fg: var(--sample-orange-fg);
+  --color-sample-yellow-bg: var(--sample-yellow-bg);
+  --color-sample-yellow-fg: var(--sample-yellow-fg);
+  --color-sample-green-bg: var(--sample-green-bg);
+  --color-sample-green-fg: var(--sample-green-fg);
+  --color-sample-teal-bg: var(--sample-teal-bg);
+  --color-sample-teal-fg: var(--sample-teal-fg);
+  --color-sample-blue-bg: var(--sample-blue-bg);
+  --color-sample-blue-fg: var(--sample-blue-fg);
+  --color-sample-purple-bg: var(--sample-purple-bg);
+  --color-sample-purple-fg: var(--sample-purple-fg);
 }
 
 :root {
@@ -70,6 +86,23 @@
   --mark-possible: #E8A200;
   --mark-crystal: #34A853;
   --mark-harvested: #1A73E8;
+  /* サンプルのチップ（lib/samples.ts の色）。薄い背景に濃い文字とアイコン */
+  --sample-gray-bg: #EEEEEE;
+  --sample-gray-fg: #555555;
+  --sample-red-bg: #FDE8E7;
+  --sample-red-fg: #B3261E;
+  --sample-orange-bg: #FDEBDD;
+  --sample-orange-fg: #A34500;
+  --sample-yellow-bg: #FBF1CC;
+  --sample-yellow-fg: #735400;
+  --sample-green-bg: #E2F3E6;
+  --sample-green-fg: #1E7B34;
+  --sample-teal-bg: #DDF2F0;
+  --sample-teal-fg: #0B6E66;
+  --sample-blue-bg: #E3EDFC;
+  --sample-blue-fg: #1A5BC4;
+  --sample-purple-bg: #EEE6FA;
+  --sample-purple-fg: #6B3FB5;
 
   /* shadcn variables mapped to design tokens */
   --radius: 0.625rem;
@@ -109,6 +142,23 @@
   --mark-possible: #D97706;
   --mark-crystal: #16A34A;
   --mark-harvested: #2563EB;
+  /* サンプルのチップ。暗い背景に明るい文字とアイコン */
+  --sample-gray-bg: #2C2C2C;
+  --sample-gray-fg: #C8C8C8;
+  --sample-red-bg: #3A1D1B;
+  --sample-red-fg: #F7A29B;
+  --sample-orange-bg: #3A2614;
+  --sample-orange-fg: #F5B27A;
+  --sample-yellow-bg: #362E12;
+  --sample-yellow-fg: #EBCB62;
+  --sample-green-bg: #18301F;
+  --sample-green-fg: #7DD69A;
+  --sample-teal-bg: #123230;
+  --sample-teal-fg: #6FD3C8;
+  --sample-blue-bg: #19263D;
+  --sample-blue-fg: #8DB6F5;
+  --sample-purple-bg: #2A1F3D;
+  --sample-purple-fg: #C3A6F2;
 
   --background: #121212;
   --foreground: #F0F0F0;

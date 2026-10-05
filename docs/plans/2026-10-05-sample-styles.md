@@ -29,7 +29,7 @@
 model Sample {
   id     String @id @default(uuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
   name   String
   icon   String
   color  String
@@ -84,19 +84,19 @@ model Sample {
 
 ### タスク
 
-- [ ] `prisma/schema.prisma` — `Sample` と `User.samples` を足す
-- [ ] `prisma/migrations/20261005010000_add_sample/migration.sql` — テーブルと一意制約
-- [ ] `lib/samples.ts` — アイコンと色の候補、既定値、知らない値を既定値にする関数
-- [ ] `lib/validations.ts` — `updateSampleSchema`
-- [ ] `lib/actions/samples.ts` — `getSamples`・`getSampleStyles`・`updateSample`
-- [ ] `app/globals.css` — サンプルの色8つ（背景と文字）をライトとダークで足す
-- [ ] `components/sample-chip.tsx` — アイコンと色のチップ
-- [ ] `app/(app)/settings/samples/page.tsx`・`samples-client.tsx` — 管理ページと編集・まとめる確認のダイアログ
-- [ ] `app/(app)/settings/settings-client.tsx` — 「サンプル」の行
-- [ ] `lib/i18n.ts` — ページ名・候補の名前・まとめる確認・空の表示（日英）
-- [ ] `tests/sample-actions.test.ts` — まとめる確認を返すこと、ドロップの書き換えがゴミ箱も含めて自分のプレートだけに効くこと、まとめるときに変更先の見た目が残ること、見た目だけの変更は upsert になること
-- [ ] `tests/validation-access-control.test.ts` — 候補に無いアイコン・色と空の名前を拒むこと
-- [ ] `docs/architecture.md` — `Sample` の説明とマイグレーションの本数
+- [x] `prisma/schema.prisma` — `Sample` と `User.samples` を足す
+- [x] `prisma/migrations/20261005010000_add_sample/migration.sql` — テーブルと一意制約
+- [x] `lib/samples.ts` — アイコンと色の候補、既定値、知らない値を既定値にする関数
+- [x] `lib/validations.ts` — `updateSampleSchema`
+- [x] `lib/actions/samples.ts` — `getSamples`・`getSampleStyles`・`updateSample`
+- [x] `app/globals.css` — サンプルの色8つ（背景と文字）をライトとダークで足す
+- [x] `components/sample-chip.tsx` — アイコンと色のチップ
+- [x] `app/(app)/settings/samples/page.tsx`・`samples-client.tsx` — 管理ページと編集・まとめる確認のダイアログ
+- [x] `app/(app)/settings/settings-client.tsx` — 「サンプル」の行
+- [x] `lib/i18n.ts` — ページ名・候補の名前・まとめる確認・空の表示（日英）
+- [x] `tests/sample-actions.test.ts` — まとめる確認を返すこと、ドロップの書き換えがゴミ箱も含めて自分のプレートだけに効くこと、まとめるときに変更先の見た目が残ること、見た目だけの変更は upsert になること
+- [x] `tests/validation-access-control.test.ts` — 候補に無いアイコン・色と空の名前を拒むこと
+- [x] `docs/architecture.md` — `Sample` の説明とマイグレーションの本数
 
 ### 完了条件
 
@@ -106,6 +106,19 @@ model Sample {
   - 管理ページにドロップのサンプルが並び、アイコンと色を変えられる
   - 名前を変えると、プレート詳細のドロップの名前も変わる
   - 既にある名前に変えると確認が出て、まとめたあとは1行になり、変更先の見た目が残る
+
+### 実測（2026-10-05、ローカルの dev サーバー、Playwright の Chromium、402px 幅）
+
+- `migrate diff --from-config-datasource` の差分は無し
+- `tester@example.com` の管理ページに Lysozyme（99）と Thaumatin（72）が並ぶ。Catalase と Insulin はゴミ箱のプレートにしか無いので出ない
+- Lysozyme を DNA・青にして保存すると、一覧のチップに反映される。ライトとダークの両方で、8色ともチップの文字が読める（コントラストはライトで 4.62〜6.43、ダークで 7.32〜8.51）
+- Thaumatin を Thaumatinn（赤）に変えると、72件のドロップの名前も変わる。続けて Lysozyme に変えると「ドロップ72件の名前が変わる」確認が出て、まとめたあとは Lysozyme（171、DNA・青）の1行だけになり、Thaumatinn の行は消えた。確かめたあと、ドロップの名前は SQL で Thaumatin に戻した
+
+計画とずれた点:
+
+- 色を `style` の `var(--sample-…)` で当てたら、色が出なかった。Tailwind v4 は、どのクラスからも使われていない CSS 変数を出力から落とす。`@theme` に `--color-sample-<色>-bg/-fg` を登録し、`bg-sample-red-bg` のようなクラス名を `components/sample-chip.tsx` に書き切る形にした（目印の色と同じ作り）
+- `User` との関係は、ほかのモデルと同じく `onDelete` を付けない形にした
+- 動いていた dev サーバーは、Prisma クライアントを作り直す前に起動していたので、`globalThis` に残った古いクライアント（`sample` が無い）でエラーになった。スキーマを変えたら dev サーバーを立て直す
 
 ## Phase 2: サンプル画面のカード
 

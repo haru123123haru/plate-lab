@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SAMPLE_COLORS, SAMPLE_ICONS } from "@/lib/samples";
 
 export const signUpSchema = z.object({
   name: z.string().min(1).max(100),
@@ -50,6 +51,18 @@ const dropBatchSchema = z.object({
       { message: "Duplicate slot" }
     ),
 });
+
+// 見た目と名前をまとめて変える。name は今の名前、newName は変えたあとの名前（同じなら見た目だけ）
+export const updateSampleSchema = z
+  .object({
+    name: dropFieldsSchema.shape.sampleName,
+    newName: dropFieldsSchema.shape.sampleName,
+    icon: z.enum(SAMPLE_ICONS),
+    color: z.enum(SAMPLE_COLORS),
+    // 変更先の名前のサンプルがすでにあるとき、まとめてよいか
+    merge: z.boolean().optional(),
+  })
+  .strict();
 
 export const bulkCreateDropsSchema = dropBatchSchema.extend({
   plateId: z.string().trim().min(1).max(100),
