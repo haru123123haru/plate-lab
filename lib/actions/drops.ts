@@ -15,6 +15,7 @@ import {
   resourceIdSchema,
   updateDropSchema,
 } from "@/lib/validations";
+import type { CrystalMark } from "@/types";
 
 export async function createDrop(data: {
   wellId: string;
@@ -151,19 +152,21 @@ export async function addObservation(data: {
   dropId: string;
   observedAt: string;
   notes: string;
+  mark?: CrystalMark | null;
 }) {
   const userId = await getCurrentUserId();
   const parsed = addObservationSchema.safeParse(data);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
-  const { dropId, observedAt, notes } = parsed.data;
+  const { dropId, observedAt, notes, mark } = parsed.data;
 
   try {
     return await prisma.observation.create({
       data: {
         observedAt: new Date(`${observedAt}T00:00:00Z`),
         notes,
+        mark: mark ?? null,
         drop: { connect: { id: dropId, ...editableDropWhere(userId) } },
       },
     });

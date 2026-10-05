@@ -48,6 +48,9 @@
   --color-border-subtle: var(--border-subtle);
   --color-accent-positive: var(--accent-positive);
   --color-accent-negative: var(--accent-negative);
+  --color-mark-possible: var(--mark-possible);
+  --color-mark-crystal: var(--mark-crystal);
+  --color-mark-harvested: var(--mark-harvested);
 }
 
 :root {
@@ -63,6 +66,10 @@
   --border-subtle: #F5F5F5;
   --accent-positive: #34A853;
   --accent-negative: #D93025;
+  /* 結晶化の目印（ウェルの置き場所の輪） */
+  --mark-possible: #E8A200;
+  --mark-crystal: #34A853;
+  --mark-harvested: #1A73E8;
 
   /* shadcn variables mapped to design tokens */
   --radius: 0.625rem;
@@ -98,6 +105,10 @@
   --border-subtle: #1A1A1A;
   --accent-positive: #4ADE80;
   --accent-negative: #EF4444;
+  /* 輪は白っぽい塗りの内側に描くので、ライトより濃くする */
+  --mark-possible: #D97706;
+  --mark-crystal: #16A34A;
+  --mark-harvested: #2563EB;
 
   --background: #121212;
   --foreground: #F0F0F0;
