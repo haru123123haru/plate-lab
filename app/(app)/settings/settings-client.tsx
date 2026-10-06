@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   FlaskConical,
   TestTubes,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
@@ -120,6 +121,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               icon={TestTubes}
               title={t("samples")}
               onClick={() => router.push("/settings/samples")}
+            />
+            <ListRow
+              icon={FileUp}
+              title={t("importCsv")}
+              onClick={() => router.push("/settings/import")}
             />
           </div>
         </div>

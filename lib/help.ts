@@ -139,6 +139,28 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       ],
     },
     {
+      id: "import",
+      title: "手元のプレートを CSV でまとめて登録する",
+      intro:
+        "アプリを使う前からあるプレートは、決まった形の CSV からまとめて登録できます。1行に1つのドロップを書き、同じプレート名の行が1枚のプレートになります。",
+      steps: [
+        {
+          items: [
+            "設定の「CSV から取り込む」を開き、「テンプレートをダウンロード」を押す",
+            "テンプレートを Excel で開き、例の行を消して自分のプレートを書く",
+            "「CSV UTF-8」か「CSV」で保存し、「CSV ファイルを選ぶ」で選ぶ",
+            "取り込む内容を確かめ、「取り込む」を押す",
+          ],
+        },
+      ],
+      notes: [
+        "同じプレートの2行目以降は、プレートタイプや仕込み日を空にしてかまいません。",
+        "観察を入れるときは、同じウェル・置き場所の行を観察の数だけ並べ、観察日と目印かメモを書きます。観察の列は空でもかまいません。",
+        "直す必要がある行があると、行番号と理由が出て、取り込めません。直して選び直してください。",
+        "既にあるプレートと同じ名前でも、新しいプレートとして登録されます。",
+      ],
+    },
+    {
       id: "settings",
       title: "設定を変える",
       intro:
@@ -267,6 +289,28 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       ],
       notes: [
         'A plate removed with "Delete Permanently" cannot be restored, including its wells and observations.',
+      ],
+    },
+    {
+      id: "import",
+      title: "Register many plates from a CSV",
+      intro:
+        "Plates you had before using the app can be registered at once from a CSV in a fixed format. Write one drop per row; rows with the same plate name become one plate.",
+      steps: [
+        {
+          items: [
+            'Open "Import from CSV" in Settings and tap "Download template"',
+            "Open the template in Excel, delete the example rows and write your plates",
+            'Save as "CSV UTF-8" or "CSV", then pick it with "Choose a CSV file"',
+            'Check what will be imported and tap "Import"',
+          ],
+        },
+      ],
+      notes: [
+        "After the first row of a plate, you can leave the plate type and set-up date empty.",
+        "To add observations, repeat the row of the same well and slot once per observation, with the date and a mark or a note. The observation columns can be left empty.",
+        "If some rows need fixing, their row numbers and reasons are shown and nothing is imported. Fix them and choose the file again.",
+        "A plate with the same name as an existing one is registered as a new plate.",
       ],
     },
     {

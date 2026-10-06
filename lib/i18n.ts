@@ -234,6 +234,38 @@ const translations = {
     colorTeal: "Teal",
     colorBlue: "Blue",
     colorPurple: "Purple",
+    // CSV の取り込み
+    importCsv: "Import from CSV",
+    importIntro:
+      'Register plates, drops and observations at once from a CSV in a fixed format. Download the template, fill it in with Excel, and save it as "CSV UTF-8" or "CSV".',
+    downloadTemplate: "Download template",
+    chooseCsv: "Choose a CSV file",
+    importErrors: "ROWS TO FIX",
+    importPreview: "TO BE IMPORTED",
+    importLine: "Row {line}:",
+    importMoreErrors: "and {count} more",
+    importCounts: "{drops} drops · {observations} observations",
+    importPlates: "Import {count} plates",
+    importing: "Importing...",
+    importErrEmpty: "The file has no rows.",
+    importErrMissingColumn: 'The "{column}" column is missing.',
+    importErrTooManyRows: "You can import up to {rows} rows at a time.",
+    importErrTooManyPlates: "You can import up to {plates} plates at a time.",
+    importErrRequired: '"{column}" is empty.',
+    importErrTooLong: '"{column}" is too long.',
+    importErrConflict:
+      '"{column}" differs from other rows of the same plate or drop: {value}',
+    importErrUnknownPlateType: 'There is no plate type named "{value}".',
+    importErrAmbiguousPlateType: 'More than one plate type is named "{value}".',
+    importErrUnknownTemplate: 'There is no condition named "{value}".',
+    importErrAmbiguousTemplate: 'More than one condition is named "{value}".',
+    importErrInvalidDate:
+      'Cannot read the date in "{column}": {value} (use 2026-08-01 or 2026/8/1)',
+    importErrInvalidWell: 'Well "{value}" is not on this plate.',
+    importErrInvalidSlot: 'Slot "{value}" is not on this plate.',
+    importErrInvalidMark:
+      'Unknown mark "{value}" (use POSSIBLE, CRYSTAL or HARVESTED).',
+    importErrObservationNeedsContent: "An observation needs a mark or a note.",
   },
   ja: {
     // Navigation
@@ -466,6 +498,40 @@ const translations = {
     colorTeal: "青緑",
     colorBlue: "青",
     colorPurple: "紫",
+    // CSV の取り込み
+    importCsv: "CSV から取り込む",
+    importIntro:
+      "決まった形の CSV から、プレートとドロップ、観察をまとめて登録します。テンプレートをダウンロードして Excel で埋め、「CSV UTF-8」か「CSV」で保存してください。",
+    downloadTemplate: "テンプレートをダウンロード",
+    chooseCsv: "CSV ファイルを選ぶ",
+    importErrors: "直す必要がある行",
+    importPreview: "取り込む内容",
+    importLine: "{line} 行目:",
+    importMoreErrors: "ほか {count} 件",
+    importCounts: "ドロップ {drops} · 観察 {observations}",
+    importPlates: "{count} 枚を取り込む",
+    importing: "取り込み中...",
+    importErrEmpty: "ファイルに行がありません。",
+    importErrMissingColumn: "「{column}」の列がありません。",
+    importErrTooManyRows: "1回に取り込めるのは {rows} 行までです。",
+    importErrTooManyPlates: "1回に取り込めるのは {plates} 枚までです。",
+    importErrRequired: "「{column}」が空です。",
+    importErrTooLong: "「{column}」が長すぎます。",
+    importErrConflict:
+      "「{column}」が、同じプレートかドロップのほかの行と違います: {value}",
+    importErrUnknownPlateType: "プレートタイプ「{value}」がありません。",
+    importErrAmbiguousPlateType:
+      "プレートタイプ「{value}」が複数あり、1つに決まりません。",
+    importErrUnknownTemplate: "条件「{value}」がありません。",
+    importErrAmbiguousTemplate:
+      "条件「{value}」が複数あり、1つに決まりません。",
+    importErrInvalidDate:
+      "「{column}」の日付が読めません: {value}（2026-08-01 か 2026/8/1 の形で）",
+    importErrInvalidWell: "ウェル「{value}」はこのプレートにありません。",
+    importErrInvalidSlot: "置き場所「{value}」はこのプレートにありません。",
+    importErrInvalidMark:
+      "目印「{value}」は使えません（怪しい・結晶あり・結晶取り済み）。",
+    importErrObservationNeedsContent: "観察には目印かメモが要ります。",
   },
 } as const;
 

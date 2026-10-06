@@ -82,7 +82,7 @@ Lys-0801,,A1,2,thaumatin,5 mg/mL,,,
 ## 作り
 
 - **`lib/csv.ts`**: CSV を行の配列にする純粋関数。ダブルクォートで囲んだ値（カンマ・改行・`""` を含む）と、CRLF・LF を扱う。依存は足さない
-- **`lib/plate-import.ts`**: 行の配列と、使えるプレートタイプ・テンプレートの一覧を受け取り、プレートごとにまとめた内容とエラーの一覧を返す純粋関数。ブラウザの確認画面と、サーバーの両方で使う
+- **`lib/plate-import.ts`**: 行の配列と、使えるプレートタイプ・テンプレートの一覧を受け取り、プレートごとにまとめた内容とエラーの一覧を返す純粋関数。ブラウザの確認画面で使う。サーバーは名前ではなく ID を受けるので、これは使わず、Zod（`importPlatesSchema`）とタイプの形で確かめ直す
 - **`lib/actions/plate-import.ts`**: `importPlates()`。ブラウザから来たまとめた内容を Zod で確かめ直し、プレートタイプとテンプレートを `accessiblePlateTypeWhere` などで引き直してから、1つのトランザクションで作る。ブラウザの確認は表示のためで、信用しない
 - **`app/(app)/settings/import/`**: 画面。`page.tsx` で使えるプレートタイプとテンプレートを取り、`import-client.tsx` に渡す
 
@@ -96,21 +96,21 @@ Lys-0801,,A1,2,thaumatin,5 mg/mL,,,
 
 ### Phase 1: 読み込みと確認（純粋関数）
 
-- [ ] `lib/csv.ts` と `tests/csv.test.ts` — クォート・改行・空行・BOM
-- [ ] `lib/plate-import.ts` と `tests/plate-import.test.ts` — 見出しの英日、プレートへのまとめ、日付の2つの書き方、プレートの欄の食い違い、タイプとテンプレートの名前の解決、ウェルと置き場所の範囲、同じドロップの行のまとめと食い違い、観察の目印の英日と必須の決まり、上限
+- [x] `lib/csv.ts` と `tests/csv.test.ts` — クォート・改行・空行・BOM
+- [x] `lib/plate-import.ts` と `tests/plate-import.test.ts` — 見出しの英日、プレートへのまとめ、日付の2つの書き方、プレートの欄の食い違い、タイプとテンプレートの名前の解決、ウェルと置き場所の範囲、同じドロップの行のまとめと食い違い、観察の目印の英日と必須の決まり、上限
 
 ### Phase 2: 登録の Action
 
-- [ ] `lib/validations.ts` — `importPlatesSchema`
-- [ ] `lib/actions/plate-import.ts` と `tests/plate-import-actions.test.ts` — 他の人のタイプやテンプレートを拒むこと、1つのトランザクションで作ること、範囲の外のウェルと置き場所を拒むこと、観察をドロップと一緒に作ること
+- [x] `lib/validations.ts` — `importPlatesSchema`
+- [x] `lib/actions/plate-import.ts` と `tests/plate-import-actions.test.ts` — 他の人のタイプやテンプレートを拒むこと、1つのトランザクションで作ること、範囲の外のウェルと置き場所を拒むこと、観察をドロップと一緒に作ること
 
 ### Phase 3: 画面
 
-- [ ] `app/(app)/settings/import/` — ファイルの選択、確認の表、取り込み、終わったらホームへ
-- [ ] `app/(app)/settings/settings-client.tsx` — 「CSV から取り込む」の行
-- [ ] `lib/i18n.ts` — 文言（日英）
-- [ ] `lib/help.ts` — ヘルプの節
-- [ ] `docs/architecture.md` のルート表、バックログ
+- [x] `app/(app)/settings/import/` — ファイルの選択、確認の表、取り込み、終わったらホームへ
+- [x] `app/(app)/settings/settings-client.tsx` — 「CSV から取り込む」の行
+- [x] `lib/i18n.ts` — 文言（日英）
+- [x] `lib/help.ts` — ヘルプの節
+- [x] `docs/architecture.md` のルート表、バックログ
 
 ## 確認
 
@@ -121,3 +121,10 @@ Lys-0801,,A1,2,thaumatin,5 mg/mL,,,
 - 1枚に違うサンプルが混ざったプレートと、4 Drop のプレートの置き場所が正しく入る
 - 観察を書いた行は詳細画面のウェルのシートに出て、目印はウェルマップに輪で出る。観察の列が無いファイルも取り込める
 - 問題のある行があると、行番号と理由が出て、取り込めない
+
+## 結果
+
+- Phase 1〜3 を1つの PR にまとめた。テストは `tests/csv.test.ts`・`tests/plate-import.test.ts`・`tests/plate-import-actions.test.ts` の3本（31件）
+- ローカルで Playwright を使い、テンプレートをそのまま取り込むとプレート・ドロップ・観察ができ、目印がウェルのシートに出ることを確かめた。Shift_JIS のファイルも読めた。間違いのあるファイルでは行番号と理由が出た
+- 取り込んだあとホームへ移るところで、`router.push("/")` の直後に `router.refresh()` を呼ぶと遷移が取り消された。ホームは動的な画面で移った先で引き直されるので、`push` だけにした
+- Excel の実物で保存したファイルでは、まだ確かめていない
