@@ -14,6 +14,7 @@ import {
   createPlateSchema,
   createPlateTypeSchema,
   updatePlateSchema,
+  updateSampleSchema,
   updateUserSettingsSchema,
 } from "../lib/validations";
 
@@ -145,6 +146,24 @@ describe("validation schemas", () => {
     expect(parse({ notes: " ", mark: null })).toBe(false);
     expect(parse({ notes: "" })).toBe(false);
     expect(parse({ notes: "x", mark: "PRECIPITATE" })).toBe(false);
+  });
+
+  it("accepts sample icons and colors from the candidates only", () => {
+    const parse = (fields: Record<string, unknown>) =>
+      updateSampleSchema.safeParse({
+        name: "Lysozym",
+        newName: "Lysozyme",
+        icon: "dna",
+        color: "blue",
+        ...fields,
+      }).success;
+
+    expect(parse({})).toBe(true);
+    expect(parse({ merge: true })).toBe(true);
+    expect(parse({ icon: "skull" })).toBe(false);
+    expect(parse({ color: "#ff0000" })).toBe(false);
+    expect(parse({ newName: "  " })).toBe(false);
+    expect(parse({ userId: "user-b" })).toBe(false);
   });
 });
 

@@ -13,6 +13,7 @@ import { MenuSheet } from "@/components/menu-sheet";
 import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { searchPlates } from "@/lib/actions/plates";
+import type { SampleStyle } from "@/lib/samples";
 import type { PlateType } from "@/types";
 
 interface UiPlate {
@@ -29,6 +30,8 @@ import type { UiConditionSet } from "@/app/(app)/dashboard-client";
 
 interface SamplesClientProps {
   plates: UiPlate[];
+  // 検索し直したあとのカードにも同じ対応表を使う
+  sampleStyles: Record<string, SampleStyle>;
   plateTypes: PlateType[];
   conditionTemplates: {
     id: number;
@@ -40,6 +43,7 @@ interface SamplesClientProps {
 
 export function SamplesClient({
   plates,
+  sampleStyles,
   plateTypes,
   conditionTemplates,
   conditionSets,
@@ -103,6 +107,7 @@ export function SamplesClient({
               <PlateCard
                 key={plate.id}
                 plate={plate}
+                sampleStyles={sampleStyles}
                 onClick={() => router.push(`/plates/${plate.id}`)}
               />
             ))

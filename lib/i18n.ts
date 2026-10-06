@@ -201,6 +201,34 @@ const translations = {
     dropsSkipped: "Skipped (already had a drop)",
     dropBatchIncomplete:
       "Choose a position and enter the sample name and a concentration for each position.",
+
+    // Samples
+    noSamples: "No samples yet. Add drops to a plate to see them here.",
+    editSample: "Edit Sample",
+    sampleIconLabel: "ICON",
+    sampleColorLabel: "COLOR",
+    sampleSaveFailed: "Couldn't save the sample.",
+    mergeSampleConfirmTitle: "Merge into “{name}”?",
+    mergeSampleConfirmBody:
+      "“{name}” already exists. {count} drops will be renamed, and the icon and color of “{name}” will be kept. This cannot be undone.",
+    merge: "Merge",
+    merging: "Merging...",
+    iconFlask: "Flask",
+    iconTestTube: "Test tube",
+    iconDna: "DNA",
+    iconAtom: "Atom",
+    iconMicroscope: "Microscope",
+    iconDroplet: "Droplet",
+    iconGem: "Gem",
+    iconLeaf: "Leaf",
+    colorGray: "Gray",
+    colorRed: "Red",
+    colorOrange: "Orange",
+    colorYellow: "Yellow",
+    colorGreen: "Green",
+    colorTeal: "Teal",
+    colorBlue: "Blue",
+    colorPurple: "Purple",
   },
   ja: {
     // Navigation
@@ -399,6 +427,35 @@ const translations = {
     dropsSkipped: "スキップ（使用中）",
     dropBatchIncomplete:
       "選んだウェルに入れる置き場所・サンプル名と、置き場所ごとの濃度を入れてください。",
+
+    // サンプル
+    noSamples:
+      "まだサンプルがありません。プレートにドロップを入れると、ここに並びます。",
+    editSample: "サンプルを編集",
+    sampleIconLabel: "アイコン",
+    sampleColorLabel: "色",
+    sampleSaveFailed: "サンプルを保存できませんでした。",
+    mergeSampleConfirmTitle: "「{name}」にまとめますか？",
+    mergeSampleConfirmBody:
+      "「{name}」はすでにあります。ドロップ{count}件の名前が変わり、アイコンと色は「{name}」のものが残ります。元に戻せません。",
+    merge: "まとめる",
+    merging: "まとめています...",
+    iconFlask: "フラスコ",
+    iconTestTube: "試験管",
+    iconDna: "DNA",
+    iconAtom: "原子",
+    iconMicroscope: "顕微鏡",
+    iconDroplet: "しずく",
+    iconGem: "結晶",
+    iconLeaf: "葉",
+    colorGray: "グレー",
+    colorRed: "赤",
+    colorOrange: "オレンジ",
+    colorYellow: "黄",
+    colorGreen: "緑",
+    colorTeal: "青緑",
+    colorBlue: "青",
+    colorPurple: "紫",
   },
 } as const;
 

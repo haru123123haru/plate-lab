@@ -9,6 +9,7 @@ import {
   Menu,
   LayoutGrid,
   FlaskConical,
+  TestTubes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
@@ -114,6 +115,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               icon={FlaskConical}
               title={t("conditions")}
               onClick={() => router.push("/settings/conditions")}
+            />
+            <ListRow
+              icon={TestTubes}
+              title={t("samples")}
+              onClick={() => router.push("/settings/samples")}
             />
           </div>
         </div>
