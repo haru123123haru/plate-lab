@@ -181,7 +181,7 @@ Supabase のリダイレクト検証は文字列マッチなので、ブラウ�
 
 ## 7. 本番の状態
 
-ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。そのあとのマイグレーションも含め、17本すべてが本番DBに適用されている。最後の `add_observation_mark` は 2026-10-05 に PR #10 で出し、メモの `Status: CRYSTAL` から移した観察は0件だった（本番のドロップのメモに `Status: CRYSTAL` が無かった）。
+ドロップの導入は2回に分けて出した。2026-09-25 に PR #2（`d3ab3d1`）で Phase 1〜3 のマイグレーション3本を出し、本番で次を確かめた。新しいテーブル `Drop`・`Observation` に `anon`・`authenticated` の権限が無いこと、既存の種別に形が埋まったこと、使用中のウェル1152件がすべて1番の置き場所のドロップになったこと。そのあと、元に戻せない列の削除（`drop_well_record_columns`）を別の PR で出した。そのあとのマイグレーションも含め、18本すべてが本番DBに適用されている。`add_observation_mark` は 2026-10-05 に PR #10 で出し、メモの `Status: CRYSTAL` から移した観察は0件だった（本番のドロップのメモに `Status: CRYSTAL` が無かった）。そのあと 2026-10-06 に PR #11 で `add_sample` を出し、新しいテーブル `Sample` に `anon`・`authenticated` の権限が無いことを確かめた。
 
 本番の共有プレート種別は3つある。ドロップの導入で入れた2つ（`24 Well - Sitting 4 Drop` と `15 Well - Hanging 3 Drop`）と、2026-09-25 にマイグレーション `add_96_well_plate_type` で入れた `96 Well - Sitting`（8×12、1ドロップ）だ。seed にあるほかの共有種別（`24 Well - Hanging` など）は、本番には最初から無い。ほかに、ユーザーが自分で作った `96well-sitting`（8×12）がある。
 

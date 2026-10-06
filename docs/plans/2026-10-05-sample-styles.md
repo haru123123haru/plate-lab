@@ -142,7 +142,7 @@ model Sample {
 - Lysozyme を DNA・青にした状態で、サンプル画面のカードは Lysozyme が青いチップ、Thaumatin がフラスコ・グレーのチップになる。ライトとダークの両方で確かめた
 - 「Test 4-Drop」のドロップ3件を一時的に別の名前（Thaumatin・Glucose isomerase・Proteinase K）にすると、チップ4つとドロップ数が2行に折り返す。確かめたあと SQL で戻した
 - 「Lysozyme」で検索したあとのカードにも、同じチップが出る
-- 本番の権限の確認は、出したあとに行う
+- 2026-10-06 に PR #11 で本番に出し、`information_schema.role_table_grants` で `Sample` に `anon`・`authenticated` の権限が無い（0行）ことを確かめた
 
 ## リスク
 
