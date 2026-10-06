@@ -26,6 +26,7 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
     { label: t("samples"), href: "/samples" },
     { label: t("myPage"), href: "/mypage" },
     { label: t("settings"), href: "/settings" },
+    { label: t("help"), href: "/help" },
   ];
 
   return (

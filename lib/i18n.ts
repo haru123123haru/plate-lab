@@ -8,6 +8,7 @@ const translations = {
     samples: "Samples",
     settings: "Settings",
     myPage: "My Page",
+    help: "Help",
     signOut: "Sign Out",
 
     // Common
@@ -22,6 +23,9 @@ const translations = {
     // Dashboard
     recentPlates: "RECENT PLATES",
     viewAll: "View All",
+
+    // Help
+    helpContents: "CONTENTS",
 
     // Plate Detail
     wellMap: "WELL MAP",
@@ -238,6 +242,7 @@ const translations = {
     samples: "サンプル",
     settings: "設定",
     myPage: "マイページ",
+    help: "ヘルプ",
     signOut: "サインアウト",
 
     // Common
@@ -252,6 +257,9 @@ const translations = {
     // Dashboard
     recentPlates: "最近のプレート",
     viewAll: "すべて表示",
+
+    // ヘルプ
+    helpContents: "目次",
 
     // Plate Detail
     wellMap: "ウェルマップ",
