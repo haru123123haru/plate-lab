@@ -83,7 +83,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、条件を足すときは Markdown の表に行を足す。
 
-プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェル・ドロップ・観察は cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` がゴミ箱まわりの Action の渡す条件を検査している（一覧と検索の `getPlates` / `searchPlates` はテストしていない）。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
+プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェル・ドロップ・観察は cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` がゴミ箱まわりの Action の渡す条件を検査している。検索（`searchPlates`）は、似ているものを探すところだけ生の SQL（`pg_trgm`）を使うが、見つけた ID を `activePlateWhere` でもう一度絞ってから返し、`tests/plate-search-actions.test.ts` で検査している（一覧の `getPlates` はテストしていない）。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
 
 以前あった「アーカイブ」（`Plate.status = ARCHIVED`）は、ゴミ箱と役割が重なるので 2026-09-23 に廃止した。アーカイブ済みだったプレートはゴミ箱へ移し、そのあと `status` カラムと `PlateStatus` enum も削除した。先にコードを切り離して本番で動くのを確かめ、そのあとでカラムを消す、という2段階で進めている（理由は計画書の Phase 3）。
 

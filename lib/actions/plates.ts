@@ -268,54 +268,116 @@ export async function updatePlate(
   });
 }
 
+// 似ているとみなす word_similarity の下限（pg_trgm の <% と同じ既定値）
+const FUZZY_SEARCH_THRESHOLD = 0.6;
+// これより短い検索語は部分一致だけにする。短いと似ているものが出すぎる
+const FUZZY_SEARCH_MIN_LENGTH = 3;
+// 似ているだけのプレートは、似ている順にここまで出す
+const FUZZY_SEARCH_LIMIT = 50;
+
+// 部分一致で見つかったプレートを先に、似ているだけのプレート（打ち間違いや表記の揺れ）をあとに並べる
 export async function searchPlates(query: string) {
   const userId = await getCurrentUserId();
   const parsed = searchPlatesSchema.safeParse(query);
   if (!parsed.success) return [];
   const normalizedQuery = parsed.data;
+  const visiblePlateWhere = {
+    ...activePlateWhere(userId),
+    plateType: accessiblePlateTypeWhere(userId),
+  };
   if (!normalizedQuery) {
     return prisma.plate.findMany({
-      where: {
-        ...activePlateWhere(userId),
-        plateType: accessiblePlateTypeWhere(userId),
-      },
+      where: visiblePlateWhere,
       include: { plateType: true, wells: wellDropSamples },
       orderBy: { updatedAt: "desc" },
     });
   }
 
-  return prisma.plate.findMany({
-    where: {
-      ...activePlateWhere(userId),
-      plateType: accessiblePlateTypeWhere(userId),
-      OR: [
-        { name: { contains: normalizedQuery, mode: "insensitive" } },
-        // サンプル名はドロップにだけある。部分一致なので索引は効かない
-        {
-          wells: {
-            some: {
-              drops: {
-                some: {
-                  sampleName: {
-                    contains: normalizedQuery,
-                    mode: "insensitive",
+  const [matched, similarIds] = await Promise.all([
+    prisma.plate.findMany({
+      where: {
+        ...visiblePlateWhere,
+        OR: [
+          { name: { contains: normalizedQuery, mode: "insensitive" } },
+          // サンプル名はドロップにだけある。部分一致なので索引は効かない
+          {
+            wells: {
+              some: {
+                drops: {
+                  some: {
+                    sampleName: {
+                      contains: normalizedQuery,
+                      mode: "insensitive",
+                    },
                   },
                 },
               },
             },
           },
-        },
-        {
-          plateType: {
-            name: { contains: normalizedQuery, mode: "insensitive" },
+          {
+            plateType: {
+              name: { contains: normalizedQuery, mode: "insensitive" },
+            },
           },
-        },
-        { notes: { contains: normalizedQuery, mode: "insensitive" } },
-      ],
-    },
+          { notes: { contains: normalizedQuery, mode: "insensitive" } },
+        ],
+      },
+      include: { plateType: true, wells: wellDropSamples },
+      orderBy: { updatedAt: "desc" },
+    }),
+    normalizedQuery.length < FUZZY_SEARCH_MIN_LENGTH
+      ? Promise.resolve([])
+      : findSimilarPlateIds(userId, normalizedQuery),
+  ]);
+
+  const matchedIds = new Set(matched.map((plate) => plate.id));
+  const extraIds = similarIds.filter((id) => !matchedIds.has(id));
+  if (extraIds.length === 0) return matched;
+
+  // 持ち主・ゴミ箱・タイプの条件は、部分一致と同じものをもう一度かける
+  const similar = await prisma.plate.findMany({
+    where: { ...visiblePlateWhere, id: { in: extraIds } },
     include: { plateType: true, wells: wellDropSamples },
-    orderBy: { updatedAt: "desc" },
   });
+  const rank = new Map(extraIds.map((id, index) => [id, index]));
+  similar.sort((a, b) => rank.get(a.id)! - rank.get(b.id)!);
+  return [...matched, ...similar];
+}
+
+// プレート名・メモ・サンプル名のどれかが検索語に似ているプレートの ID を、似ている順に返す。
+// word_similarity は、長い文の中の1語に似ていても拾う（メモの中の打ち間違いなど）。
+// 持ち主とゴミ箱の条件は候補を減らすためだけのもので、守るのは呼び出し元の findMany の条件。
+// 似ているものは付け足しなので、失敗しても（pg_trgm が無いなど）部分一致の結果は返せるようにする
+async function findSimilarPlateIds(userId: string, query: string) {
+  try {
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT p."id"
+      FROM (
+        SELECT
+          p."id",
+          p."updatedAt",
+          greatest(
+            word_similarity(${query}, p."name"),
+            word_similarity(${query}, coalesce(p."notes", '')),
+            (
+              SELECT coalesce(max(word_similarity(${query}, d."sampleName")), 0)
+              FROM "Well" w
+              JOIN "Drop" d ON d."wellId" = w."id"
+              WHERE w."plateId" = p."id"
+            )
+          ) AS score
+        FROM "Plate" p
+        WHERE p."userId" = ${userId} AND p."deletedAt" IS NULL
+      ) p
+      WHERE p.score >= ${FUZZY_SEARCH_THRESHOLD}
+      ORDER BY p.score DESC, p."updatedAt" DESC
+      LIMIT ${FUZZY_SEARCH_LIMIT}
+    `;
+    return rows.map((row) => row.id);
+  } catch (error) {
+    console.error("Fuzzy plate search failed", error);
+    return [];
+  }
 }
 
 // ゴミ箱へ移す。物理削除は purgePlate だけが行う

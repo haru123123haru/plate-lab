@@ -119,6 +119,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       intro:
         "メニューの「サンプル」に、ドロップに入れたサンプルが並びます。サンプル名で検索すると、そのサンプルを使っているプレートが見つかります。",
       notes: [
+        "ホームとサンプルの検索は、プレート名・サンプル名・メモを探します。3文字以上で検索すると、「lysozme」のような打ち間違いや表記の揺れがあっても、似ているプレートが、ぴったり当たったプレートのあとに続けて出ます。",
         "詳細画面のサンプル欄でサンプルを押すと、名前とアイコン・色を変えられます。設定の「サンプル」からも変えられます。",
         "サンプルの名前や見た目を変えると、そのサンプルが入っている他のプレートにも反映されます。",
       ],
@@ -272,6 +273,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       intro:
         '"Samples" in the menu lists the samples in your drops. Search by sample name to find the plates that use it.',
       notes: [
+        'Search on Home and Samples looks at plate names, sample names and notes. With 3 or more characters, plates that are similar to your search follow the exact matches, even with a typo like "lysozme".',
         "Tap a sample in the plate page's Samples section to change its name, icon and color. You can also do this from Samples in Settings.",
         "Changing a sample's name or look applies to every plate that contains it.",
       ],
