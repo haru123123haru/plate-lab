@@ -64,10 +64,6 @@ export const updateSampleSchema = z
   })
   .strict();
 
-export const bulkCreateDropsSchema = dropBatchSchema.extend({
-  plateId: z.string().trim().min(1).max(100),
-});
-
 export const createPlateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   plateTypeId: z.string().trim().min(1).max(100),

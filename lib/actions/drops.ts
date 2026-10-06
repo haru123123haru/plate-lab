@@ -3,14 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { prismaErrorCode } from "@/lib/prisma-error";
 import { getCurrentUserId } from "@/lib/auth";
-import {
-  activePlateWhere,
-  editableDropWhere,
-  editableWellWhere,
-} from "@/lib/access-control";
+import { editableDropWhere, editableWellWhere } from "@/lib/access-control";
 import {
   addObservationSchema,
-  bulkCreateDropsSchema,
   createDropSchema,
   resourceIdSchema,
   updateDropSchema,
@@ -96,56 +91,6 @@ export async function deleteDrop(id: string) {
   });
   if (count === 0) return { error: "Not found" };
   return { success: true };
-}
-
-// 同じサンプルを複数のウェル・置き場所へまとめて入れる。既存のドロップは上書きしない
-export async function bulkCreateDrops(data: {
-  plateId: string;
-  positions: string[];
-  sampleName: string;
-  drops: { slot: number; concentration: string }[];
-}) {
-  const userId = await getCurrentUserId();
-  const parsed = bulkCreateDropsSchema.safeParse(data);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
-  }
-  const { plateId, sampleName, drops: slotDrops } = parsed.data;
-  const positions = [...new Set(parsed.data.positions)];
-
-  // ウェル ID ではなくプレート ID で受けるので、持ち主の確認はここの1回で済む
-  const plate = await prisma.plate.findFirst({
-    where: { id: plateId, ...activePlateWhere(userId) },
-    select: {
-      plateType: { select: { maxDrops: true } },
-      wells: {
-        where: { position: { in: positions } },
-        select: { id: true },
-      },
-    },
-  });
-  if (!plate) return { error: "Not found" };
-  if (plate.wells.length !== positions.length) {
-    return { error: "Invalid well position" };
-  }
-  if (slotDrops.some(({ slot }) => slot > plate.plateType.maxDrops)) {
-    return { error: "Invalid slot" };
-  }
-
-  // ponytail: 確認と作成のあいだにゴミ箱へ移されると作ってしまう。気になったらトランザクションで行ロックを取る
-  const drops = plate.wells.flatMap((well) =>
-    slotDrops.map(({ slot, concentration }) => ({
-      wellId: well.id,
-      slot,
-      sampleName,
-      concentration,
-    }))
-  );
-  const { count } = await prisma.drop.createMany({
-    data: drops,
-    skipDuplicates: true,
-  });
-  return { created: count, skipped: drops.length - count };
 }
 
 export async function addObservation(data: {
