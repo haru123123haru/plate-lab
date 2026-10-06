@@ -205,6 +205,9 @@ const translations = {
     editSample: "Edit Sample",
     sampleIconLabel: "ICON",
     sampleColorLabel: "COLOR",
+    sampleStyleLabel: "LOOK",
+    sampleStyleSharedNote:
+      "Other plates with this sample will also change to this look.",
     sampleSaveFailed: "Couldn't save the sample.",
     mergeSampleConfirmTitle: "Merge into “{name}”?",
     mergeSampleConfirmBody:
@@ -430,6 +433,9 @@ const translations = {
     editSample: "サンプルを編集",
     sampleIconLabel: "アイコン",
     sampleColorLabel: "色",
+    sampleStyleLabel: "見た目",
+    sampleStyleSharedNote:
+      "このサンプルが入っている他のプレートも、この見た目に変わります。",
     sampleSaveFailed: "サンプルを保存できませんでした。",
     mergeSampleConfirmTitle: "「{name}」にまとめますか？",
     mergeSampleConfirmBody:

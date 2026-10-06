@@ -10,44 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import {
-  SAMPLE_COLOR_CLASSES,
-  SAMPLE_ICON_COMPONENTS,
-  SampleChip,
-} from "@/components/sample-chip";
+import { SampleChip } from "@/components/sample-chip";
+import { SampleStylePicker } from "@/components/sample-style-picker";
 import { useTranslation } from "@/components/locale-provider";
 import { updateSample } from "@/lib/actions/samples";
-import {
-  SAMPLE_COLORS,
-  SAMPLE_ICONS,
-  type SampleColor,
-  type SampleIcon,
-  type SampleStyle,
-} from "@/lib/samples";
-import { cn } from "@/lib/utils";
-import type { TranslationKey } from "@/lib/i18n";
-
-const ICON_LABEL: Record<SampleIcon, TranslationKey> = {
-  flask: "iconFlask",
-  "test-tube": "iconTestTube",
-  dna: "iconDna",
-  atom: "iconAtom",
-  microscope: "iconMicroscope",
-  droplet: "iconDroplet",
-  gem: "iconGem",
-  leaf: "iconLeaf",
-};
-
-const COLOR_LABEL: Record<SampleColor, TranslationKey> = {
-  gray: "colorGray",
-  red: "colorRed",
-  orange: "colorOrange",
-  yellow: "colorYellow",
-  green: "colorGreen",
-  teal: "colorTeal",
-  blue: "colorBlue",
-  purple: "colorPurple",
-};
+import { DEFAULT_SAMPLE_STYLE, type SampleStyle } from "@/lib/samples";
 
 const fieldLabel =
   "mb-2 block text-[11px] uppercase tracking-[2px] text-text-secondary font-medium";
@@ -57,17 +24,19 @@ interface SampleEditDialogProps {
   sample: { name: string; style: SampleStyle } | null;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  // false なら見た目だけを変える（プレート詳細から開いたとき）。名前の変更とまとめるのは管理ページで
+  renameable?: boolean;
 }
 
 export function SampleEditDialog({
   sample,
   onOpenChange,
   onSaved,
+  renameable = true,
 }: SampleEditDialogProps) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState<SampleIcon>(SAMPLE_ICONS[0]);
-  const [color, setColor] = useState<SampleColor>(SAMPLE_COLORS[0]);
+  const [style, setStyle] = useState<SampleStyle>(DEFAULT_SAMPLE_STYLE);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   // まとめる確認で出す、名前が変わるドロップの数
@@ -76,8 +45,7 @@ export function SampleEditDialog({
   useEffect(() => {
     if (!sample) return;
     setName(sample.name);
-    setIcon(sample.style.icon);
-    setColor(sample.style.color);
+    setStyle(sample.style);
     setError("");
     setMergeCount(null);
   }, [sample]);
@@ -90,8 +58,8 @@ export function SampleEditDialog({
       const result = await updateSample({
         name: sample.name,
         newName: name.trim(),
-        icon,
-        color,
+        icon: style.icon,
+        color: style.color,
         merge,
       });
       if ("needsMerge" in result) {
@@ -130,87 +98,27 @@ export function SampleEditDialog({
             <div className="flex justify-center">
               <SampleChip
                 name={mergeName || " "}
-                style={{ icon, color }}
+                style={style}
                 className="text-[15px]"
               />
             </div>
 
-            <div>
-              <label htmlFor="sample-name" className={fieldLabel}>
-                {t("sampleNameLabel")}
-              </label>
-              <Input
-                id="sample-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={200}
-                className="h-12 rounded-xl"
-              />
-            </div>
+            {renameable && (
+              <div>
+                <label htmlFor="sample-name" className={fieldLabel}>
+                  {t("sampleNameLabel")}
+                </label>
+                <Input
+                  id="sample-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={200}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            )}
 
-            <div>
-              <div id="sample-icon-label" className={fieldLabel}>
-                {t("sampleIconLabel")}
-              </div>
-              <div
-                role="group"
-                aria-labelledby="sample-icon-label"
-                className="grid grid-cols-4 gap-2"
-              >
-                {SAMPLE_ICONS.map((key) => {
-                  const Icon = SAMPLE_ICON_COMPONENTS[key];
-                  return (
-                    <button
-                      type="button"
-                      key={key}
-                      aria-pressed={icon === key}
-                      aria-label={t(ICON_LABEL[key])}
-                      onClick={() => setIcon(key)}
-                      className={cn(
-                        "flex h-12 cursor-pointer items-center justify-center rounded-xl",
-                        icon === key
-                          ? "bg-text-primary text-bg-surface"
-                          : "bg-bg-surface text-text-primary"
-                      )}
-                    >
-                      <Icon className="size-5" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <div id="sample-color-label" className={fieldLabel}>
-                {t("sampleColorLabel")}
-              </div>
-              <div
-                role="group"
-                aria-labelledby="sample-color-label"
-                className="grid grid-cols-4 gap-2"
-              >
-                {SAMPLE_COLORS.map((key) => (
-                  <button
-                    type="button"
-                    key={key}
-                    aria-pressed={color === key}
-                    aria-label={t(COLOR_LABEL[key])}
-                    onClick={() => setColor(key)}
-                    className={cn(
-                      "flex h-12 cursor-pointer items-center justify-center rounded-xl border-2",
-                      SAMPLE_COLOR_CLASSES[key],
-                      color === key
-                        ? "border-border-strong"
-                        : "border-transparent"
-                    )}
-                  >
-                    <span className="text-[13px] font-medium">
-                      {t(COLOR_LABEL[key])}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <SampleStylePicker value={style} onChange={setStyle} />
           </div>
 
           <div className="mt-3">

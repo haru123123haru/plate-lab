@@ -5,15 +5,17 @@ import {
   getConditionTemplates,
   getConditionSets,
 } from "@/lib/actions/condition-templates";
+import { getSamples } from "@/lib/actions/samples";
 import { DashboardClient } from "./dashboard-client";
 
 export default async function DashboardPage() {
-  const [plates, plateTypes, conditionTemplates, conditionSets] =
+  const [plates, plateTypes, conditionTemplates, conditionSets, samples] =
     await Promise.all([
       getPlates(),
       getPlateTypes(),
       getConditionTemplates(),
       getConditionSets(),
+      getSamples(),
     ]);
 
   // DB データを UI 用の形に変換
@@ -57,6 +59,7 @@ export default async function DashboardPage() {
       plateTypes={uiPlateTypes}
       conditionTemplates={uiConditionTemplates}
       conditionSets={uiConditionSets}
+      samples={samples}
     />
   );
 }

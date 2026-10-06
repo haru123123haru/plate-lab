@@ -1,5 +1,6 @@
 import { getPlateById } from "@/lib/actions/plates";
 import { getConditionTemplates } from "@/lib/actions/condition-templates";
+import { getSampleStyles } from "@/lib/actions/samples";
 import { PlateDetailClient } from "./plate-detail-client";
 import { toTokyoDate } from "@/lib/utils";
 import { bestMark } from "@/lib/wells";
@@ -28,7 +29,10 @@ export default async function PlateDetailPage({
     );
   }
 
-  const conditionTemplates = await getConditionTemplates();
+  const [conditionTemplates, sampleStyles] = await Promise.all([
+    getConditionTemplates(),
+    getSampleStyles(),
+  ]);
 
   const uiWells: WellData[] = plate.wells.map((w) => ({
     id: w.id,
@@ -105,6 +109,7 @@ export default async function PlateDetailPage({
     <PlateDetailClient
       plate={uiPlate}
       conditionTemplates={uiConditionTemplates}
+      sampleStyles={sampleStyles}
       reservoirConditionMap={reservoirConditionMap}
       screeningConditionMap={screeningConditionMap}
     />

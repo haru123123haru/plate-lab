@@ -72,8 +72,16 @@ export const createPlateSchema = z.object({
   notes: z.string().max(2000).optional(),
   // 観察日と同じく日付だけなので文字列で受ける（addObservationSchema）
   setupDate: z.iso.date(),
-  // 作成と同時に入れるドロップ。ウェルを選ばなければ省く
-  drops: dropBatchSchema.optional(),
+  // 作成と同時に入れるドロップ。ウェルを選ばなければ省く。
+  // style はそのサンプルの見た目。あれば Sample に保存する（同じ名前の他のプレートにも効く）
+  drops: dropBatchSchema
+    .extend({
+      style: z
+        .object({ icon: z.enum(SAMPLE_ICONS), color: z.enum(SAMPLE_COLORS) })
+        .strict()
+        .optional(),
+    })
+    .optional(),
 });
 
 export const createPlateTypeSchema = z
