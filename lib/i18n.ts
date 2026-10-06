@@ -218,6 +218,13 @@ const translations = {
       "“{name}” already exists. {count} drops will be renamed, and the icon and color of “{name}” will be kept. This cannot be undone.",
     merge: "Merge",
     merging: "Merging...",
+    sampleDuplicates: "NAME VARIANTS",
+    allSamples: "ALL SAMPLES",
+    sampleDuplicatesHint:
+      "These names differ only in case, full/half width, spaces or separators. Tap the name to keep to merge the others into it.",
+    mergeDuplicatesConfirmBody:
+      "{count} drops named {others} will be renamed to “{name}”, and the icon and color of “{name}” will be kept. Drops on plates in the trash are renamed too. This cannot be undone.",
+    sampleMergeFailed: "Couldn't merge the samples.",
     iconFlask: "Flask",
     iconTestTube: "Test tube",
     iconDna: "DNA",
@@ -482,6 +489,13 @@ const translations = {
       "「{name}」はすでにあります。ドロップ{count}件の名前が変わり、アイコンと色は「{name}」のものが残ります。元に戻せません。",
     merge: "まとめる",
     merging: "まとめています...",
+    sampleDuplicates: "名前の揺れ",
+    allSamples: "すべてのサンプル",
+    sampleDuplicatesHint:
+      "大文字小文字・全角半角・空白や区切りだけが違う名前です。残す名前を押すと、ほかの名前をまとめられます。",
+    mergeDuplicatesConfirmBody:
+      "{others}のドロップ{count}件の名前が「{name}」に変わり、アイコンと色は「{name}」のものが残ります。ゴミ箱のプレートのドロップも変わります。元に戻せません。",
+    sampleMergeFailed: "サンプルをまとめられませんでした。",
     iconFlask: "フラスコ",
     iconTestTube: "試験管",
     iconDna: "DNA",

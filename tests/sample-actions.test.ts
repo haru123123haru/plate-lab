@@ -28,6 +28,7 @@ vi.mock("@/lib/auth", () => ({ getCurrentUserId: async () => "user-a" }));
 import {
   getSampleStyles,
   getSamples,
+  mergeSamples,
   updateSample,
 } from "../lib/actions/samples";
 
@@ -176,5 +177,36 @@ describe("updateSample", () => {
       where: { userId: "user-a", name: "Lysozym" },
     });
     expect(prismaMock.sample.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("mergeSamples", () => {
+  it("renames the drops of every name, trash included, in one transaction", async () => {
+    expect(
+      await mergeSamples({ from: ["lysozyme", "LYSOZYME"], into: "Lysozyme" })
+    ).toEqual({ success: true });
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.drop.updateMany).toHaveBeenCalledWith({
+      where: {
+        sampleName: { in: ["lysozyme", "LYSOZYME"] },
+        well: { plate: { userId: "user-a" } },
+      },
+      data: { sampleName: "Lysozyme" },
+    });
+    // まとめた名前の見た目の行だけ消し、残す名前の見た目は触らない
+    expect(prismaMock.sample.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-a", name: { in: ["lysozyme", "LYSOZYME"] } },
+    });
+    expect(prismaMock.sample.upsert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["no names to merge", { from: [], into: "Lysozyme" }],
+    ["the kept name among them", { from: ["Lysozyme"], into: "Lysozyme" }],
+    ["an empty kept name", { from: ["lysozyme"], into: " " }],
+    ["names that are not variants", { from: ["Thaumatin"], into: "Lysozyme" }],
+  ])("rejects %s without touching the DB", async (_, input) => {
+    expect(await mergeSamples(input)).toEqual({ error: "Invalid input" });
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 });

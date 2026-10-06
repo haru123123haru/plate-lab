@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/auth";
 import { activePlateWhere } from "@/lib/access-control";
 import { toSampleStyle, type SampleStyle } from "@/lib/samples";
-import { updateSampleSchema } from "@/lib/validations";
+import { mergeSamplesSchema, updateSampleSchema } from "@/lib/validations";
 
 // サンプルの一覧はドロップの名前から組み立て、Sample の行は見た目を重ねるためだけに使う。
 // ゴミ箱のプレートにしか無いサンプルは出さない
@@ -98,4 +98,26 @@ export async function updateSample(data: {
     });
     return { success: true as const };
   });
+}
+
+// 名前の揺れをまとめる。from の名前のドロップをすべて into の名前にし、from の見た目の行は消す。
+// into の見た目はそのまま残す。名前の変更と同じく、ゴミ箱のプレートのドロップも書き換える
+export async function mergeSamples(data: {
+  from: string[];
+  into: string;
+}): Promise<{ success: true } | { error: "Invalid input" }> {
+  const userId = await getCurrentUserId();
+  const parsed = mergeSamplesSchema.safeParse(data);
+  if (!parsed.success) return { error: "Invalid input" };
+  const { from, into } = parsed.data;
+
+  // 途中で失敗して半分だけまとまらないよう、1つのトランザクションで
+  await prisma.$transaction(async (tx) => {
+    await tx.drop.updateMany({
+      where: { sampleName: { in: from }, well: { plate: { userId } } },
+      data: { sampleName: into },
+    });
+    await tx.sample.deleteMany({ where: { userId, name: { in: from } } });
+  });
+  return { success: true };
 }
