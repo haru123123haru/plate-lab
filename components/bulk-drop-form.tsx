@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { WellGridSelector } from "@/components/well-grid-selector";
 import { WellShape } from "@/components/well-shape";
@@ -65,6 +65,10 @@ interface BulkDropFieldsProps {
   maxDrops: number;
   value: DropBatch;
   onChange: (value: DropBatch) => void;
+  // サンプル名の候補（既にあるサンプル）。表記の揺れで別のサンプルになるのを防ぐ
+  sampleNames?: string[];
+  // サンプル名のすぐ下に出すもの（作成画面の見た目の選択）
+  afterSampleName?: ReactNode;
 }
 
 export function BulkDropFields({
@@ -74,6 +78,8 @@ export function BulkDropFields({
   maxDrops,
   value,
   onChange,
+  sampleNames = [],
+  afterSampleName,
 }: BulkDropFieldsProps) {
   const { t } = useTranslation();
   const fieldId = useId();
@@ -185,9 +191,19 @@ export function BulkDropFields({
           value={value.sampleName}
           onChange={(e) => onChange({ ...value, sampleName: e.target.value })}
           placeholder="e.g. Lysozyme"
+          list={sampleNames.length > 0 ? `${fieldId}-sample-names` : undefined}
+          autoComplete="off"
           className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
         />
+        {sampleNames.length > 0 && (
+          <datalist id={`${fieldId}-sample-names`}>
+            {sampleNames.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        )}
       </div>
+      {afterSampleName}
       {/* 置き場所ごとに1つ。1ドロップの種別では置き場所の番号を出さない */}
       {value.drops.map(({ slot, concentration }) => (
         <div key={slot} className="space-y-2">

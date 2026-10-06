@@ -19,7 +19,10 @@ import {
   isDropBatchComplete,
   toDropBatchInput,
 } from "@/components/bulk-drop-form";
+import { SampleChip } from "@/components/sample-chip";
+import { SampleStylePicker } from "@/components/sample-style-picker";
 import { createPlate } from "@/lib/actions/plates";
+import { DEFAULT_SAMPLE_STYLE, type SampleStyle } from "@/lib/samples";
 import { cn, today } from "@/lib/utils";
 import { plateShapeLabel } from "@/lib/wells";
 import { TemplateChips } from "@/components/template-chips";
@@ -39,6 +42,8 @@ interface NewPlateSheetProps {
   plateTypes: PlateType[];
   conditionTemplates: ConditionTemplateItem[];
   conditionSets: UiConditionSet[];
+  // 既にあるサンプル（getSamples）。名前の候補と、今の見た目に使う
+  samples: { name: string; style: SampleStyle }[];
 }
 
 export function NewPlateSheet({
@@ -47,6 +52,7 @@ export function NewPlateSheet({
   plateTypes,
   conditionTemplates,
   conditionSets,
+  samples,
 }: NewPlateSheetProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -63,9 +69,26 @@ export function NewPlateSheet({
   const [customScreeningId, setCustomScreeningId] = useState<number | null>(
     null
   );
+  // 選んだ見た目は、選んだときのサンプル名に結びつける。名前を変えたら、その名前の見た目に戻る
+  const [styleChoice, setStyleChoice] = useState<{
+    name: string;
+    style: SampleStyle;
+  } | null>(null);
   const [notes, setNotes] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  const sampleName = dropBatch.sampleName.trim();
+  const currentStyle = samples.find((s) => s.name === sampleName)?.style;
+  const chosenStyle =
+    styleChoice?.name === sampleName ? styleChoice.style : undefined;
+  const sampleStyle = chosenStyle ?? currentStyle ?? DEFAULT_SAMPLE_STYLE;
+  // 既にあるサンプルの見た目を変えると、そのサンプルが入っている他のプレートも変わる
+  const changesOtherPlates =
+    currentStyle !== undefined &&
+    chosenStyle !== undefined &&
+    (chosenStyle.icon !== currentStyle.icon ||
+      chosenStyle.color !== currentStyle.color);
 
   const selectedPlateType = useMemo(
     () => plateTypes.find((pt) => pt.id === selectedType),
@@ -89,6 +112,7 @@ export function NewPlateSheet({
       setSetupDate(today());
       setSelectedType(null);
       setDropBatch(emptyDropBatch());
+      setStyleChoice(null);
       setConditionMode("sets");
       setSelectedSetId(null);
       setCustomReservoirId(null);
@@ -125,6 +149,7 @@ export function NewPlateSheet({
       scrId = customScreeningId;
     }
 
+    const dropsInput = toDropBatchInput(dropBatch);
     try {
       const result = await createPlate({
         name: plateName.trim(),
@@ -133,7 +158,11 @@ export function NewPlateSheet({
         screeningTemplateId: scrId,
         notes: notes.trim() || undefined,
         setupDate,
-        drops: toDropBatchInput(dropBatch),
+        drops: dropsInput && {
+          ...dropsInput,
+          // 選んだときだけ保存する。選ばなければ今の見た目（新しい名前なら既定）のまま
+          style: chosenStyle,
+        },
       });
       if (result && "error" in result) {
         setError("Unable to create plate.");
@@ -273,6 +302,31 @@ export function NewPlateSheet({
                   maxDrops={selectedPlateType.maxDrops}
                   value={dropBatch}
                   onChange={setDropBatch}
+                  sampleNames={samples.map((s) => s.name)}
+                  afterSampleName={
+                    dropBatch.positions.size > 0 &&
+                    sampleName && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
+                            {t("sampleStyleLabel")}
+                          </span>
+                          <SampleChip name={sampleName} style={sampleStyle} />
+                        </div>
+                        <SampleStylePicker
+                          value={sampleStyle}
+                          onChange={(style) =>
+                            setStyleChoice({ name: sampleName, style })
+                          }
+                        />
+                        {changesOtherPlates && (
+                          <p className="text-[13px] text-text-secondary">
+                            {t("sampleStyleSharedNote")}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }
                 />
               )}
 

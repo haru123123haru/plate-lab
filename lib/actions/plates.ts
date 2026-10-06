@@ -117,6 +117,7 @@ export async function createPlate(data: {
     positions: string[];
     sampleName: string;
     drops: { slot: number; concentration: string }[];
+    style?: { icon: string; color: string };
   };
 }) {
   const userId = await getCurrentUserId();
@@ -152,7 +153,8 @@ export async function createPlate(data: {
   }
 
   const rowLabels = "ABCDEFGH";
-  const wells = [];
+  // トランザクションの関数から読むと推論が効かないので、型を書く
+  const wells: Prisma.WellCreateWithoutPlateInput[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const position = `${rowLabels[r]}${c + 1}`;
@@ -176,21 +178,32 @@ export async function createPlate(data: {
   // 残った位置はこのプレートの範囲の外
   if (dropPositions.size > 0) return { error: "Invalid well position" };
 
-  return prisma.plate.create({
-    data: {
-      name: parsed.data.name,
-      plateTypeId: parsed.data.plateTypeId,
-      reservoirTemplateId: parsed.data.reservoirTemplateId ?? null,
-      screeningTemplateId: parsed.data.screeningTemplateId ?? null,
-      notes: parsed.data.notes,
-      setupDate: new Date(`${parsed.data.setupDate}T00:00:00Z`),
-      userId,
-      wells: { create: wells },
-    },
-    include: {
-      plateType: true,
-      wells: true,
-    },
+  const style = batch?.style;
+  return prisma.$transaction(async (tx) => {
+    const plate = await tx.plate.create({
+      data: {
+        name: parsed.data.name,
+        plateTypeId: parsed.data.plateTypeId,
+        reservoirTemplateId: parsed.data.reservoirTemplateId ?? null,
+        screeningTemplateId: parsed.data.screeningTemplateId ?? null,
+        notes: parsed.data.notes,
+        setupDate: new Date(`${parsed.data.setupDate}T00:00:00Z`),
+        userId,
+        wells: { create: wells },
+      },
+      include: {
+        plateType: true,
+        wells: true,
+      },
+    });
+    if (batch && style) {
+      await tx.sample.upsert({
+        where: { userId_name: { userId, name: batch.sampleName } },
+        create: { userId, name: batch.sampleName, ...style },
+        update: style,
+      });
+    }
+    return plate;
   });
 }
 

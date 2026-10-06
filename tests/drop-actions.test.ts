@@ -1,17 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // plate-trash-actions.test.ts と同じく、Action が prisma に渡す条件そのものを検査する
-const prismaMock = vi.hoisted(() => ({
-  plate: { findFirst: vi.fn(), create: vi.fn() },
-  plateType: { findFirst: vi.fn() },
-  well: { findFirst: vi.fn() },
-  drop: {
-    create: vi.fn(),
-    update: vi.fn(),
-    deleteMany: vi.fn(),
-  },
-  observation: { create: vi.fn(), deleteMany: vi.fn() },
-}));
+const prismaMock = vi.hoisted(() => {
+  const mock = {
+    plate: { findFirst: vi.fn(), create: vi.fn() },
+    plateType: { findFirst: vi.fn() },
+    well: { findFirst: vi.fn() },
+    drop: {
+      create: vi.fn(),
+      update: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    observation: { create: vi.fn(), deleteMany: vi.fn() },
+    sample: { upsert: vi.fn() },
+    // トランザクションの中でも同じモックを使う
+    $transaction: vi.fn(),
+  };
+  mock.$transaction.mockImplementation((fn: (tx: typeof mock) => unknown) =>
+    fn(mock)
+  );
+  return mock;
+});
 
 vi.mock("@/lib/prisma", () => ({ prisma: prismaMock }));
 vi.mock("@/lib/auth", () => ({ getCurrentUserId: async () => "user-a" }));
@@ -290,6 +299,50 @@ describe("createPlate", () => {
       { slot: 1, sampleName: "Lysozyme", concentration: "10 mg/mL" },
       { slot: 3, sampleName: "Lysozyme", concentration: "5 mg/mL" },
     ]);
+  });
+
+  it("saves the chosen sample style with the plate", async () => {
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      setupDate: "2026-09-25",
+      drops: { ...batch, style: { icon: "dna", color: "blue" } },
+    });
+
+    expect(prismaMock.sample.upsert).toHaveBeenCalledWith({
+      where: { userId_name: { userId: "user-a", name: "Lysozyme" } },
+      create: {
+        userId: "user-a",
+        name: "Lysozyme",
+        icon: "dna",
+        color: "blue",
+      },
+      update: { icon: "dna", color: "blue" },
+    });
+  });
+
+  it("leaves sample styles alone without a chosen style", async () => {
+    await createPlate({
+      name: "P",
+      plateTypeId: "type-1",
+      setupDate: "2026-09-25",
+      drops: batch,
+    });
+
+    expect(prismaMock.plate.create).toHaveBeenCalled();
+    expect(prismaMock.sample.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a style that is not a candidate", async () => {
+    expect(
+      await createPlate({
+        name: "P",
+        plateTypeId: "type-1",
+        setupDate: "2026-09-25",
+        drops: { ...batch, style: { icon: "rocket", color: "blue" } },
+      })
+    ).toHaveProperty("error");
+    expect(prismaMock.plate.create).not.toHaveBeenCalled();
   });
 
   it("ignores duplicate positions and rejects duplicate slots", async () => {

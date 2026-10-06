@@ -5,19 +5,26 @@ import {
   getConditionTemplates,
   getConditionSets,
 } from "@/lib/actions/condition-templates";
-import { getSampleStyles } from "@/lib/actions/samples";
+import { getSamples, getSampleStyles } from "@/lib/actions/samples";
 import { SamplesClient } from "./samples-client";
 
 export default async function SamplesPage() {
-  const [plates, plateTypes, conditionTemplates, conditionSets, sampleStyles] =
-    await Promise.all([
-      // 空の検索は全件を返す。検索結果と同じ形（サンプル名つき）で最初の一覧を出すため
-      searchPlates(""),
-      getPlateTypes(),
-      getConditionTemplates(),
-      getConditionSets(),
-      getSampleStyles(),
-    ]);
+  const [
+    plates,
+    plateTypes,
+    conditionTemplates,
+    conditionSets,
+    sampleStyles,
+    samples,
+  ] = await Promise.all([
+    // 空の検索は全件を返す。検索結果と同じ形（サンプル名つき）で最初の一覧を出すため
+    searchPlates(""),
+    getPlateTypes(),
+    getConditionTemplates(),
+    getConditionSets(),
+    getSampleStyles(),
+    getSamples(),
+  ]);
 
   const uiPlates = plates.map((p) => ({
     id: p.id,
@@ -63,6 +70,7 @@ export default async function SamplesPage() {
       plateTypes={uiPlateTypes}
       conditionTemplates={uiConditionTemplates}
       conditionSets={uiConditionSets}
+      samples={samples}
     />
   );
 }

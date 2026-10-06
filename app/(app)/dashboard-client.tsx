@@ -15,6 +15,7 @@ import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { searchPlates } from "@/lib/actions/plates";
 import type { PlateType } from "@/types";
+import type { SampleStyle } from "@/lib/samples";
 
 interface UiPlate {
   id: string;
@@ -43,6 +44,7 @@ interface DashboardClientProps {
     description?: string | null;
   }[];
   conditionSets: UiConditionSet[];
+  samples: { name: string; style: SampleStyle }[];
 }
 
 export function DashboardClient({
@@ -50,6 +52,7 @@ export function DashboardClient({
   plateTypes,
   conditionTemplates,
   conditionSets,
+  samples,
 }: DashboardClientProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -135,6 +138,7 @@ export function DashboardClient({
         plateTypes={plateTypes}
         conditionTemplates={conditionTemplates}
         conditionSets={conditionSets}
+        samples={samples}
       />
     </div>
   );

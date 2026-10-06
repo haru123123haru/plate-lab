@@ -39,6 +39,7 @@ interface SamplesClientProps {
     description?: string | null;
   }[];
   conditionSets: UiConditionSet[];
+  samples: { name: string; style: SampleStyle }[];
 }
 
 export function SamplesClient({
@@ -47,6 +48,7 @@ export function SamplesClient({
   plateTypes,
   conditionTemplates,
   conditionSets,
+  samples,
 }: SamplesClientProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -127,6 +129,7 @@ export function SamplesClient({
         plateTypes={plateTypes}
         conditionTemplates={conditionTemplates}
         conditionSets={conditionSets}
+        samples={samples}
       />
     </div>
   );

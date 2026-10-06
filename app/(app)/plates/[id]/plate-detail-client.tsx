@@ -20,10 +20,12 @@ import { ListRow } from "@/components/list-row";
 import { WellGrid } from "@/components/well-grid";
 import { WellSheet } from "@/components/well-sheet";
 import { PlateNotes } from "@/components/plate-notes";
+import { PlateSamples } from "@/components/plate-samples";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/components/locale-provider";
+import type { SampleStyle } from "@/lib/samples";
 import type { PlateLayout, WellData } from "@/types";
 
 export type WellCondition = {
@@ -53,6 +55,7 @@ interface PlateDetailClientProps {
     deletedAt: string | null;
   };
   conditionTemplates: { id: number; name: string; description: string }[];
+  sampleStyles: Record<string, SampleStyle>;
   reservoirConditionMap?: Record<string, WellCondition>;
   screeningConditionMap?: Record<string, WellCondition>;
 }
@@ -60,6 +63,7 @@ interface PlateDetailClientProps {
 export function PlateDetailClient({
   plate,
   conditionTemplates,
+  sampleStyles,
   reservoirConditionMap = {},
   screeningConditionMap = {},
 }: PlateDetailClientProps) {
@@ -402,6 +406,12 @@ export function PlateDetailClient({
             </button>
           </div>
         )}
+
+        <PlateSamples
+          wells={plate.wells}
+          sampleStyles={sampleStyles}
+          readOnly={isTrashed}
+        />
 
         {/* メモは編集モードでなくても見えて、その場で書き換えられる */}
         <PlateNotes
