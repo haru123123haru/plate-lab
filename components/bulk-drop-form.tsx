@@ -1,13 +1,10 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { WellGridSelector } from "@/components/well-grid-selector";
 import { WellShape } from "@/components/well-shape";
 import { useTranslation } from "@/components/locale-provider";
-import { bulkCreateDrops } from "@/lib/actions/drops";
 import type { PlateLayout } from "@/types";
 
 // 同じサンプルを、選んだウェルの選んだ置き場所へまとめて入れる内容
@@ -217,94 +214,6 @@ export function BulkDropFields({
           {t("dropBatchIncomplete")}
         </p>
       )}
-    </div>
-  );
-}
-
-interface BulkAddDropsFormProps {
-  plateId: string;
-  rows: number;
-  cols: number;
-  layout: PlateLayout;
-  maxDrops: number;
-}
-
-// 詳細画面の編集モードに置く「まとめて追加」。既存のドロップは上書きしない
-export function BulkAddDropsForm({
-  plateId,
-  rows,
-  cols,
-  layout,
-  maxDrops,
-}: BulkAddDropsFormProps) {
-  const router = useRouter();
-  const { t } = useTranslation();
-  const [batch, setBatch] = useState(emptyDropBatch);
-  const [pending, setPending] = useState(false);
-  const [isRefreshing, startTransition] = useTransition();
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const busy = pending || isRefreshing;
-  const input = toDropBatchInput(batch);
-  const canSubmit = !busy && input !== undefined && isDropBatchComplete(batch);
-
-  const handleSubmit = async () => {
-    if (!canSubmit || !input) return;
-    setPending(true);
-    setMessage("");
-    setError("");
-    try {
-      const result = await bulkCreateDrops({ plateId, ...input });
-      if ("error" in result) {
-        setError(t("actionFailed"));
-        return;
-      }
-      setMessage(
-        `${t("dropsAdded")}: ${result.created} / ${t("dropsSkipped")}: ${result.skipped}`
-      );
-      startTransition(() => {
-        // サンプル名と濃度は、続けて別のウェルに入れるときのために残す
-        setBatch((prev) => ({ ...prev, positions: new Set() }));
-        router.refresh();
-      });
-    } catch {
-      setError(t("actionFailed"));
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="text-[15px] font-semibold text-text-primary">
-        {t("bulkAddDrops")}
-      </div>
-      <BulkDropFields
-        rows={rows}
-        cols={cols}
-        layout={layout}
-        maxDrops={maxDrops}
-        value={batch}
-        onChange={setBatch}
-      />
-      {error && (
-        <div className="rounded-xl bg-accent-negative/10 px-4 py-3 text-[13px] text-accent-negative">
-          {error}
-        </div>
-      )}
-      {message && (
-        <p role="status" className="text-[13px] text-text-secondary">
-          {message}
-        </p>
-      )}
-      <Button
-        type="button"
-        className="h-11 w-full rounded-xl"
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-      >
-        {busy ? t("adding") : t("bulkAddDrops")}
-      </Button>
     </div>
   );
 }

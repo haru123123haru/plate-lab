@@ -35,6 +35,7 @@ const translations = {
     setupDate: "Set up",
     updated: "Updated",
     notes: "NOTES",
+    noNotes: "No notes yet.",
 
     // New Plate
     addPlate: "Add Plate",
@@ -195,10 +196,7 @@ const translations = {
     delete: "Delete",
     close: "Close",
     hasDrop: "has a drop",
-    bulkAddDrops: "Add Drops in Bulk",
     drops: "drops",
-    dropsAdded: "Added",
-    dropsSkipped: "Skipped (already had a drop)",
     dropBatchIncomplete:
       "Choose a position and enter the sample name and a concentration for each position.",
 
@@ -264,6 +262,7 @@ const translations = {
     setupDate: "仕込み日",
     updated: "更新日",
     notes: "メモ",
+    noNotes: "メモはまだありません",
 
     // New Plate
     addPlate: "プレート追加",
@@ -421,10 +420,7 @@ const translations = {
     delete: "削除",
     close: "閉じる",
     hasDrop: "ドロップあり",
-    bulkAddDrops: "まとめて追加",
     drops: "ドロップ",
-    dropsAdded: "追加",
-    dropsSkipped: "スキップ（使用中）",
     dropBatchIncomplete:
       "選んだウェルに入れる置き場所・サンプル名と、置き場所ごとの濃度を入れてください。",
 

@@ -9,7 +9,6 @@ const prismaMock = vi.hoisted(() => ({
     create: vi.fn(),
     update: vi.fn(),
     deleteMany: vi.fn(),
-    createMany: vi.fn(),
   },
   observation: { create: vi.fn(), deleteMany: vi.fn() },
 }));
@@ -19,7 +18,6 @@ vi.mock("@/lib/auth", () => ({ getCurrentUserId: async () => "user-a" }));
 
 import {
   addObservation,
-  bulkCreateDrops,
   createDrop,
   deleteDrop,
   deleteObservation,
@@ -147,84 +145,6 @@ describe("deleteDrop", () => {
     expect(prismaMock.drop.deleteMany).toHaveBeenCalledWith({
       where: { id: "drop-1", ...editableDrop },
     });
-  });
-});
-
-describe("bulkCreateDrops", () => {
-  const input = {
-    plateId: "plate-1",
-    positions: ["A1", "A2"],
-    sampleName: "Lysozyme",
-    drops: [
-      { slot: 1, concentration: "10 mg/mL" },
-      { slot: 2, concentration: "20 mg/mL" },
-    ],
-  };
-
-  it("checks the plate owner and reports skipped duplicates", async () => {
-    prismaMock.plate.findFirst.mockResolvedValue({
-      plateType: { maxDrops: 4 },
-      wells: [{ id: "well-1" }, { id: "well-2" }],
-    });
-    prismaMock.drop.createMany.mockResolvedValue({ count: 3 });
-
-    const result = await bulkCreateDrops(input);
-
-    expect(result).toEqual({ created: 3, skipped: 1 });
-    expect(prismaMock.plate.findFirst.mock.calls[0][0].where).toEqual({
-      id: "plate-1",
-      ...editablePlate,
-    });
-    const args = prismaMock.drop.createMany.mock.calls[0][0];
-    expect(args.skipDuplicates).toBe(true);
-    expect(args.data).toHaveLength(4);
-    // 置き場所ごとの濃度で作る
-    expect(args.data.slice(0, 2)).toEqual([
-      {
-        wellId: "well-1",
-        slot: 1,
-        sampleName: "Lysozyme",
-        concentration: "10 mg/mL",
-      },
-      {
-        wellId: "well-1",
-        slot: 2,
-        sampleName: "Lysozyme",
-        concentration: "20 mg/mL",
-      },
-    ]);
-  });
-
-  it("does nothing for a plate it cannot edit", async () => {
-    prismaMock.plate.findFirst.mockResolvedValue(null);
-
-    expect(await bulkCreateDrops(input)).toEqual({ error: "Not found" });
-    expect(prismaMock.drop.createMany).not.toHaveBeenCalled();
-  });
-
-  it("rejects positions missing from the plate and slots beyond maxDrops", async () => {
-    prismaMock.plate.findFirst.mockResolvedValueOnce({
-      plateType: { maxDrops: 4 },
-      wells: [{ id: "well-1" }],
-    });
-    expect(await bulkCreateDrops(input)).toEqual({
-      error: "Invalid well position",
-    });
-
-    prismaMock.plate.findFirst.mockResolvedValueOnce({
-      plateType: { maxDrops: 1 },
-      wells: [{ id: "well-1" }, { id: "well-2" }],
-    });
-    expect(await bulkCreateDrops(input)).toEqual({ error: "Invalid slot" });
-    expect(prismaMock.drop.createMany).not.toHaveBeenCalled();
-  });
-
-  it("rejects the same slot twice before touching the database", async () => {
-    const slot1 = { slot: 1, concentration: "10 mg/mL" };
-    expect(await bulkCreateDrops({ ...input, drops: [slot1, slot1] })).toEqual({
-      error: "Duplicate slot",
-    });
-    expect(prismaMock.plate.findFirst).not.toHaveBeenCalled();
   });
 });
 

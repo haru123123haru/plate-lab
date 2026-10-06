@@ -19,7 +19,7 @@ import { SectionHeader } from "@/components/section-header";
 import { ListRow } from "@/components/list-row";
 import { WellGrid } from "@/components/well-grid";
 import { WellSheet } from "@/components/well-sheet";
-import { BulkAddDropsForm } from "@/components/bulk-drop-form";
+import { PlateNotes } from "@/components/plate-notes";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deletePlate, restorePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,6 @@ export function PlateDetailClient({
   const { t } = useTranslation();
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState(plate.name);
-  const [editNotes, setEditNotes] = useState(plate.notes ?? "");
   const [editSetupDate, setEditSetupDate] = useState(plate.setupDate);
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
@@ -130,7 +129,6 @@ export function PlateDetailClient({
 
   const handleCancelEdit = () => {
     setEditName(plate.name);
-    setEditNotes(plate.notes ?? "");
     setEditSetupDate(plate.setupDate);
     setEditReservoirTemplateId(plate.reservoirTemplateId);
     setEditScreeningTemplateId(plate.screeningTemplateId);
@@ -145,7 +143,6 @@ export function PlateDetailClient({
     try {
       const result = await updatePlate(plate.id, {
         name: editName,
-        notes: editNotes || undefined,
         setupDate: editSetupDate,
         reservoirTemplateId: editReservoirTemplateId,
         screeningTemplateId: editScreeningTemplateId,
@@ -378,19 +375,6 @@ export function PlateDetailClient({
               </div>
             </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <label className="text-[11px] uppercase tracking-[2px] text-text-secondary font-medium">
-                {t("notes")}
-              </label>
-              <textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                rows={4}
-                className="w-full rounded-xl border border-border-default bg-bg-primary p-4 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none resize-none"
-              />
-            </div>
-
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -419,16 +403,12 @@ export function PlateDetailClient({
           </div>
         )}
 
-        {/* まとめて追加（編集モードだけ。ゴミ箱のプレートでは出さない） */}
-        {editMode && !isTrashed && (
-          <BulkAddDropsForm
-            plateId={plate.id}
-            rows={plate.plateType.rows}
-            cols={plate.plateType.cols}
-            layout={plate.plateType.layout}
-            maxDrops={plate.plateType.maxDrops}
-          />
-        )}
+        {/* メモは編集モードでなくても見えて、その場で書き換えられる */}
+        <PlateNotes
+          plateId={plate.id}
+          notes={plate.notes}
+          readOnly={isTrashed}
+        />
 
         {/* Plate Details */}
         <div>
