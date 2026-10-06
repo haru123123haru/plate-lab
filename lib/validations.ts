@@ -163,3 +163,56 @@ export const updateUserSchema = z.object({
   organization: z.string().max(200).optional(),
   bio: z.string().max(1000).optional(),
 });
+
+// CSV から取り込むプレート。ブラウザで lib/plate-import.ts が組み立てたものを、
+// サーバーで確かめ直す。上限は IMPORT_MAX_PLATES・IMPORT_MAX_ROWS に合わせる
+const importObservationSchema = z
+  .object({
+    observedAt: z.iso.date(),
+    mark: z.enum(["POSSIBLE", "CRYSTAL", "HARVESTED"]).nullable(),
+    notes: z.string().trim().max(2000),
+  })
+  .refine((data) => data.notes.length > 0 || data.mark, {
+    message: "Add a note or a mark",
+  });
+
+const importDropSchema = z.object({
+  position: dropBatchSchema.shape.positions.element,
+  slot: slotSchema,
+  sampleName: dropFieldsSchema.shape.sampleName,
+  concentration: dropFieldsSchema.shape.concentration,
+  notes: z.string().max(2000).nullable(),
+  observations: z.array(importObservationSchema).max(2000),
+});
+
+export const importPlatesSchema = z
+  .array(
+    z.object({
+      name: createPlateSchema.shape.name,
+      plateTypeId: createPlateSchema.shape.plateTypeId,
+      setupDate: z.iso.date(),
+      reservoirTemplateId: z.number().int().positive().nullable(),
+      screeningTemplateId: z.number().int().positive().nullable(),
+      notes: z.string().max(2000).nullable(),
+      drops: z
+        .array(importDropSchema)
+        .max(2000)
+        .refine(
+          (drops) =>
+            new Set(drops.map((d) => `${d.position}-${d.slot}`)).size ===
+            drops.length,
+          { message: "Duplicate drop" }
+        ),
+    })
+  )
+  .min(1)
+  .max(50)
+  // 行の上限。1行は1ドロップか1観察なので、観察の数（最低1行）で数える
+  .refine(
+    (plates) =>
+      plates
+        .flatMap((p) => p.drops)
+        .reduce((sum, d) => sum + Math.max(1, d.observations.length), 0) <=
+      2000,
+    { message: "Too many rows" }
+  );

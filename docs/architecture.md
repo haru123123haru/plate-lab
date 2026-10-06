@@ -32,6 +32,7 @@
 | `/settings`               | `app/(app)/settings/page.tsx`     | 言語と外観の設定                 |
 | `/settings/plate-types`   | `app/(app)/settings/plate-types/` | プレートタイプの一覧・追加・削除 |
 | `/settings/conditions`    | `app/(app)/settings/conditions/`  | 条件テンプレートとセットの一覧・追加・削除 |
+| `/settings/import`        | `app/(app)/settings/import/`      | CSV からプレート・ドロップ・観察をまとめて登録。確かめは `lib/plate-import.ts` |
 | `/help`                   | `app/(app)/help/`                 | ヘルプ。基本操作とホーム画面への追加の手順。文章は `lib/help.ts` |
 | `/login`, `/register`     | `app/(auth)/`                     | 認証フォーム                     |
 | `/auth/callback`          | `app/auth/callback/route.ts`      | OAuth のコード交換               |
