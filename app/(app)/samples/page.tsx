@@ -35,6 +35,8 @@ export default async function SamplesPage() {
     totalWells: p.wells.length,
     // setupDate は日付だけの列なので、UTC の日付として読む
     setupDate: p.setupDate.toISOString().slice(0, 10),
+    updatedAt: p.updatedAt.toISOString(),
+    similar: p.similar,
   }));
 
   const uiPlateTypes = plateTypes.map((pt) => ({

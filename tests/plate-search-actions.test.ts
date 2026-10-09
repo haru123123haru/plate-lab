@@ -44,9 +44,9 @@ describe("searchPlates", () => {
     ]);
 
     expect(await searchPlates(" lysozme ")).toEqual([
-      { id: "plate-1" },
-      { id: "plate-3" },
-      { id: "plate-2" },
+      { id: "plate-1", similar: false },
+      { id: "plate-3", similar: true },
+      { id: "plate-2", similar: true },
     ]);
     // 似ているものにも、持ち主・ゴミ箱・タイプの条件をかけ直す
     expect(prismaMock.plate.findMany.mock.calls[1][0].where).toEqual({
@@ -64,7 +64,9 @@ describe("searchPlates", () => {
     prismaMock.plate.findMany.mockResolvedValueOnce([{ id: "plate-1" }]);
     prismaMock.$queryRaw.mockResolvedValue([{ id: "plate-1" }]);
 
-    expect(await searchPlates("Lysozyme")).toEqual([{ id: "plate-1" }]);
+    expect(await searchPlates("Lysozyme")).toEqual([
+      { id: "plate-1", similar: false },
+    ]);
     expect(prismaMock.plate.findMany).toHaveBeenCalledTimes(1);
   });
 
@@ -75,7 +77,9 @@ describe("searchPlates", () => {
       new Error("function word_similarity(text, text) does not exist")
     );
 
-    expect(await searchPlates("lysozme")).toEqual([{ id: "plate-1" }]);
+    expect(await searchPlates("lysozme")).toEqual([
+      { id: "plate-1", similar: false },
+    ]);
   });
 
   it("uses only substring matching for short queries", async () => {

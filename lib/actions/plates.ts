@@ -275,7 +275,8 @@ const FUZZY_SEARCH_MIN_LENGTH = 3;
 // 似ているだけのプレートは、似ている順にここまで出す
 const FUZZY_SEARCH_LIMIT = 50;
 
-// 部分一致で見つかったプレートを先に、似ているだけのプレート（打ち間違いや表記の揺れ）をあとに並べる
+// 部分一致で見つかったプレートを先に、似ているだけのプレート（打ち間違いや表記の揺れ）をあとに並べる。
+// 似ているだけのものには similar を付ける。画面で並べ方を変えても、部分一致のあとに置くため
 export async function searchPlates(query: string) {
   const userId = await getCurrentUserId();
   const parsed = searchPlatesSchema.safeParse(query);
@@ -286,11 +287,12 @@ export async function searchPlates(query: string) {
     plateType: accessiblePlateTypeWhere(userId),
   };
   if (!normalizedQuery) {
-    return prisma.plate.findMany({
+    const plates = await prisma.plate.findMany({
       where: visiblePlateWhere,
       include: { plateType: true, wells: wellDropSamples },
       orderBy: { updatedAt: "desc" },
     });
+    return plates.map((plate) => ({ ...plate, similar: false }));
   }
 
   const [matched, similarIds] = await Promise.all([
@@ -332,7 +334,8 @@ export async function searchPlates(query: string) {
 
   const matchedIds = new Set(matched.map((plate) => plate.id));
   const extraIds = similarIds.filter((id) => !matchedIds.has(id));
-  if (extraIds.length === 0) return matched;
+  const exact = matched.map((plate) => ({ ...plate, similar: false }));
+  if (extraIds.length === 0) return exact;
 
   // 持ち主・ゴミ箱・タイプの条件は、部分一致と同じものをもう一度かける
   const similar = await prisma.plate.findMany({
@@ -341,7 +344,7 @@ export async function searchPlates(query: string) {
   });
   const rank = new Map(extraIds.map((id, index) => [id, index]));
   similar.sort((a, b) => rank.get(a.id)! - rank.get(b.id)!);
-  return [...matched, ...similar];
+  return [...exact, ...similar.map((plate) => ({ ...plate, similar: true }))];
 }
 
 // プレート名・メモ・サンプル名のどれかが検索語に似ているプレートの ID を、似ている順に返す。
