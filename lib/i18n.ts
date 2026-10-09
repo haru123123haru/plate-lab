@@ -14,6 +14,10 @@ const translations = {
     // Common
     searchPlates: "Search plates...",
     noPlatesFound: "No plates found",
+    sortPlates: "Sort plates",
+    sortUpdated: "Updated",
+    sortSetupNewest: "Newest set up",
+    sortSetupOldest: "Oldest set up",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving...",
@@ -22,6 +26,7 @@ const translations = {
 
     // Dashboard
     recentPlates: "RECENT PLATES",
+    plates: "PLATES",
     viewAll: "View All",
 
     // Help
@@ -280,6 +285,10 @@ const translations = {
     // Common
     searchPlates: "プレートを検索...",
     noPlatesFound: "プレートが見つかりません",
+    sortPlates: "並べ方",
+    sortUpdated: "更新が新しい",
+    sortSetupNewest: "仕込みが新しい",
+    sortSetupOldest: "仕込みが古い",
     cancel: "キャンセル",
     save: "保存",
     saving: "保存中...",
@@ -288,6 +297,7 @@ const translations = {
 
     // Dashboard
     recentPlates: "最近のプレート",
+    plates: "プレート",
     viewAll: "すべて表示",
 
     // ヘルプ

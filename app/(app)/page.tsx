@@ -25,6 +25,9 @@ export default async function DashboardPage() {
     plateType: { name: p.plateType.name },
     filledWells: countUsedWells(p.wells),
     totalWells: p.wells.length,
+    // setupDate は日付だけの列なので、UTC の日付として読む
+    setupDate: p.setupDate.toISOString().slice(0, 10),
+    updatedAt: p.updatedAt.toISOString(),
   }));
 
   const uiPlateTypes = plateTypes.map((pt) => ({

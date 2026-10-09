@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { countUsedWells } from "@/lib/wells";
 import { useRouter } from "next/navigation";
 import { Menu, FlaskConical } from "lucide-react";
@@ -14,6 +14,8 @@ import { MenuSheet } from "@/components/menu-sheet";
 import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { searchPlates } from "@/lib/actions/plates";
+import { PlateSortChips, usePlateSort } from "@/components/plate-sort-chips";
+import { sortPlates } from "@/lib/plate-sort";
 import type { PlateType } from "@/types";
 import type { SampleStyle } from "@/lib/samples";
 
@@ -23,6 +25,9 @@ interface UiPlate {
   plateType: { name: string };
   filledWells: number;
   totalWells: number;
+  setupDate: string;
+  updatedAt: string;
+  similar?: boolean;
 }
 
 export type UiConditionSet = {
@@ -57,14 +62,20 @@ export function DashboardClient({
   const router = useRouter();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [sort, setSort] = usePlateSort();
   const [filteredPlates, setFilteredPlates] = useState<UiPlate[]>(plates);
   const [menuOpen, setMenuOpen] = useState(false);
   const [newPlateOpen, setNewPlateOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 最後に始めた検索の番号。遅れて返った古い検索の結果で上書きしないため
+  const latestSearchRef = useRef(0);
+
   const doSearch = useCallback(async (query: string) => {
     if (!query.trim()) return;
+    const searchId = ++latestSearchRef.current;
     const results = await searchPlates(query);
+    if (searchId !== latestSearchRef.current) return;
     setFilteredPlates(
       results.map((p) => ({
         id: p.id,
@@ -72,6 +83,9 @@ export function DashboardClient({
         plateType: { name: p.plateType.name },
         filledWells: countUsedWells(p.wells),
         totalWells: p.wells.length,
+        setupDate: p.setupDate.toISOString().slice(0, 10),
+        updatedAt: p.updatedAt.toISOString(),
+        similar: p.similar,
       }))
     );
   }, []);
@@ -85,7 +99,11 @@ export function DashboardClient({
   }, [search, doSearch]);
 
   // 検索中でなければ最新の plates（router.refresh 後も含む）をそのまま出す
-  const visiblePlates = search.trim() ? filteredPlates : plates;
+  const searching = search.trim() !== "";
+  const visiblePlates = useMemo(
+    () => sortPlates(searching ? filteredPlates : plates, sort),
+    [searching, filteredPlates, plates, sort]
+  );
 
   return (
     <div className="bg-bg-primary min-h-screen">
@@ -105,8 +123,11 @@ export function DashboardClient({
           placeholder={t("searchPlates")}
         />
 
+        <PlateSortChips value={sort} onChange={setSort} />
+
         <SectionHeader
-          label={t("recentPlates")}
+          // 更新順でないときは「最近の」と言えない
+          label={t(sort === "updated" ? "recentPlates" : "plates")}
           action={t("viewAll")}
           onAction={() => router.push("/samples")}
         />
