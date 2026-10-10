@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // plate-trash-actions.test.ts と同じく、Action が prisma に渡す条件そのものを検査する
 const prismaMock = vi.hoisted(() => {
   const mock = {
-    plate: { findFirst: vi.fn(), create: vi.fn() },
+    plate: { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
     plateType: { findFirst: vi.fn() },
     well: { findFirst: vi.fn() },
     drop: {
@@ -77,6 +77,29 @@ describe("createDrop", () => {
     expect(prismaMock.drop.create.mock.calls[0][0].data.well).toEqual({
       connect: { id: "well-1", ...editableWell },
     });
+  });
+
+  it("moves the plate's updatedAt only for the owner's active plate", async () => {
+    prismaMock.drop.create.mockResolvedValue({ id: "drop-1" });
+
+    await createDrop({ wellId: "well-1", slot: 1, ...dropInput });
+
+    const touch = prismaMock.plate.updateMany.mock.calls[0][0];
+    expect(touch.where).toEqual({
+      userId: "user-a",
+      deletedAt: null,
+      wells: { some: { id: "well-1" } },
+    });
+    expect(touch.data.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("does not move updatedAt when the drop was not created", async () => {
+    prismaMock.drop.create.mockRejectedValue({ code: "P2002" });
+
+    expect(
+      await createDrop({ wellId: "well-1", slot: 1, ...dropInput })
+    ).toEqual({ error: "Slot in use" });
+    expect(prismaMock.plate.updateMany).not.toHaveBeenCalled();
   });
 
   it("rejects a slot beyond the plate type's maxDrops", async () => {

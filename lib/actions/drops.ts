@@ -3,14 +3,28 @@
 import { prisma } from "@/lib/prisma";
 import { prismaErrorCode } from "@/lib/prisma-error";
 import { getCurrentUserId } from "@/lib/auth";
-import { editableDropWhere, editableWellWhere } from "@/lib/access-control";
+import {
+  activePlateWhere,
+  editableDropWhere,
+  editableWellWhere,
+} from "@/lib/access-control";
 import {
   addObservationSchema,
   createDropSchema,
   resourceIdSchema,
   updateDropSchema,
 } from "@/lib/validations";
+import type { Prisma } from "../../generated/prisma/client";
 import type { CrystalMark } from "@/types";
+
+// ドロップや観察を変えたら、プレートの更新日時も進める。一覧の「更新が新しい」順と、
+// 詳細の「更新日」に出すため。@updatedAt はプレートの行を直したときしか進まない
+function touchPlate(userId: string, where: Prisma.PlateWhereInput) {
+  return prisma.plate.updateMany({
+    where: { ...activePlateWhere(userId), ...where },
+    data: { updatedAt: new Date() },
+  });
+}
 
 export async function createDrop(data: {
   wellId: string;
@@ -38,8 +52,9 @@ export async function createDrop(data: {
   }
 
   // connect の条件にも認可を入れ、あいだにゴミ箱へ移されたウェルには作らない
+  let created;
   try {
-    return await prisma.drop.create({
+    created = await prisma.drop.create({
       data: {
         ...drop,
         well: { connect: { id: wellId, ...editableWellWhere(userId) } },
@@ -51,6 +66,8 @@ export async function createDrop(data: {
     if (code === "P2025") return { error: "Not found" };
     throw error;
   }
+  await touchPlate(userId, { wells: { some: { id: wellId } } });
+  return created;
 }
 
 export async function updateDrop(
@@ -69,8 +86,9 @@ export async function updateDrop(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
+  let updated;
   try {
-    return await prisma.drop.update({
+    updated = await prisma.drop.update({
       where: { id: parsedId.data, ...editableDropWhere(userId) },
       data: parsed.data,
     });
@@ -78,6 +96,10 @@ export async function updateDrop(
     if (prismaErrorCode(error) === "P2025") return { error: "Not found" };
     throw error;
   }
+  await touchPlate(userId, {
+    wells: { some: { drops: { some: { id: parsedId.data } } } },
+  });
+  return updated;
 }
 
 export async function deleteDrop(id: string) {
@@ -85,6 +107,11 @@ export async function deleteDrop(id: string) {
   const parsedId = resourceIdSchema.safeParse(id);
   if (!parsedId.success) return { error: "Not found" };
 
+  // 消したあとはドロップからプレートをたどれないので、先に進める。
+  // 消せないドロップなら、同じ条件でプレートも見つからない
+  await touchPlate(userId, {
+    wells: { some: { drops: { some: { id: parsedId.data } } } },
+  });
   // 観察は onDelete: Cascade で消える
   const { count } = await prisma.drop.deleteMany({
     where: { id: parsedId.data, ...editableDropWhere(userId) },
@@ -106,8 +133,9 @@ export async function addObservation(data: {
   }
   const { dropId, observedAt, notes, mark } = parsed.data;
 
+  let created;
   try {
-    return await prisma.observation.create({
+    created = await prisma.observation.create({
       data: {
         observedAt: new Date(`${observedAt}T00:00:00Z`),
         notes,
@@ -119,6 +147,10 @@ export async function addObservation(data: {
     if (prismaErrorCode(error) === "P2025") return { error: "Not found" };
     throw error;
   }
+  await touchPlate(userId, {
+    wells: { some: { drops: { some: { id: dropId } } } },
+  });
+  return created;
 }
 
 export async function deleteObservation(id: string) {
@@ -126,6 +158,14 @@ export async function deleteObservation(id: string) {
   const parsedId = resourceIdSchema.safeParse(id);
   if (!parsedId.success) return { error: "Not found" };
 
+  // deleteDrop と同じく、消す前に進める
+  await touchPlate(userId, {
+    wells: {
+      some: {
+        drops: { some: { observations: { some: { id: parsedId.data } } } },
+      },
+    },
+  });
   const { count } = await prisma.observation.deleteMany({
     where: { id: parsedId.data, drop: editableDropWhere(userId) },
   });
