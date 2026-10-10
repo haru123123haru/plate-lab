@@ -10,5 +10,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // DB を伴う結合テストは vitest.integration.config.mts で流す
+    exclude: ["tests/integration/**"],
   },
 });
