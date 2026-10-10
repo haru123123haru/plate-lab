@@ -164,6 +164,25 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       ],
     },
     {
+      id: "condition-template",
+      title: "自分の条件テンプレートに中身を入れる",
+      intro:
+        "自分で作った条件テンプレートには、ウェルごとの条件（塩・沈殿剤・ポリアミン・バッファー）を CSV で入れられます。入れた条件は、そのテンプレートを使うプレートのウェルを押すと出ます。",
+      steps: [
+        {
+          items: [
+            "設定の「条件」を開き、テンプレートを押す",
+            "「CSV を書き出す」を押し、Excel で開いて1行に1ウェルずつ書く",
+            "保存して「CSV ファイルを選ぶ」で選び、内容を確かめて置き換える",
+          ],
+        },
+      ],
+      notes: [
+        "取り込むと、今の中身はファイルの中身にまるごと置き換わります。",
+        "共有のテンプレート（PEG・MPD など）は、中身を見られますが変えられません。",
+      ],
+    },
+    {
       id: "settings",
       title: "設定を変える",
       intro:
@@ -317,6 +336,25 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         "To add observations, repeat the row of the same well and slot once per observation, with the date and a mark or a note. The observation columns can be left empty.",
         "If some rows need fixing, their row numbers and reasons are shown and nothing is imported. Fix them and choose the file again.",
         "A plate with the same name as an existing one is registered as a new plate.",
+      ],
+    },
+    {
+      id: "condition-template",
+      title: "Fill in your own condition template",
+      intro:
+        "Your own condition templates can hold a condition for each well (salt, precipitant, polyamine and buffer), uploaded as a CSV. The condition shows when you tap a well on a plate that uses the template.",
+      steps: [
+        {
+          items: [
+            'Open "Conditions" in Settings and tap a template',
+            'Tap "Download as CSV", open it in Excel and write one well per row',
+            'Save it, pick it with "Choose a CSV file", check the contents and replace',
+          ],
+        },
+      ],
+      notes: [
+        "Importing replaces all current conditions with the file's contents.",
+        "Shared templates (such as PEG and MPD) can be viewed but not changed.",
       ],
     },
     {
