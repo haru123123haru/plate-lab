@@ -143,4 +143,53 @@ describe("drops and observations can only be changed by the plate's owner", () =
       })
     ).toEqual({ error: "Not found" });
   });
+
+  it("moves the plate's updatedAt when drops and observations change", async () => {
+    const { alice, alicePlate } = await createTwoUsers();
+    signInAs(alice);
+    const past = new Date("2026-01-01T00:00:00Z");
+    const updatedAt = async () =>
+      (
+        await prisma.plate.findUniqueOrThrow({
+          where: { id: alicePlate.plate.id },
+        })
+      ).updatedAt;
+    const reset = () =>
+      prisma.$executeRaw`UPDATE "Plate" SET "updatedAt" = ${past} WHERE "id" = ${alicePlate.plate.id}`;
+    const changes = [
+      () => createDrop(newDrop(alicePlate.plate.wells[1].id)),
+      () => updateDrop(alicePlate.drop!.id, { concentration: "20 mg/mL" }),
+      () =>
+        addObservation({
+          dropId: alicePlate.drop!.id,
+          observedAt: "2026-10-03",
+          notes: "second look",
+        }),
+      () => deleteObservation(alicePlate.observation!.id),
+      () => deleteDrop(alicePlate.drop!.id),
+    ];
+
+    for (const change of changes) {
+      await reset();
+      expect("error" in (await change())).toBe(false);
+      expect((await updatedAt()).getTime()).toBeGreaterThan(past.getTime());
+    }
+  });
+
+  it("does not move another user's plate's updatedAt", async () => {
+    const { alice, bobPlate } = await createTwoUsers();
+    signInAs(alice);
+    const before = (
+      await prisma.plate.findUniqueOrThrow({ where: { id: bobPlate.plate.id } })
+    ).updatedAt;
+
+    await updateDrop(bobPlate.drop!.id, { sampleName: "taken" });
+    await deleteObservation(bobPlate.observation!.id);
+    await deleteDrop(bobPlate.drop!.id);
+
+    const after = (
+      await prisma.plate.findUniqueOrThrow({ where: { id: bobPlate.plate.id } })
+    ).updatedAt;
+    expect(after).toEqual(before);
+  });
 });
