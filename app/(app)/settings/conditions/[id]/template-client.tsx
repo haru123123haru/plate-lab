@@ -132,10 +132,17 @@ export function TemplateClient({ template }: TemplateClientProps) {
   };
 
   const handleFile = async (file: File) => {
+    // 読めなかったときに、前のファイルの中身で置き換えさせない
+    setResult(null);
     setFileName(file.name);
     setError("");
-    const table = parseCsv(decodeCsv(await file.arrayBuffer()));
-    setResult(buildConditionImport(table));
+    try {
+      const table = parseCsv(decodeCsv(await file.arrayBuffer()));
+      setResult(buildConditionImport(table));
+    } catch {
+      setFileName("");
+      setError(t("actionFailed"));
+    }
   };
 
   const handleReplace = async () => {
