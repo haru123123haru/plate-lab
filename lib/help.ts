@@ -123,6 +123,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         "ホームとサンプルの検索は、プレート名・サンプル名・メモを探します。3文字以上で検索すると、「lysozme」のような打ち間違いや表記の揺れがあっても、似ているプレートが、ぴったり当たったプレートのあとに続けて出ます。",
         "詳細画面のサンプル欄でサンプルを押すと、名前とアイコン・色を変えられます。設定の「サンプル」からも変えられます。",
         "サンプルの名前や見た目を変えると、そのサンプルが入っている他のプレートにも反映されます。",
+        "「lysozyme」と「Lysozyme」のように、大文字小文字・全角半角・空白や区切りだけが違う名前は、設定の「サンプル」の「名前の揺れ」に出ます。残す名前を押すと、ほかの名前をまとめられます。",
       ],
     },
     {
@@ -278,6 +279,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         'Search on Home and Samples looks at plate names, sample names and notes. With 3 or more characters, plates that are similar to your search follow the exact matches, even with a typo like "lysozme".',
         "Tap a sample in the plate page's Samples section to change its name, icon and color. You can also do this from Samples in Settings.",
         "Changing a sample's name or look applies to every plate that contains it.",
+        'Names that differ only in case, full/half width, spaces or separators, such as "lysozyme" and "Lysozyme", appear under Name variants in Samples in Settings. Tap the name to keep to merge the others into it.',
       ],
     },
     {

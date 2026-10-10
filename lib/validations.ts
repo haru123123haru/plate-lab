@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SAMPLE_COLORS, SAMPLE_ICONS } from "@/lib/samples";
+import { SAMPLE_COLORS, SAMPLE_ICONS, sampleNameKey } from "@/lib/samples";
 
 export const signUpSchema = z.object({
   name: z.string().min(1).max(100),
@@ -63,6 +63,22 @@ export const updateSampleSchema = z
     merge: z.boolean().optional(),
   })
   .strict();
+
+// 名前の揺れをまとめる。from の名前のドロップを、すべて into の名前にする。
+// 揺れでない名前（キーが違う名前）は、古い画面から送られてきても受けない
+export const mergeSamplesSchema = z
+  .object({
+    from: z.array(dropFieldsSchema.shape.sampleName).min(1).max(50),
+    into: dropFieldsSchema.shape.sampleName,
+  })
+  .strict()
+  .refine(
+    (data) =>
+      !data.from.includes(data.into) &&
+      data.from.every(
+        (name) => sampleNameKey(name) === sampleNameKey(data.into)
+      )
+  );
 
 export const createPlateSchema = z.object({
   name: z.string().trim().min(1).max(200),
