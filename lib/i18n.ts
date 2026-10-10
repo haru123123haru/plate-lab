@@ -278,6 +278,23 @@ const translations = {
     importErrInvalidMark:
       'Unknown mark "{value}" (use POSSIBLE, CRYSTAL or HARVESTED).',
     importErrObservationNeedsContent: "An observation needs a mark or a note.",
+    conditionCount: "{count} conditions",
+    conditionEmpty: "No conditions yet",
+    templateNotFound: "Template not found",
+    templateShared: "Shared",
+    templateWellsIntro:
+      "Upload a CSV with one well per row (well, salt, precipitant, polyamine, buffer). The current conditions are replaced.",
+    templateWellsSharedNote: "Shared templates can't be changed.",
+    exportConditionsCsv: "Download as CSV",
+    replaceConditions: "Replace with {count} conditions",
+    replacingConditions: "Replacing...",
+    replaceConditionsConfirmTitle: "Replace the conditions?",
+    replaceConditionsConfirmBody:
+      "The current {current} conditions will be replaced with {count} from the file.",
+    conditionErrTooManyRows: "A template holds up to {rows} wells.",
+    conditionErrInvalidWell: 'Write the well "{value}" as A1 to H12.',
+    conditionErrDuplicateWell: 'Well "{value}" appears more than once.',
+    conditionErrEmptyCondition: "All four conditions are empty.",
   },
   ja: {
     // Navigation
@@ -556,6 +573,24 @@ const translations = {
     importErrInvalidMark:
       "目印「{value}」は使えません（怪しい・結晶あり・結晶取り済み）。",
     importErrObservationNeedsContent: "観察には目印かメモが要ります。",
+    conditionCount: "{count} 条件",
+    conditionEmpty: "中身なし",
+    templateNotFound: "テンプレートが見つかりません",
+    templateShared: "共有",
+    templateWellsIntro:
+      "1行に1ウェルの CSV（ウェル・塩・沈殿剤・ポリアミン・バッファー）で中身を入れます。取り込むと、今の中身は置き換わります。",
+    templateWellsSharedNote: "共有のテンプレートは変えられません。",
+    exportConditionsCsv: "CSV を書き出す",
+    replaceConditions: "{count} 件の条件で置き換える",
+    replacingConditions: "置き換え中...",
+    replaceConditionsConfirmTitle: "中身を置き換えますか？",
+    replaceConditionsConfirmBody:
+      "今の {current} 件の条件を、ファイルの {count} 件に置き換えます。",
+    conditionErrTooManyRows:
+      "1つのテンプレートに入れられるのは {rows} ウェルまでです。",
+    conditionErrInvalidWell: "ウェル「{value}」は A1〜H12 で書いてください。",
+    conditionErrDuplicateWell: "ウェル「{value}」が2回以上出てきます。",
+    conditionErrEmptyCondition: "4つの条件がすべて空です。",
   },
 } as const;
 
