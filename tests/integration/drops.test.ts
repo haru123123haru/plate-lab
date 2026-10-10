@@ -73,6 +73,35 @@ describe("drops and observations can only be changed by the plate's owner", () =
     expect(drop.sampleName).toBe("lysozyme");
   });
 
+  it("updates and deletes the user's own drops and observations", async () => {
+    const { alice, alicePlate } = await createTwoUsers();
+    signInAs(alice);
+    const dropId = alicePlate.drop!.id;
+
+    expect(
+      "error" in (await updateDrop(dropId, { sampleName: "Lysozyme" }))
+    ).toBe(false);
+    expect(
+      "error" in
+        (await addObservation({
+          dropId,
+          observedAt: "2026-10-03",
+          notes: "second look",
+        }))
+    ).toBe(false);
+    expect(await deleteObservation(alicePlate.observation!.id)).toEqual({
+      success: true,
+    });
+    expect(await prisma.observation.count({ where: { dropId } })).toBe(1);
+    expect(
+      (await prisma.drop.findUniqueOrThrow({ where: { id: dropId } }))
+        .sampleName
+    ).toBe("Lysozyme");
+    expect(await deleteDrop(dropId)).toEqual({ success: true });
+    // 観察も一緒に消える
+    expect(await prisma.observation.count({ where: { dropId } })).toBe(0);
+  });
+
   it("does not add or delete observations on another user's drop", async () => {
     const { alice, bobPlate } = await createTwoUsers();
     signInAs(alice);

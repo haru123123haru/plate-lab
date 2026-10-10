@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createConditionSet,
+  createConditionTemplate,
   deleteConditionSet,
   deleteConditionTemplate,
   getConditionSets,
@@ -9,7 +10,11 @@ import {
   getConditionTemplates,
   replaceConditionTemplateWells,
 } from "@/lib/actions/condition-templates";
-import { deletePlateType, getPlateTypes } from "@/lib/actions/plate-types";
+import {
+  createPlateType as createPlateTypeAction,
+  deletePlateType,
+  getPlateTypes,
+} from "@/lib/actions/plate-types";
 import {
   createPlate,
   createPlateType,
@@ -59,6 +64,83 @@ describe("condition templates and sets", () => {
       "Shared set",
       "Alice set",
     ]);
+  });
+
+  it("hides the user's own set that points at another user's template", async () => {
+    const { alice, bob } = await createTwoUsers();
+    const mine = await createTemplate({
+      name: "Alice screen",
+      ownerId: alice.id,
+    });
+    const bobs = await createTemplate({ name: "Bob screen", ownerId: bob.id });
+    // アプリからは作れない形。DB に直接入っていても、相手のテンプレートの名前を見せない
+    await prisma.conditionSet.createMany({
+      data: [
+        {
+          name: "Bob reservoir",
+          createdById: alice.id,
+          reservoirTemplateId: bobs.id,
+          screeningTemplateId: mine.id,
+        },
+        {
+          name: "Bob screening",
+          createdById: alice.id,
+          reservoirTemplateId: mine.id,
+          screeningTemplateId: bobs.id,
+        },
+        {
+          name: "Mine",
+          createdById: alice.id,
+          reservoirTemplateId: mine.id,
+          screeningTemplateId: mine.id,
+        },
+      ],
+    });
+    signInAs(alice);
+
+    expect((await getConditionSets()).map((s) => s.name)).toEqual(["Mine"]);
+  });
+
+  it("creates templates and sets owned by the signed-in user only", async () => {
+    const { alice, bob } = await createTwoUsers();
+    const shared = await createTemplate({ name: "PEG" });
+    signInAs(alice);
+
+    const template = await createConditionTemplate({ name: "Alice new" });
+    const set = await createConditionSet({
+      name: "Alice new set",
+      reservoirTemplateId: template.id,
+      screeningTemplateId: shared.id,
+    });
+    expect([template.createdById, template.isDefault]).toEqual([
+      alice.id,
+      false,
+    ]);
+    expect([set.createdById, set.isDefault]).toEqual([alice.id, false]);
+
+    signInAs(bob);
+    expect((await getConditionTemplates()).map((t) => t.name)).toEqual(["PEG"]);
+    expect(await getConditionSets()).toEqual([]);
+  });
+
+  it("deletes the user's own set", async () => {
+    const { alice } = await createTwoUsers();
+    const mine = await createTemplate({
+      name: "Alice screen",
+      ownerId: alice.id,
+    });
+    const set = await prisma.conditionSet.create({
+      data: {
+        name: "Alice set",
+        createdById: alice.id,
+        reservoirTemplateId: mine.id,
+        screeningTemplateId: mine.id,
+      },
+    });
+    signInAs(alice);
+
+    expect(await deleteConditionSet(set.id)).toEqual({ success: true });
+    expect(await prisma.conditionSet.count()).toBe(0);
   });
 
   it("does not delete a shared or another user's template or set", async () => {
@@ -262,6 +344,27 @@ describe("plate types", () => {
     });
     expect(await deletePlateType(bobType.id)).toEqual({ error: "Not found" });
     expect(await prisma.plateType.count()).toBe(2);
+  });
+
+  it("creates a type owned by the signed-in user and deletes it when unused", async () => {
+    const { alice, bob } = await createTwoUsers();
+    signInAs(alice);
+
+    const type = await createPlateTypeAction({
+      name: "Alice new type",
+      rows: 4,
+      cols: 6,
+      maxDrops: 1,
+      layout: "SITTING",
+    });
+    expect([type.createdById, type.isDefault]).toEqual([alice.id, false]);
+
+    signInAs(bob);
+    expect((await getPlateTypes()).map((t) => t.name)).toEqual(["Shared 2x2"]);
+
+    signInAs(alice);
+    expect(await deletePlateType(type.id)).toEqual({ success: true });
+    expect(await prisma.plateType.count({ where: { id: type.id } })).toBe(0);
   });
 
   it("does not delete an own type that a plate uses, even in the trash", async () => {

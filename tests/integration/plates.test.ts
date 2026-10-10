@@ -44,6 +44,47 @@ describe("plates are only visible to their owner", () => {
     expect(await getPlateById(bobPlate.plate.id)).toBeNull();
   });
 
+  it("opens the user's own plate with its drops and observations", async () => {
+    const { alice, alicePlate } = await createTwoUsers();
+    signInAs(alice);
+
+    const plate = await getPlateById(alicePlate.plate.id);
+    expect(plate?.id).toBe(alicePlate.plate.id);
+    expect(plate?.wells[0].drops[0].observations).toHaveLength(1);
+  });
+
+  it("hides the user's own plate that uses another user's plate type", async () => {
+    const { alice, bob } = await createTwoUsers();
+    const bobType = await createPlateType({
+      name: "Bob type",
+      ownerId: bob.id,
+    });
+    // アプリからは作れない形。DB に直接入っていても、一覧・検索・ゴミ箱・詳細に出さない
+    const active = await createPlate({
+      ownerId: alice.id,
+      plateTypeId: bobType.id,
+      name: "Alice on Bob type",
+    });
+    const trashed = await createPlate({
+      ownerId: alice.id,
+      plateTypeId: bobType.id,
+      name: "Alice on Bob type trashed",
+      trashed: true,
+    });
+    signInAs(alice);
+
+    const hidden = [active.plate.id, trashed.plate.id];
+    expect((await getPlates()).map((p) => p.id)).not.toContain(active.plate.id);
+    expect((await searchPlates("Alice on Bob")).map((p) => p.id)).not.toContain(
+      active.plate.id
+    );
+    expect((await searchPlates("")).map((p) => p.id)).not.toContain(
+      active.plate.id
+    );
+    expect(await getTrashedPlates()).toEqual([]);
+    for (const id of hidden) expect(await getPlateById(id)).toBeNull();
+  });
+
   it("does not find another user's plates by name, notes or sample, even when similar", async () => {
     const { alice, alicePlate } = await createTwoUsers();
     signInAs(alice);
@@ -107,6 +148,25 @@ describe("plates can only be changed by their owner", () => {
     ]);
   });
 
+  it("updates, trashes, restores and purges the user's own plate", async () => {
+    const { alice, alicePlate } = await createTwoUsers();
+    signInAs(alice);
+    const id = alicePlate.plate.id;
+
+    expect("error" in (await updatePlate(id, { name: "Renamed" }))).toBe(false);
+    expect(await deletePlate(id)).toEqual({ success: true });
+    expect(await restorePlate(id)).toEqual({ success: true });
+    expect(await deletePlate(id)).toEqual({ success: true });
+    expect(await purgePlate(id)).toEqual({ success: true });
+    expect(await prisma.plate.count({ where: { id } })).toBe(0);
+    // ウェル・ドロップ・観察も一緒に消える
+    expect(
+      await prisma.observation.count({
+        where: { drop: { well: { plateId: id } } },
+      })
+    ).toBe(0);
+  });
+
   it("does not purge a plate that is not in the trash", async () => {
     const { alice, alicePlate } = await createTwoUsers();
     signInAs(alice);
@@ -132,10 +192,16 @@ describe("plates can only be changed by their owner", () => {
         reservoirTemplateId: bobTemplate.id,
       })
     ).toEqual({ error: "Not found" });
+    expect(
+      await updatePlate(alicePlate.plate.id, {
+        screeningTemplateId: bobTemplate.id,
+      })
+    ).toEqual({ error: "Not found" });
     const plate = await prisma.plate.findUniqueOrThrow({
       where: { id: alicePlate.plate.id },
     });
     expect(plate.reservoirTemplateId).toBeNull();
+    expect(plate.screeningTemplateId).toBeNull();
   });
 
   it("hides a plate that points at another user's template", async () => {
@@ -151,9 +217,19 @@ describe("plates can only be changed by their owner", () => {
       name: "Alice with Bob's template",
       reservoirTemplateId: bobTemplate.id,
     });
+    const screening = await createPlate({
+      ownerId: alice.id,
+      plateTypeId: sharedType.id,
+      name: "Alice with Bob's screening",
+    });
+    await prisma.plate.update({
+      where: { id: screening.plate.id },
+      data: { screeningTemplateId: bobTemplate.id },
+    });
     signInAs(alice);
 
     expect(await getPlateById(plate.id)).toBeNull();
+    expect(await getPlateById(screening.plate.id)).toBeNull();
   });
 });
 
@@ -242,6 +318,16 @@ describe("creating plates only uses accessible types and templates", () => {
     expect(
       await importPlates([{ ...plate, reservoirTemplateId: bobTemplate.id }])
     ).toEqual({ error: "Not found" });
+    expect(
+      await importPlates([{ ...plate, screeningTemplateId: bobTemplate.id }])
+    ).toEqual({ error: "Not found" });
     expect(await prisma.plate.count()).toBe(before);
+
+    // 共有のタイプなら取り込める
+    expect("error" in (await importPlates([plate]))).toBe(false);
+    const imported = await prisma.plate.findFirstOrThrow({
+      where: { name: "Imported" },
+    });
+    expect(imported.userId).toBe(alice.id);
   });
 });

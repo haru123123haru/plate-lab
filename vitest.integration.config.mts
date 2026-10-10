@@ -16,6 +16,10 @@ if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
     `Integration tests only run against a local database, got ${url.hostname}`
   );
 }
+// 接続先はクエリ（?host=）でも変えられるので、クエリは受け付けない
+if (url.search !== "") {
+  throw new Error("The integration test database URL must not have a query");
+}
 if (!url.pathname.endsWith("_test")) {
   throw new Error(
     `The integration test database name must end with _test, got ${url.pathname}`
