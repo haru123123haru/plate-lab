@@ -209,6 +209,11 @@ const translations = {
     adding: "Adding...",
     delete: "Delete",
     close: "Close",
+    homeScreenCardTitle: "Add PLATE LAB to your home screen",
+    homeScreenCardBody:
+      "Open it from an icon and use it full screen, like an app.",
+    homeScreenCardAction: "Show me how",
+    homeScreenGuideTitle: "Add to Home Screen",
     hasDrop: "has a drop",
     drops: "drops",
     dropBatchIncomplete:
@@ -506,6 +511,10 @@ const translations = {
     adding: "追加中...",
     delete: "削除",
     close: "閉じる",
+    homeScreenCardTitle: "ホーム画面に追加しませんか",
+    homeScreenCardBody: "アイコンから開けて、アプリのように全画面で使えます。",
+    homeScreenCardAction: "やり方を見る",
+    homeScreenGuideTitle: "ホーム画面に追加する",
     hasDrop: "ドロップあり",
     drops: "ドロップ",
     dropBatchIncomplete:

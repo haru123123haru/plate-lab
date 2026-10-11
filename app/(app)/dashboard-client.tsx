@@ -10,6 +10,7 @@ import { SearchBar } from "@/components/search-bar";
 import { SectionHeader } from "@/components/section-header";
 import { ListRow } from "@/components/list-row";
 import { FabButton } from "@/components/fab-button";
+import { HomeScreenCard } from "@/components/home-screen-card";
 import { MenuSheet } from "@/components/menu-sheet";
 import { NewPlateSheet } from "@/components/new-plate-sheet";
 import { useTranslation } from "@/components/locale-provider";
@@ -117,6 +118,8 @@ export function DashboardClient({
       />
 
       <div className="space-y-5 px-6">
+        <HomeScreenCard />
+
         <SearchBar
           value={search}
           onChange={setSearch}

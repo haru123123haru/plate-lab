@@ -11,6 +11,8 @@ export interface HelpTopic {
   steps?: { heading?: string; items: string[] }[];
   // 補足と注意
   notes?: string[];
+  // 手順の代わりに、写真つきの「ホーム画面に追加」の案内（components/home-screen-guide.tsx）を出す
+  homeScreenGuide?: boolean;
 }
 
 const helpTopics: Record<Locale, HelpTopic[]> = {
@@ -19,29 +21,10 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       id: "home-screen",
       title: "スマホのホーム画面に追加する",
       intro:
-        "PLATE LAB はブラウザで使う Web アプリです。ホーム画面に追加すると、アイコンから開けて、アドレスバーの無い全画面で使えます。App Store や Google Play からのインストールは要りません。",
-      steps: [
-        {
-          heading: "iPhone（Safari）",
-          items: [
-            "Safari で plate-manage-app.vercel.app を開き、ログインする",
-            "画面下の共有ボタン（四角から上向きの矢印）を押す",
-            "メニューを下に送り、「ホーム画面に追加」を押す",
-            "名前が「PLATE LAB」になっているのを確かめ、右上の「追加」を押す",
-          ],
-        },
-        {
-          heading: "Android（Chrome）",
-          items: [
-            "Chrome で plate-manage-app.vercel.app を開き、ログインする",
-            "右上の︙メニューを押す",
-            "「ホーム画面に追加」か「アプリをインストール」を押す",
-            "「インストール」（または「追加」）を押す",
-          ],
-        },
-      ],
+        "PLATE LAB はブラウザで使う Web アプリです。ホーム画面に追加すると、アイコンから開けて、アドレスバーの無い全画面で使えます。App Store や Google Play からのインストールは要りません。ブラウザで plate-manage-app.vercel.app を開いてログインし、次の手順で追加してください。",
+      homeScreenGuide: true,
       notes: [
-        "iPhone では、ホーム画面から開いた PLATE LAB と Safari とで、ログインの状態が別になります。ホーム画面から初めて開いたときは、もう一度ログインしてください。",
+        "iPhone では、ホーム画面から開いた PLATE LAB とブラウザとで、ログインの状態が別になります。ホーム画面から初めて開いたときは、もう一度ログインしてください。",
         "カメラで QR コードを読むと、ホーム画面のアイコンではなくブラウザで開きます。ブラウザ側でもログインしておくと、すぐに詳細画面が見られます。",
         "データはサーバーに保存されるので、パソコンとスマホのどちらで入れても同じプレートが見えます。",
       ],
@@ -194,29 +177,10 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       id: "home-screen",
       title: "Add to your phone's home screen",
       intro:
-        "PLATE LAB is a web app that runs in your browser. Add it to your home screen to open it from an icon, full screen, without the address bar. No App Store or Google Play install is needed.",
-      steps: [
-        {
-          heading: "iPhone (Safari)",
-          items: [
-            "Open plate-manage-app.vercel.app in Safari and sign in",
-            "Tap the Share button (a square with an upward arrow) at the bottom",
-            'Scroll down and tap "Add to Home Screen"',
-            'Check that the name is "PLATE LAB", then tap "Add" at the top right',
-          ],
-        },
-        {
-          heading: "Android (Chrome)",
-          items: [
-            "Open plate-manage-app.vercel.app in Chrome and sign in",
-            "Tap the ⋮ menu at the top right",
-            'Tap "Add to Home screen" or "Install app"',
-            'Tap "Install" (or "Add")',
-          ],
-        },
-      ],
+        "PLATE LAB is a web app that runs in your browser. Add it to your home screen to open it from an icon, full screen, without the address bar. No App Store or Google Play install is needed. Open plate-manage-app.vercel.app in your browser, sign in, and follow these steps.",
+      homeScreenGuide: true,
       notes: [
-        "On iPhone, PLATE LAB opened from the home screen does not share its sign-in with Safari. Sign in again the first time you open it from the home screen.",
+        "On iPhone, PLATE LAB opened from the home screen does not share its sign-in with the browser. Sign in again the first time you open it from the home screen.",
         "Scanning a QR code with the camera opens it in the browser, not in the home screen app. Stay signed in to the browser too, so plate pages open right away.",
         "Your data is stored on the server, so the same plates show up on your computer and your phone.",
       ],
