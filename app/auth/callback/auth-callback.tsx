@@ -30,7 +30,12 @@ export function AuthCallback({ code, errorDescription }: AuthCallbackProps) {
       .then((result) => {
         if (result?.error) setError(result.error);
       })
-      .catch(() => setError(""));
+      .catch((e: unknown) => {
+        // Action の中で redirect すると、Promise は redirect のエラーで失敗する。
+        // これはホームへ移る途中なので、処理中の表示のままにする
+        if (isRedirectError(e)) return;
+        setError("");
+      });
   }, [code]);
 
   if (error === null) {
@@ -50,5 +55,16 @@ export function AuthCallback({ code, errorDescription }: AuthCallbackProps) {
         {t("backToLogin")}
       </Link>
     </div>
+  );
+}
+
+// next/navigation の redirect() が投げるエラーは digest が NEXT_REDIRECT で始まる
+function isRedirectError(e: unknown) {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "digest" in e &&
+    typeof e.digest === "string" &&
+    e.digest.startsWith("NEXT_REDIRECT")
   );
 }
