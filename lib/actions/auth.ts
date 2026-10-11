@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { signUpSchema, signInSchema } from "@/lib/validations";
 
 export async function signUp(formData: {
@@ -59,27 +58,6 @@ export async function signIn(formData: { email: string; password: string }) {
   }
 
   redirect("/");
-}
-
-export async function signInWithGoogle() {
-  const supabase = await createClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") || "http://127.0.0.1:3000";
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${origin}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  if (data.url) {
-    redirect(data.url);
-  }
 }
 
 export async function signOut() {
