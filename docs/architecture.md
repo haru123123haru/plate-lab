@@ -40,9 +40,9 @@
 
 各画面は例外なく同じ形をとる。`page.tsx` は Server Component としてデータ取得と整形だけを行い、`*-client.tsx` に渡す。状態とインタラクションはすべて Client 側。この分離のおかげで、DB アクセスがクライアントバンドルに混ざる事故が構造的に起きない。
 
-読み込み中の表示は `app/(app)/loading.tsx` の1つだけで、グレーの箱を点滅させる。`(app)` の直下の画面が入れ替わる遷移で、データがそろうまでこれが出る。ヘッダーは各ページが描いているので、読み込み中は画面全体が置き換わる。`/mypage` → `/mypage/edit` は入れ子の遷移で `(app)` の境界が作り直されないため、`app/(app)/mypage/edit/loading.tsx` で同じスケルトンを再エクスポートしている。
+読み込み中の表示は `app/(app)/loading.tsx` の1つだけで、グレーの箱を点滅させる。`(app)` の直下の画面が入れ替わる遷移で、データがそろうまでこれが出る。ヘッダーは各ページが描いているので、読み込み中は画面全体が置き換わる。`/mypage` → `/mypage/edit` は入れ子の遷移で `(app)` の境界が作り直されないため、`app/(app)/mypage/edit/loading.tsx` で同じスケルトンを再エクスポートしている。プレートの詳細だけは、一覧の形では合わないので、見出しとウェルマップの形をした `app/(app)/plates/[id]/loading.tsx` を持つ（2026-10-11）。ホームとサンプル画面のプレートは `Link` で、画面に見えたものの読み込み中の画面を先に読んでおく。`router.push` だと、押してから読み込み中の画面が届くまで何も変わらない。
 
-セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。
+セッションの扱いは `proxy.ts` が担当する。Next.js 16 で middleware のファイル名が `proxy.ts` に変わったのに追随したもので、中身は `lib/supabase/middleware.ts` の `updateSession()` を呼ぶだけ。ここで Supabase のセッション Cookie をリフレッシュし、未認証なら `/login` に飛ばす。ログインしているかは `getClaims()` で見る。JWT の署名を公開鍵（本番は ES256）で手元で確かめるので、リクエストのたびに Supabase Auth へ問い合わせない（2026-10-11 まで `getUser()` で毎回問い合わせていた）。データを守るのは各 Action の `getCurrentUserId()`（`lib/auth.ts`）で、こちらは `getUser()` で Auth に確かめる。同じ描画のあいだはレイアウトと各 Action で結果を使い回すので、1画面に1回で済む。
 
 コンポーネントは `components/` 直下にカスタム18個、`components/ui/` に shadcn 由来が10個。ウェルまわりは次の5つで分担している。
 

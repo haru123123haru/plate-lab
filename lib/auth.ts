@@ -1,11 +1,20 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-export async function getCurrentUserId(): Promise<string> {
+// ログインしている人の ID。未ログインなら null。
+// getUser() は毎回 Supabase Auth に問い合わせるので、1回の描画のあいだは結果を使い回す
+// （レイアウトと各 Action が呼ぶ。Server Action から呼んだときは使い回さない）
+export const getSessionUserId = cache(async (): Promise<string | null> => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  return user.id;
+  return user?.id ?? null;
+});
+
+export async function getCurrentUserId(): Promise<string> {
+  const userId = await getSessionUserId();
+  if (!userId) redirect("/login");
+  return userId;
 }

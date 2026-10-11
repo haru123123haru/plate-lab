@@ -55,11 +55,13 @@ Vercel の関数は、しばらく使われないと止まる。久しぶりに�
 
 ## タスク
 
-- [ ] 本番の時間を測り、この文書の「結果」に書く
-- [ ] `lib/auth.ts` — `getCurrentUserId()` を `cache()` で包む
-- [ ] Supabase の JWT 署名の設定を確かめ、`lib/supabase/middleware.ts` を `getClaims()` にするか決める
-- [ ] `lib/actions/plates.ts` の `getPlates` — ウェルの数を DB で数える
-- [ ] `app/(app)/plates/[id]/loading.tsx`・`app/(app)/settings/loading.tsx`
+- [x] 本番の時間を測り、この文書の「結果」に書く
+- [x] `lib/auth.ts` — `getCurrentUserId()` を `cache()` で包む
+- [x] Supabase の JWT 署名の設定を確かめ、`lib/supabase/middleware.ts` を `getClaims()` にするか決める
+- [x] `lib/actions/plates.ts` の `getPlates` — 測ってみると軽かったので、直さない
+- [x] `app/(app)/plates/[id]/loading.tsx`（設定のページは、測った範囲では遅くないので見送り）
+- [x] `app/(app)/plates/[id]/page.tsx` — 3つを並べて取る（測って見つけた）
+- [x] ホームとサンプル画面のプレートを `Link` にする（スクショを撮って見つけた）
 - [ ] 直したあとに同じ方法で測り直し、変わったかを書く
 
 ## 確認
@@ -68,4 +70,38 @@ Vercel の関数は、しばらく使われないと止まる。久しぶりに�
 
 ## 結果
 
-（まだ）
+### 直す前（2026-10-11、本番）
+
+測定用のアカウント（`plate-lab-perf-20261011@example.com`）を作り、CSV で30枚（24 Well を20枚、96 Well を10枚。ドロップ960）を入れて、Playwright（402px）で7回ずつ測った。中央値。
+
+| 測ったもの | 時間 |
+| --- | --- |
+| ホームを直接開いて、プレートが見えるまで | 0.93秒 |
+| プレートの詳細を直接開いて、ウェルマップが見えるまで | 0.70秒 |
+| ホームでプレートを押して、詳細のウェルマップが見えるまで | 1.17秒 |
+| サインインを押して、ホームのプレートが見えるまで | 1.33秒 |
+| 冷えた状態で `/login` を開いたときの最初の応答 | 2.5秒（温まっていれば 0.5秒） |
+
+分かったこと:
+
+- `getUser()` は、ホームを1回出すのに7回走っていた（`proxy.ts`、`app/layout.tsx` の `getUserSettings()`、ホームの5つの Action）
+- 詳細ページは、プレートを取り終えてから、条件とサンプルの見た目を取りに行っていた。`proxy.ts` の認証 → プレート（認証 → DB）→ 条件とサンプル（認証 → DB）と、一列に並んで待つ
+- ホームでプレートを押すと、URL が変わるまで 0.34秒、そこからウェルマップが出るまでさらに 0.8秒。データの待ちが大きい
+- 本番の JWT は ES256 で署名されていて、`getClaims()` で手元で確かめられる
+- `getPlates` はウェルごとにドロップの数（`_count`）だけを読んでいて、思ったより軽い。直さない
+- ついでに、`/manifest.webmanifest` が、ログインしていないと `/login` に飛ばされていた（`proxy.ts` の除外が画像だけだった）
+
+### 直したこと
+
+- `lib/auth.ts` — `getUser()` を `cache()` で包んだ `getSessionUserId()` を足し、`getCurrentUserId()` と `getUserSettings()` がそれを使う。1画面で1回になる
+- `lib/supabase/middleware.ts` — `getUser()` を `getClaims()` にした。Auth への問い合わせが無くなる
+- `app/(app)/plates/[id]/page.tsx` — プレート・条件・サンプルの見た目を並べて取る
+- `app/(app)/plates/[id]/loading.tsx` — 詳細の形のスケルトン
+- ホームとサンプル画面のプレートを `router.push` から `Link` にした（`ListRow`・`PlateCard` に `href`）。スクショを撮ろうとして、`loading.tsx` も押してからサーバーに取りに行っていて、押してから 0.34秒は何も変わらないことが分かった。`Link` は画面に見えた行の、読み込み中の画面までを先に読んでおくので、押した瞬間にスケルトンが出る
+- `proxy.ts` — `webmanifest` を認証の対象から外した
+
+ローカル（本番ビルド）で、登録・取り込み・詳細・Cookie を消すと `/login` に戻ること・サインインし直し・偽の JWT の Cookie では `/login` に戻ることを確かめた。
+
+### 直した後
+
+（本番に出たあとに、同じ方法で測る）

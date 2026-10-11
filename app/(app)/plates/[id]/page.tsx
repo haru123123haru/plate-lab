@@ -19,7 +19,12 @@ export default async function PlateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const plate = await getPlateById(id);
+  // 3つは互いに頼らないので、プレートを待たずに並べて取る
+  const [plate, conditionTemplates, sampleStyles] = await Promise.all([
+    getPlateById(id),
+    getConditionTemplates(),
+    getSampleStyles(),
+  ]);
 
   if (!plate) {
     return (
@@ -28,11 +33,6 @@ export default async function PlateDetailPage({
       </div>
     );
   }
-
-  const [conditionTemplates, sampleStyles] = await Promise.all([
-    getConditionTemplates(),
-    getSampleStyles(),
-  ]);
 
   const uiWells: WellData[] = plate.wells.map((w) => ({
     id: w.id,

@@ -139,7 +139,7 @@ export function DashboardClient({
               icon={FlaskConical}
               title={plate.name}
               description={`${plate.plateType.name} · ${plate.filledWells}/${plate.totalWells}`}
-              onClick={() => router.push(`/plates/${plate.id}`)}
+              href={`/plates/${plate.id}`}
             />
           ))}
           {visiblePlates.length === 0 && (
