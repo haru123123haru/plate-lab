@@ -7,14 +7,9 @@ import { redirect } from "next/navigation";
 // （レイアウトと各 Action が呼ぶ。Server Action から呼んだときは使い回さない）
 export const getSessionUserId = cache(async (): Promise<string | null> => {
   const supabase = await createClient();
-  // 一時的な計測（#17）。測り終えたら消す
-  const started = performance.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log(
-    `[timing] auth.getUser ${Math.round(performance.now() - started)}ms`
-  );
   return user?.id ?? null;
 });
 

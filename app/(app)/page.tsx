@@ -7,20 +7,16 @@ import {
 } from "@/lib/actions/condition-templates";
 import { getSamples } from "@/lib/actions/samples";
 import { DashboardClient } from "./dashboard-client";
-import { timed } from "@/lib/timing";
 
 export default async function DashboardPage() {
   const [plates, plateTypes, conditionTemplates, conditionSets, samples] =
-    await timed(
-      "home data",
-      Promise.all([
-        getPlates(),
-        getPlateTypes(),
-        getConditionTemplates(),
-        getConditionSets(),
-        getSamples(),
-      ])
-    );
+    await Promise.all([
+      getPlates(),
+      getPlateTypes(),
+      getConditionTemplates(),
+      getConditionSets(),
+      getSamples(),
+    ]);
 
   // DB データを UI 用の形に変換
   const uiPlates = plates.map((p) => ({
