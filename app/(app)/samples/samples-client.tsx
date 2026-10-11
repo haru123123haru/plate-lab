@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { countUsedWells, summarizeSamples } from "@/lib/wells";
-import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
@@ -54,7 +53,6 @@ export function SamplesClient({
   conditionSets,
   samples,
 }: SamplesClientProps) {
-  const router = useRouter();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [sort, setSort] = usePlateSort();
@@ -130,7 +128,7 @@ export function SamplesClient({
                 key={plate.id}
                 plate={plate}
                 sampleStyles={sampleStyles}
-                onClick={() => router.push(`/plates/${plate.id}`)}
+                href={`/plates/${plate.id}`}
               />
             ))
           ) : (

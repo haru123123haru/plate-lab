@@ -29,9 +29,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // セッション Cookie の更新と、ログインしているかの判定だけをする。
+  // getClaims() は JWT の署名を手元の公開鍵（JWKS）で確かめるので、getUser() と違って
+  // リクエストのたびに Supabase Auth へ問い合わせない（本番は ES256 の非対称鍵）。
+  // 期限切れならここでリフレッシュする。データを守るのは各 Action の getCurrentUserId()
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub ? data.claims : null;
 
   // 未認証ユーザーを /login にリダイレクト（認証ページ自体は除外）
   const isAuthPage =

@@ -1,20 +1,16 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserId } from "@/lib/auth";
+import { getCurrentUserId, getSessionUserId } from "@/lib/auth";
 import { updateUserSettingsSchema } from "@/lib/validations";
 
 export async function getUserSettings() {
   // RootLayout から呼ばれるため、未認証時は redirect せず null を返す
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const userId = await getSessionUserId();
+  if (!userId) return null;
 
   return prisma.userSettings.findUnique({
-    where: { userId: user.id },
+    where: { userId },
   });
 }
 
