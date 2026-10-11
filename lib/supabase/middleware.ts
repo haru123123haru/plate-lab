@@ -33,12 +33,7 @@ export async function updateSession(request: NextRequest) {
   // getClaims() は JWT の署名を手元の公開鍵（JWKS）で確かめるので、getUser() と違って
   // リクエストのたびに Supabase Auth へ問い合わせない（本番は ES256 の非対称鍵）。
   // 期限切れならここでリフレッシュする。データを守るのは各 Action の getCurrentUserId()
-  // 一時的な計測（#17）。測り終えたら消す
-  const started = performance.now();
   const { data } = await supabase.auth.getClaims();
-  console.log(
-    `[timing] proxy getClaims ${Math.round(performance.now() - started)}ms`
-  );
   const user = data?.claims.sub ? data.claims : null;
 
   // 未認証ユーザーを /login にリダイレクト（認証ページ自体は除外）
