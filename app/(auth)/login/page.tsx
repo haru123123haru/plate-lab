@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useTranslation } from "@/components/locale-provider";
-import { signIn, signInWithGoogle } from "@/lib/actions/auth";
+import { signIn } from "@/lib/actions/auth";
+import { AuthPendingOverlay } from "@/components/auth-pending-overlay";
+import { GoogleSignInButton } from "@/components/google-sign-in-button";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -28,18 +30,6 @@ export default function LoginPage() {
       // redirect が throw されるので正常
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    setError("");
-    try {
-      const result = await signInWithGoogle();
-      if (result?.error) {
-        setError(result.error);
-      }
-    } catch {
-      // redirect が throw されるので正常
     }
   }
 
@@ -107,14 +97,7 @@ export default function LoginPage() {
         </div>
 
         {/* Google */}
-        <Button
-          type="button"
-          variant="outline"
-          className="h-12 w-full rounded-xl"
-          onClick={handleGoogleSignIn}
-        >
-          {t("continueWithGoogle")}
-        </Button>
+        <GoogleSignInButton disabled={loading} onError={setError} />
 
         {/* Create Account */}
         <p className="mt-8 text-[14px] text-text-secondary">
@@ -127,6 +110,8 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+
+      {loading && <AuthPendingOverlay message={t("signingIn")} />}
     </div>
   );
 }
