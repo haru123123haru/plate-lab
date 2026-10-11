@@ -8,6 +8,12 @@ import {
   getAccessibleConditionTemplate,
 } from "@/lib/access-control";
 import {
+  compareWellPosition,
+  CONDITION_FIELDS,
+  type ConditionWell,
+} from "@/lib/condition-import";
+import {
+  conditionWellsSchema,
   createConditionSetSchema,
   createConditionTemplateSchema,
   positiveIntegerSchema,
@@ -18,7 +24,88 @@ export async function getConditionTemplates() {
 
   return prisma.conditionTemplate.findMany({
     where: accessibleConditionTemplateWhere(userId),
+    include: { _count: { select: { wells: true } } },
     orderBy: { name: "asc" },
+  });
+}
+
+// 見られるテンプレート（共有か自分の）を、ウェルごとの条件と一緒に返す。
+// 条件は A1, A2, …, B1 の順。読めない条件の行は飛ばす
+export async function getConditionTemplate(id: number) {
+  const userId = await getCurrentUserId();
+  const parsedId = positiveIntegerSchema.safeParse(id);
+  if (!parsedId.success) return null;
+
+  const template = await prisma.conditionTemplate.findFirst({
+    where: {
+      AND: [{ id: parsedId.data }, accessibleConditionTemplateWhere(userId)],
+    },
+    include: { wells: true },
+  });
+  if (!template) return null;
+
+  const wells: ConditionWell[] = [];
+  for (const tw of template.wells) {
+    try {
+      const composition = JSON.parse(tw.composition);
+      wells.push({
+        position: tw.position,
+        ...Object.fromEntries(
+          CONDITION_FIELDS.map((field) => [
+            field,
+            typeof composition?.[field] === "string" ? composition[field] : "",
+          ])
+        ),
+      } as ConditionWell);
+    } catch {
+      // パース失敗はスキップ
+    }
+  }
+  wells.sort((a, b) => compareWellPosition(a.position, b.position));
+
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    isDefault: template.isDefault,
+    isOwn: !template.isDefault && template.createdById === userId,
+    wells,
+  };
+}
+
+// 自分のテンプレートの中身を、まるごと置き換える。共有や他人のテンプレートは Not found
+export async function replaceConditionTemplateWells(
+  id: number,
+  wells: ConditionWell[]
+) {
+  const userId = await getCurrentUserId();
+  const parsedId = positiveIntegerSchema.safeParse(id);
+  if (!parsedId.success) return { error: "Not found" };
+  const parsed = conditionWellsSchema.safeParse(wells);
+  if (!parsed.success) return { error: "Invalid input" };
+
+  return prisma.$transaction(async (tx) => {
+    const template = await tx.conditionTemplate.findFirst({
+      where: { id: parsedId.data, createdById: userId, isDefault: false },
+      select: { id: true },
+    });
+    if (!template) return { error: "Not found" };
+
+    await tx.templateWell.deleteMany({ where: { templateId: template.id } });
+    await tx.templateWell.createMany({
+      data: parsed.data.map((well) => ({
+        templateId: template.id,
+        position: well.position,
+        composition: JSON.stringify({
+          salt: well.salt,
+          precipitant: well.precipitant,
+          polyamine: well.polyamine,
+          buffer: well.buffer,
+        }),
+      })),
+    });
+
+    return { success: true, count: parsed.data.length };
   });
 }
 

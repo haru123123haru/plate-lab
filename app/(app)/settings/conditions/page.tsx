@@ -16,6 +16,7 @@ export default async function ConditionsPage() {
         id: ct.id,
         name: ct.name,
         isDefault: ct.isDefault,
+        wellCount: ct._count.wells,
       }))}
       sets={sets.map((cs) => ({
         id: cs.id,

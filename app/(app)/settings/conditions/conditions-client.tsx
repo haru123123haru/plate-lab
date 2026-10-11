@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,7 +25,12 @@ import {
 import type { UiConditionSet } from "@/app/(app)/dashboard-client";
 
 interface ConditionsClientProps {
-  templates: { id: number; name: string; isDefault: boolean }[];
+  templates: {
+    id: number;
+    name: string;
+    isDefault: boolean;
+    wellCount: number;
+  }[];
   sets: UiConditionSet[];
 }
 
@@ -192,9 +198,27 @@ export function ConditionsClient({ templates, sets }: ConditionsClientProps) {
               key={ct.id}
               className="flex items-center gap-3 rounded-xl bg-bg-surface p-4"
             >
-              <div className="min-w-0 flex-1 truncate text-[15px] font-medium text-text-primary">
-                {ct.name}
-              </div>
+              {/* 押すとテンプレートのページで中身を見る。自分のものは CSV で入れられる */}
+              <Link
+                href={`/settings/conditions/${ct.id}`}
+                className="flex min-w-0 flex-1 items-center gap-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-medium text-text-primary">
+                    {ct.name}
+                  </div>
+                  <div className="text-[13px] text-text-secondary">
+                    {ct.isDefault && `${t("templateShared")} · `}
+                    {ct.wellCount > 0
+                      ? t("conditionCount").replace(
+                          "{count}",
+                          String(ct.wellCount)
+                        )
+                      : t("conditionEmpty")}
+                  </div>
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-text-tertiary" />
+              </Link>
               {!ct.isDefault && (
                 <button
                   type="button"

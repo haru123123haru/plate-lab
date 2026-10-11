@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { SAMPLE_COLORS, SAMPLE_ICONS, sampleNameKey } from "@/lib/samples";
+import {
+  CONDITION_MAX_LENGTH,
+  CONDITION_MAX_ROWS,
+  CONDITION_WELL_PATTERN,
+} from "@/lib/condition-import";
 
 export const signUpSchema = z.object({
   name: z.string().min(1).max(100),
@@ -123,6 +128,35 @@ export const createConditionTemplateSchema = z.object({
   name: z.string().trim().min(1).max(100),
   description: z.string().max(500).optional(),
 });
+
+// 条件テンプレートの中身。形は lib/condition-import.ts の CSV と同じ
+const conditionFieldSchema = z.string().trim().max(CONDITION_MAX_LENGTH);
+
+export const conditionWellsSchema = z
+  .array(
+    z
+      .object({
+        position: z.string().regex(CONDITION_WELL_PATTERN),
+        salt: conditionFieldSchema,
+        precipitant: conditionFieldSchema,
+        polyamine: conditionFieldSchema,
+        buffer: conditionFieldSchema,
+      })
+      .strict()
+      .refine(
+        (well) =>
+          [well.salt, well.precipitant, well.polyamine, well.buffer].some(
+            (value) => value !== ""
+          ),
+        { message: "Empty condition" }
+      )
+  )
+  .min(1)
+  .max(CONDITION_MAX_ROWS)
+  .refine(
+    (wells) => new Set(wells.map((w) => w.position)).size === wells.length,
+    { message: "Duplicate well position" }
+  );
 
 export const createConditionSetSchema = z.object({
   name: z.string().trim().min(1).max(100),

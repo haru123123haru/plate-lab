@@ -32,6 +32,7 @@
 | `/settings`               | `app/(app)/settings/page.tsx`     | 言語と外観の設定                 |
 | `/settings/plate-types`   | `app/(app)/settings/plate-types/` | プレートタイプの一覧・追加・削除 |
 | `/settings/conditions`    | `app/(app)/settings/conditions/`  | 条件テンプレートとセットの一覧・追加・削除 |
+| `/settings/conditions/[id]` | `app/(app)/settings/conditions/[id]/` | テンプレートの中身。自分のものは CSV で置き換える。確かめは `lib/condition-import.ts` |
 | `/settings/import`        | `app/(app)/settings/import/`      | CSV からプレート・ドロップ・観察をまとめて登録。確かめは `lib/plate-import.ts` |
 | `/help`                   | `app/(app)/help/`                 | ヘルプ。基本操作とホーム画面への追加の手順。文章は `lib/help.ts` |
 | `/login`, `/register`     | `app/(auth)/`                     | 認証フォーム                     |
@@ -73,7 +74,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 - `TemplateWell` — テンプレート内の1ウェル分の組成。詳細画面では、プレートのウェルと同じ位置の行を引いて条件を表示する
 - `ConditionSet` — リザーバーとスクリーニングのテンプレートをセットにしたもの
 
-テンプレートとセットの追加・削除は `/settings/conditions` でやる。2026-09-25 までは作成画面の「新規セット」の中でやっていたが、作成画面は選ぶだけにした。作成画面の条件の欄は「セット／個別に選ぶ」の切り替えで、「個別に選ぶ」はその場で使うだけで保存しない。プレートが持つのはテンプレートの ID だけで、どのセットから選んだかは残らない。テンプレートを消すと、それを使う自分のセットも消え、自分のプレートのその条件は空になる（`deleteConditionTemplate`）。
+テンプレートとセットの追加・削除は `/settings/conditions` でやる。2026-09-25 までは作成画面の「新規セット」の中でやっていたが、作成画面は選ぶだけにした。作成画面の条件の欄は「セット／個別に選ぶ」の切り替えで、「個別に選ぶ」はその場で使うだけで保存しない。プレートが持つのはテンプレートの ID だけで、どのセットから選んだかは残らない。テンプレートを消すと、それを使う自分のセットも消え、自分のプレートのその条件は空になる（`deleteConditionTemplate`）。テンプレートの行を押すと中身のページに移る。自分のテンプレートの中身は、CSV でまるごと置き換える（`replaceConditionTemplateWells`、2026-10-10。`docs/plans/2026-10-10-template-wells.md`）。
 
 記録の単位は、2026-09-25 にウェルからドロップへ移した。それまでは記録欄が `Well` に、サンプル名が `Plate.sampleName` にあったが、1ウェルに複数のドロップを置くプレートでは表せない。「使用中のウェル」は「ドロップが1つ以上あるウェル」で、数え方は `lib/wells.ts` の `countUsedWells` に1つにまとめてある。サンプル検索もドロップのサンプル名を見る。観察日はクライアントから `"YYYY-MM-DD"` の文字列で受け、UTC の0時として保存する。`Date` のまま送ると、日本時間の0〜9時は UTC で前日になるためだ。経緯は計画書 `docs/plans/2026-09-24-plate-drops.md`。
 
@@ -81,7 +82,7 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 当初の設計では `Plate` が持つテンプレートは1本だけで、足りない分はメモのテキストで補う想定だった。実装はそこから離れていて、リザーバー条件とスクリーニング条件を別々の `ConditionTemplate` として持つ形になっている。分岐点はマイグレーション `20260218064000_split_reservoir_screening` で、ここで `templateId` が2つに割れた。
 
-条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、条件を足すときは Markdown の表に行を足す。
+条件データそのものは Markdown で管理されている。`conditions/mpd.md` と `conditions/peg.md` が96ウェル分の条件表（Salt × Precipitant × Polyamine × Buffer の組み合わせ）を持ち、`prisma/seed.ts` の `parseConditionMd()` がこれをパースして `TemplateWell` に流し込む。条件をコードやSQLではなくドキュメントで持つ設計で、共有の条件を足すときは Markdown の表に行を足す。自分のテンプレートの条件は、画面から CSV で入れる。
 
 プレートを消すと、まずゴミ箱に入る（ソフトデリート）。物理削除はゴミ箱から「完全に削除」したときだけで、ウェル・ドロップ・観察は cascade で一緒に消える。一覧・検索から除く条件は `lib/access-control.ts` の `activePlateWhere` / `trashedPlateWhere` に集約してあり、クエリに直書きしない。直書きすると除外漏れが起きるためで、`tests/plate-trash-actions.test.ts` がゴミ箱まわりの Action の渡す条件を検査している。検索（`searchPlates`）は、似ているものを探すところだけ生の SQL（`pg_trgm`）を使うが、見つけた ID を `activePlateWhere` でもう一度絞ってから返し、`tests/plate-search-actions.test.ts` で検査している（一覧の `getPlates` はテストしていない）。詳細は計画書 `docs/plans/2026-09-23-plate-trash.md`。
 
@@ -213,11 +214,7 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 ## 8. 既知の課題
 
-重いものが2つある。
-
-ひとつは、個人テンプレートに中身を登録できないこと。`createConditionTemplate` は名前と説明しか受け取らず、`TemplateWell` を作る経路がどこにも無い。つまり、共有の PEG・MPD 以外の条件は、実質的に登録できない。
-
-もうひとつは、DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書はまだ無い。
+重いものが1つある。DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書はまだ無い。
 
 サインアップがまだ開いていることも残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
 
