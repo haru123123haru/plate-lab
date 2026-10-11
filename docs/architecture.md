@@ -110,7 +110,9 @@ Prisma のスキーマは `prisma/schema.prisma`。中心は `Plate` で、`Well
 
 RLS SQL の末尾には「Prisma は service_role キーで接続するため」というコメントがあるが、これは事実と違う。`SUPABASE_SERVICE_ROLE_KEY` はコードのどこからも参照されていない。Prisma が RLS を受けないのは、`postgres` ロールで直接つないでいるからだ。
 
-テストは5本ある。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` と `tests/drop-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりとドロップ・観察の Action が実際に渡す `where` / `connect` に、持ち主とゴミ箱の条件が入っているかを検査する。`tests/plate-type-actions.test.ts` も同じやり方で、プレートタイプの削除が自分の種別に限られ、使っているプレートがあれば拒むことを検査する。この3本があるので、ヘルパーの呼び忘れは検出できる。残りの `tests/utils.test.ts` は `toTokyoDate` の日付の切り方を確かめる。ただしどちらも DB には繋がないので、「他人のデータが実際に取得できないこと」は自動検証されていない。
+DB に繋がない単体テストは `tests/` の直下にあり、主なものは次のとおり。`tests/validation-access-control.test.ts` は Zod スキーマの検証と、`access-control.ts` が返す `where` 句の形を確かめる純粋関数テスト。`tests/plate-trash-actions.test.ts` と `tests/drop-actions.test.ts` は prisma をモックに差し替え、ゴミ箱まわりとドロップ・観察の Action が実際に渡す `where` / `connect` に、持ち主とゴミ箱の条件が入っているかを検査する。`tests/plate-type-actions.test.ts` も同じやり方で、プレートタイプの削除が自分の種別に限られ、使っているプレートがあれば拒むことを検査する。この3本があるので、ヘルパーの呼び忘れは検出できる。残りの `tests/utils.test.ts` は `toTokyoDate` の日付の切り方を確かめる。ここまでは DB に繋がない。
+
+DB に繋ぐ結合テストは `tests/integration/` にある（2026-10-10）。ローカルの Supabase の Postgres にテスト専用の DB を作り、ログインだけを差し替えて Action を本物の DB に向けて呼ぶ。2人のユーザーのあいだで、プレート・ドロップ・観察・サンプル・条件・プレートタイプが読めない、変えられないことを確かめる。流し方と中身は `docs/plans/2026-10-10-integration-tests.md`。
 
 ---
 
@@ -214,9 +216,9 @@ Vercel 上の `DATABASE_URL` と `DIRECT_URL` は sensitive 型で登録され�
 
 ## 8. 既知の課題
 
-重いものが1つある。DB を伴う結合テストが無いこと。今あるのは純粋関数のテストと prisma をモックしたテストだけで、「他人のデータが実際に取得できないこと」は検証されていない。Action が正しい `where` 句を渡すことまでは確認できるが、それが実際のクエリで期待どおり効くかは誰も確かめていない。認可の正しさを本気で担保するなら、ここが最初に埋めるべき穴になる。計画書はまだ無い。
+重いものは片付いた。個人テンプレートの中身は CSV で入れられるようにし、DB を伴う結合テストも足した（どちらも 2026-10-10）。
 
-サインアップがまだ開いていることも残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
+サインアップがまだ開いていることが残っている。REST API の入口は閉じたので、アカウントを作られても他人のデータには届かない。それでも、決まったメンバーだけで使うなら閉じたほうがいい。
 
 残りは軽い。`plate-detail-client.tsx` が524行あり、分割の候補になっている。ドロップと観察を足しても `Plate.updatedAt` が変わらないので、一覧の更新順と詳細の「更新日」に反映されない。`npm run check` は format から build まで通る状態にある（検索まわりに残っていた lint エラー2件は 2026-09-24 に解消した）。
 
