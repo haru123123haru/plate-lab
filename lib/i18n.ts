@@ -165,7 +165,7 @@ const translations = {
 
     // QR Code
     qrCode: "QR CODE",
-    downloadQr: "Download QR Code",
+    downloadQr: "Save QR Code",
 
     // Trash
     trash: "Trash",
@@ -463,7 +463,7 @@ const translations = {
 
     // QR Code
     qrCode: "QRコード",
-    downloadQr: "QRコードをダウンロード",
+    downloadQr: "QRコードを保存",
 
     // Trash
     trash: "ゴミ箱",

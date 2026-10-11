@@ -71,7 +71,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       steps: [
         {
           items: [
-            "プレートの詳細画面を下までスクロールし、「QRコードをダウンロード」を押す",
+            "プレートの詳細画面を下までスクロールし、「QRコードを保存」を押す。スマホでは共有の画面が開くので、「画像を保存」（印刷するなら「プリント」）を選ぶ",
             "保存した画像を印刷し、プレートに貼る",
             "スマホのカメラで QR コードを読むと、そのプレートの詳細画面が開く",
           ],
@@ -246,7 +246,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       steps: [
         {
           items: [
-            'Scroll to the bottom of the plate page and tap "Download QR Code"',
+            'Scroll to the bottom of the plate page and tap "Save QR Code". On a phone, the share sheet opens; choose "Save Image" (or "Print")',
             "Print the saved image and stick it on the plate",
             "Scan the QR code with your phone's camera to open that plate's page",
           ],
