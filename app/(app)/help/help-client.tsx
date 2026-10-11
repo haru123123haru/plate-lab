@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { MenuSheet } from "@/components/menu-sheet";
 import { useTranslation } from "@/components/locale-provider";
+import { HomeScreenGuideSteps } from "@/components/home-screen-guide";
 import { getHelpTopics } from "@/lib/help";
 
 export function HelpClient() {
@@ -58,6 +59,12 @@ export function HelpClient() {
               <p className="mt-3 text-[14px] leading-relaxed text-text-primary">
                 {topic.intro}
               </p>
+            )}
+
+            {topic.homeScreenGuide && (
+              <div className="mt-4">
+                <HomeScreenGuideSteps />
+              </div>
             )}
 
             {topic.steps?.map((group, i) => (
