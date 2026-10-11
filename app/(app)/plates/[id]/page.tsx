@@ -5,6 +5,7 @@ import { PlateDetailClient } from "./plate-detail-client";
 import { toTokyoDate } from "@/lib/utils";
 import { bestMark } from "@/lib/wells";
 import type { WellData } from "@/types";
+import { timed } from "@/lib/timing";
 
 export type WellCondition = {
   salt: string;
@@ -20,11 +21,10 @@ export default async function PlateDetailPage({
 }) {
   const { id } = await params;
   // 3つは互いに頼らないので、プレートを待たずに並べて取る
-  const [plate, conditionTemplates, sampleStyles] = await Promise.all([
-    getPlateById(id),
-    getConditionTemplates(),
-    getSampleStyles(),
-  ]);
+  const [plate, conditionTemplates, sampleStyles] = await timed(
+    "detail data",
+    Promise.all([getPlateById(id), getConditionTemplates(), getSampleStyles()])
+  );
 
   if (!plate) {
     return (
