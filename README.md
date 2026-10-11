@@ -27,7 +27,9 @@ npm run dev
 ## チェック
 
 ```bash
-npm run check   # format・lint・typecheck・test・build を順に流す
+npm run check   # format・lint・typecheck・test・test:integration・build を順に流す
 ```
+
+`test:integration` は DB を伴う結合テストで、ローカルの Supabase（`npx supabase start`）の Postgres に `plate_lab_test` という DB を作って流す。手元の DB でしか動かない（`vitest.integration.config.mts`）。
 
 `build` は `prisma migrate deploy` を含むので、`.env` の `DIRECT_URL` が指す DB にマイグレーションが適用される。
