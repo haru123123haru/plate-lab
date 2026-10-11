@@ -9,7 +9,15 @@ function createPrismaClient() {
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
   });
-  return new PrismaClient({ adapter });
+  const client = new PrismaClient({
+    adapter,
+    // 一時的な計測（#17）。測り終えたら消す
+    log: [{ emit: "event", level: "query" }],
+  });
+  client.$on("query", (e) => {
+    console.log(`[timing] db ${e.duration}ms ${e.query.slice(0, 80)}`);
+  });
+  return client;
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
