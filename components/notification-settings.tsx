@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, Send } from "lucide-react";
+import { Bell, CalendarClock, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/components/locale-provider";
 import { isStandalone } from "@/components/home-screen-guide";
 import { sendTestNotification } from "@/lib/actions/notifications";
+import { updateUserSettings } from "@/lib/actions/settings";
 import { detectHomeScreenGuide } from "@/lib/home-screen-guide";
 import {
   currentSubscription,
@@ -35,12 +36,36 @@ const statusDescriptions: Record<Status, TranslationKey> = {
   on: "notificationsDescription",
 };
 
-// 設定画面の「通知」の欄。この端末で通知を受けるかの切り替えと、テスト通知
-export function NotificationSettings() {
+// 設定画面の「通知」の欄。この端末で通知を受けるかの切り替えと、テスト通知、
+// 何を知らせるか（アカウントごと）
+export function NotificationSettings({
+  initialReminder,
+}: {
+  initialReminder: boolean;
+}) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>("loading");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<TranslationKey | null>(null);
+  const [reminder, setReminder] = useState(initialReminder);
+  const [savingReminder, setSavingReminder] = useState(false);
+
+  // 保存し終わるまで切り替えさせない。続けて押すと、画面と保存した値がずれるため
+  const toggleReminder = async (checked: boolean) => {
+    setSavingReminder(true);
+    setReminder(checked);
+    setMessage(null);
+    try {
+      const result = await updateUserSettings({ notifReminder: checked });
+      if ("error" in result) throw new Error(result.error);
+    } catch (error) {
+      console.error(error);
+      setReminder(!checked);
+      setMessage("actionFailed");
+    } finally {
+      setSavingReminder(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -196,6 +221,29 @@ export function NotificationSettings() {
           </div>
         </button>
       )}
+
+      <div className="flex w-full items-center gap-3 border-b border-border-subtle py-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">
+          <CalendarClock className="size-5 text-text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <label
+            htmlFor="reminder-switch"
+            className="text-[15px] font-medium text-text-primary"
+          >
+            {t("observationReminder")}
+          </label>
+          <div className="text-[13px] text-text-secondary">
+            {t("reminderDescription")}
+          </div>
+        </div>
+        <Switch
+          id="reminder-switch"
+          checked={reminder}
+          disabled={savingReminder}
+          onCheckedChange={toggleReminder}
+        />
+      </div>
 
       {message && (
         <p role="status" className="pt-3 text-[13px] text-text-secondary">

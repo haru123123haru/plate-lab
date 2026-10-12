@@ -36,7 +36,8 @@ model UserSettings {
   appearance    String  @default("light")
   notifNewPlate Boolean @default(true)
   notifStatus   Boolean @default(true)
-  notifReminder Boolean @default(false)
+  // 観察のリマインド（Plate.reminderDays）を送るか
+  notifReminder Boolean @default(true)
 }
 
 // 通知を受ける端末ごとの受け口（Web Push の subscription）。
@@ -79,6 +80,10 @@ model Plate {
   notes     String?     @db.Text
   // 実験を仕込んだ日。登録した日とは限らないので利用者が選ぶ
   setupDate DateTime    @db.Date
+  // 仕込みから何日目に観察のリマインドを送るか。NULL なら送らない
+  reminderDays Int?     @default(7)
+  // リマインドを送った「リマインドの日」。同じ日の分を二度送らない。日数や仕込み日を変えれば、また送る
+  reminderSentFor DateTime? @db.Date
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   // ゴミ箱に入れた日時。NULL なら通常のプレート

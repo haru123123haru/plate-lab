@@ -40,6 +40,7 @@ interface SettingsClientProps {
   initialSettings: {
     language: string;
     appearance: string;
+    notifReminder: boolean;
   };
 }
 
@@ -107,7 +108,9 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
 
         <div className="flex flex-col gap-1">
           <SectionHeader label={t("notifications")} />
-          <NotificationSettings />
+          <NotificationSettings
+            initialReminder={initialSettings.notifReminder}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
