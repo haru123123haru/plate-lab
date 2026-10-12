@@ -23,16 +23,18 @@ export function useDetectedHomeScreenGuide(): HomeScreenGuideId | null {
   );
 }
 
+// ホーム画面から開いているか。ブラウザでだけ呼べる
+export function isStandalone(): boolean {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    // iPhone の Safari は display-mode を返さないことがあるので、こちらも見る
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
 // ホーム画面から開いているか。開いていれば案内は要らない
 export function useIsStandalone(): boolean {
-  return useSyncExternalStore(
-    subscribeNothing,
-    () =>
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // iPhone の Safari は display-mode を返さないことがあるので、こちらも見る
-      (navigator as Navigator & { standalone?: boolean }).standalone === true,
-    () => false
-  );
+  return useSyncExternalStore(subscribeNothing, isStandalone, () => false);
 }
 
 // 「ホーム画面に追加」の手順。端末に合う案内を先に出し、ほかの端末の案内にも切り替えられる

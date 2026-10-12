@@ -17,6 +17,20 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // 通知の Service Worker。古いものが残らないよう、毎回確かめさせる
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+        ],
+      },
     ];
   },
 };

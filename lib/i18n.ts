@@ -1,5 +1,10 @@
 export type Locale = "en" | "ja";
 
+// 設定に保存した言語を Locale に直す。知らない値や未設定は英語
+export function toLocale(language: string | null | undefined): Locale {
+  return language === "ja" ? "ja" : "en";
+}
+
 const translations = {
   en: {
     // Navigation
@@ -305,6 +310,23 @@ const translations = {
     conditionErrInvalidWell: 'Write the well "{value}" as A1 to H12.',
     conditionErrDuplicateWell: 'Well "{value}" appears more than once.',
     conditionErrEmptyCondition: "All four conditions are empty.",
+    notifications: "Notifications",
+    notificationsThisDevice: "Notifications on this device",
+    notificationsDescription: "Reminds you when to observe your plates.",
+    notificationsNeedHomeScreen:
+      "On iPhone, add PLATE LAB to your home screen and open it from there to get notifications.",
+    notificationsUnsupported: "This browser can't receive notifications.",
+    notificationsDenied:
+      "Notifications are blocked. Allow them for PLATE LAB in your device or browser settings.",
+    notificationsNotConfigured: "Notifications aren't set up on this server.",
+    notificationsEnableFailed: "Couldn't turn on notifications. Try again.",
+    notificationsDisableFailed: "Couldn't turn off notifications. Try again.",
+    sendTestNotification: "Send a test notification",
+    testNotificationSent: "Sent. It should arrive in a few seconds.",
+    testNotificationFailed:
+      "Couldn't send it. Turn notifications off and on again.",
+    testNotificationTitle: "Test notification",
+    testNotificationBody: "Notifications are working on this device.",
   },
   ja: {
     // Navigation
@@ -610,6 +632,26 @@ const translations = {
     conditionErrInvalidWell: "ウェル「{value}」は A1〜H12 で書いてください。",
     conditionErrDuplicateWell: "ウェル「{value}」が2回以上出てきます。",
     conditionErrEmptyCondition: "4つの条件がすべて空です。",
+    notifications: "通知",
+    notificationsThisDevice: "この端末で通知を受ける",
+    notificationsDescription: "プレートを観察する時期を知らせます。",
+    notificationsNeedHomeScreen:
+      "iPhone では、ホーム画面に追加して、そこから開くと通知を受け取れます。",
+    notificationsUnsupported: "このブラウザでは通知を受け取れません。",
+    notificationsDenied:
+      "通知が許可されていません。端末かブラウザの設定で、PLATE LAB の通知を許可してください。",
+    notificationsNotConfigured:
+      "このサーバーでは、通知の準備ができていません。",
+    notificationsEnableFailed:
+      "通知をオンにできませんでした。もう一度試してください。",
+    notificationsDisableFailed:
+      "通知をオフにできませんでした。もう一度試してください。",
+    sendTestNotification: "テスト通知を送る",
+    testNotificationSent: "送りました。数秒で届きます。",
+    testNotificationFailed:
+      "送れませんでした。通知を一度オフにして、オンにし直してください。",
+    testNotificationTitle: "テスト通知",
+    testNotificationBody: "この端末に通知が届きました。",
   },
 } as const;
 

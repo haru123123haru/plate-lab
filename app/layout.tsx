@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { getUserSettings } from "@/lib/actions/settings";
 import { LocaleProvider } from "@/components/locale-provider";
-import type { Locale } from "@/lib/i18n";
+import { toLocale } from "@/lib/i18n";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,7 +27,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getUserSettings();
-  const locale: Locale = settings?.language === "ja" ? "ja" : "en";
+  const locale = toLocale(settings?.language);
   const appearance = settings?.appearance ?? "light";
   const isDark = appearance === "dark";
   const isSystem = appearance === "system";

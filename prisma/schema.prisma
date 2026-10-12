@@ -24,6 +24,7 @@ model User {
   conditionSets      ConditionSet[]
   samples    Sample[]
   settings   UserSettings?
+  pushSubscriptions PushSubscription[]
 }
 
 // ユーザー設定
@@ -36,6 +37,20 @@ model UserSettings {
   notifNewPlate Boolean @default(true)
   notifStatus   Boolean @default(true)
   notifReminder Boolean @default(false)
+}
+
+// 通知を受ける端末ごとの受け口（Web Push の subscription）。
+// endpoint は端末とブラウザごとに1つ。同じ端末で別のアカウントに入り直したら、そのアカウントに移す
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique @db.Text
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // プレート種別（ユーザーがカスタム追加可能）
