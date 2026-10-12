@@ -125,11 +125,14 @@ DB に繋ぐ結合テストは `tests/integration/` にある（2026-10-10）。
 | 認証         | Supabase Auth                                                 | メール + パスワード、Google OAuth                          |
 | ソース       | GitHub `haru123123haru/plate-lab`                             |                                                            |
 
-アプリが実際に読む環境変数は4つだけ。
+アプリが実際に読む環境変数は次の7つ。
 
 - `DATABASE_URL` — Transaction pooler（6543番ポート、`?pgbouncer=true`）。`lib/prisma.ts` と `prisma/seed.ts` が読む
 - `DIRECT_URL` — Session pooler（5432番ポート）。`prisma.config.ts` がマイグレーション用に読む
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — `lib/supabase/` の3ファイルが読む
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push（通知）の鍵と連絡先。`lib/push.ts` と、設定画面の `components/notification-settings.tsx` が読む。無い環境では通知をオンにできず、送りもしない。鍵は `npx web-push generate-vapid-keys` で作る。作り直すと、今までの端末の受け口がすべて使えなくなる
+
+通知は Web Push で送る。端末ごとの受け口は `PushSubscription` テーブルに持ち、Service Worker（`public/sw.js`）が受けて通知を出す。`/sw.js` はログインしていなくても取れるよう、`proxy.ts` の対象から外してある。サーバーが受け口の endpoint に POST するので、endpoint は主なプッシュサービス（Apple・Google・Mozilla・Microsoft）のホストに限っている（`lib/validations.ts`）。iPhone はホーム画面に追加したときだけ受け取れる。計画は `docs/plans/2026-10-11-notifications.md`。
 
 ローカルの `.env` には他に `SUPABASE_SERVICE_ROLE_KEY`・`GOOGLE_CLIENT_ID`・`GOOGLE_CLIENT_SECRET` も書かれているが、コードからは一切参照されていない。Google の認証情報は Supabase 側（`supabase/config.toml` の `[auth.external.google]` と、本番はダッシュボード）に登録するものなので、アプリに持つ必要がない。実質的に死んだ変数。
 

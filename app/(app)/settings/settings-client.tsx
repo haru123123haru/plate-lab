@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import { ListRow } from "@/components/list-row";
 import { MenuSheet } from "@/components/menu-sheet";
+import { NotificationSettings } from "@/components/notification-settings";
 import {
   Dialog,
   DialogContent,
@@ -102,6 +103,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               onClick={() => setActiveDialog("appearance")}
             />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <SectionHeader label={t("notifications")} />
+          <NotificationSettings />
         </div>
 
         <div className="flex flex-col gap-1">

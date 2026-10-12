@@ -166,6 +166,26 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       ],
     },
     {
+      id: "notifications",
+      title: "通知を受け取る",
+      intro:
+        "プレートを観察する時期を、スマホやパソコンに通知で知らせます。通知は端末ごとにオンにします。",
+      steps: [
+        {
+          items: [
+            "メニューの「設定」を開く",
+            "「通知」の「この端末で通知を受ける」をオンにする",
+            "通知の許可を求められたら「許可」を押す",
+            "「テスト通知を送る」を押し、通知が届くことを確かめる",
+          ],
+        },
+      ],
+      notes: [
+        "iPhone では、ホーム画面に追加した PLATE LAB からしか通知を受け取れません（iOS 16.4 以降）。先にホーム画面に追加し、そこから開いてオンにしてください。",
+        "許可を断ったときは、端末かブラウザの設定で PLATE LAB の通知を許可すると、オンにできるようになります。",
+      ],
+    },
+    {
       id: "settings",
       title: "設定を変える",
       intro:
@@ -319,6 +339,26 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       notes: [
         "Importing replaces all current conditions with the file's contents.",
         "Shared templates (such as PEG and MPD) can be viewed but not changed.",
+      ],
+    },
+    {
+      id: "notifications",
+      title: "Get notifications",
+      intro:
+        "PLATE LAB can notify your phone or computer when it's time to observe your plates. Turn notifications on for each device.",
+      steps: [
+        {
+          items: [
+            'Open "Settings" from the menu',
+            'Under "Notifications", turn on "Notifications on this device"',
+            'When asked for permission, choose "Allow"',
+            'Tap "Send a test notification" and check that it arrives',
+          ],
+        },
+      ],
+      notes: [
+        "On iPhone, only PLATE LAB added to your home screen can receive notifications (iOS 16.4 or later). Add it to your home screen first, open it from there, and then turn notifications on.",
+        "If you declined permission, allow notifications for PLATE LAB in your device or browser settings to turn them on.",
       ],
     },
     {

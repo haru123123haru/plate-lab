@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { useTranslation } from "@/components/locale-provider";
 import { signOut } from "@/lib/actions/auth";
+import { unsubscribeThisDevice } from "@/lib/push-client";
 
 interface MenuSheetProps {
   open: boolean;
@@ -69,6 +70,10 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
             className="h-12 w-full rounded-xl border-accent-negative text-accent-negative"
             onClick={async () => {
               onOpenChange(false);
+              // この端末に、ログアウトしたアカウントの通知が届き続けないようにする
+              await unsubscribeThisDevice().catch((error) =>
+                console.error(error)
+              );
               await signOut();
             }}
           >

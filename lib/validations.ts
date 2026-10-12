@@ -197,6 +197,36 @@ export const updateUserSettingsSchema = z
   })
   .strict();
 
+// サーバーはこの endpoint に POST するので、主なブラウザのプッシュサービスに限る
+const PUSH_SERVICE_HOSTS = [
+  "push.apple.com",
+  "fcm.googleapis.com",
+  "push.services.mozilla.com",
+  "notify.windows.com",
+];
+
+export const pushEndpointSchema = z
+  .url({ protocol: /^https$/ })
+  .max(2000)
+  .refine((endpoint) => {
+    // URL として読めなくても、前のチェックで失敗したうえでここに来る
+    const hostname = URL.parse(endpoint)?.hostname ?? "";
+    // Chromium は jmt17.google.com のようなホストを返す。google.com の下は
+    // 誰でも使えるホスト（Apps Script など）もあるので、この形だけ許す
+    if (/^jmt\d+\.google\.com$/.test(hostname)) return true;
+    return PUSH_SERVICE_HOSTS.some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`)
+    );
+  }, "Unsupported push service");
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: pushEndpointSchema,
+  keys: z.object({
+    p256dh: z.string().min(1).max(200),
+    auth: z.string().min(1).max(100),
+  }),
+});
+
 export const searchPlatesSchema = z
   .string()
   .max(200)
