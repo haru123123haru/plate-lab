@@ -9,6 +9,8 @@ export default async function SettingsPage() {
       initialSettings={{
         language: settings?.language ?? "en",
         appearance: settings?.appearance ?? "light",
+        // 設定の行が無ければ既定（オン）
+        notifReminder: settings?.notifReminder ?? true,
       }}
     />
   );

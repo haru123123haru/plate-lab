@@ -85,6 +85,17 @@ export const mergeSamplesSchema = z
       )
   );
 
+// 仕込みから何日目に観察のリマインドを送るか。null なら送らない
+export const MAX_REMINDER_DAYS = 365;
+// 選ばなかったときの日数。prisma/schema.prisma の Plate.reminderDays の @default と揃える
+export const DEFAULT_REMINDER_DAYS = 7;
+export const reminderDaysSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(MAX_REMINDER_DAYS)
+  .nullable();
+
 export const createPlateSchema = z.object({
   name: z.string().trim().min(1).max(200),
   plateTypeId: z.string().trim().min(1).max(100),
@@ -93,6 +104,8 @@ export const createPlateSchema = z.object({
   notes: z.string().max(2000).optional(),
   // 観察日と同じく日付だけなので文字列で受ける（addObservationSchema）
   setupDate: z.iso.date(),
+  // 省けば既定の 7 日
+  reminderDays: reminderDaysSchema.optional(),
   // 作成と同時に入れるドロップ。ウェルを選ばなければ省く。
   // style はそのサンプルの見た目。あれば Sample に保存する（同じ名前の他のプレートにも効く）
   drops: dropBatchSchema
@@ -169,6 +182,7 @@ export const updatePlateSchema = z
     name: z.string().trim().min(1).max(200).optional(),
     notes: z.string().max(2000).nullable().optional(),
     setupDate: z.iso.date().optional(),
+    reminderDays: reminderDaysSchema.optional(),
     reservoirTemplateId: z.number().int().positive().nullable().optional(),
     screeningTemplateId: z.number().int().positive().nullable().optional(),
   })

@@ -19,9 +19,15 @@ import {
   isDropBatchComplete,
   toDropBatchInput,
 } from "@/components/bulk-drop-form";
+import {
+  ReminderDaysField,
+  parseReminderDraft,
+  toReminderDraft,
+} from "@/components/reminder-days-field";
 import { SampleChip } from "@/components/sample-chip";
 import { SampleStylePicker } from "@/components/sample-style-picker";
 import { createPlate } from "@/lib/actions/plates";
+import { DEFAULT_REMINDER_DAYS } from "@/lib/validations";
 import { DEFAULT_SAMPLE_STYLE, type SampleStyle } from "@/lib/samples";
 import { cn, today } from "@/lib/utils";
 import { plateShapeLabel } from "@/lib/wells";
@@ -75,6 +81,9 @@ export function NewPlateSheet({
     style: SampleStyle;
   } | null>(null);
   const [notes, setNotes] = useState("");
+  const [reminder, setReminder] = useState(() =>
+    toReminderDraft(DEFAULT_REMINDER_DAYS)
+  );
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -118,10 +127,13 @@ export function NewPlateSheet({
       setCustomReservoirId(null);
       setCustomScreeningId(null);
       setNotes("");
+      setReminder(toReminderDraft(DEFAULT_REMINDER_DAYS));
       setCreating(false);
       setError("");
     }
   }, [open]);
+
+  const reminderDays = parseReminderDraft(reminder);
 
   const handleCreate = async () => {
     if (
@@ -129,6 +141,7 @@ export function NewPlateSheet({
       !plateName.trim() ||
       !setupDate ||
       !selectedType ||
+      reminderDays === undefined ||
       !isDropBatchComplete(dropBatch)
     )
       return;
@@ -158,6 +171,7 @@ export function NewPlateSheet({
         screeningTemplateId: scrId,
         notes: notes.trim() || undefined,
         setupDate,
+        reminderDays,
         drops: dropsInput && {
           ...dropsInput,
           // 選んだときだけ保存する。選ばなければ今の見た目（新しい名前なら既定）のまま
@@ -246,6 +260,14 @@ export function NewPlateSheet({
                   className="h-12 rounded-xl border-border-default bg-bg-surface text-[15px]"
                 />
               </div>
+
+              <ReminderDaysField
+                id="new-plate-reminder"
+                value={reminder}
+                onChange={setReminder}
+                setupDate={setupDate}
+                inputClassName="bg-bg-surface"
+              />
 
               {/* Plate Type */}
               <div className="space-y-2">
@@ -454,6 +476,7 @@ export function NewPlateSheet({
                   !plateName.trim() ||
                   !setupDate ||
                   !selectedType ||
+                  reminderDays === undefined ||
                   !isDropBatchComplete(dropBatch)
                 }
               >

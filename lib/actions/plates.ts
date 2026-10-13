@@ -113,6 +113,7 @@ export async function createPlate(data: {
   screeningTemplateId?: number | null;
   notes?: string;
   setupDate: string;
+  reminderDays?: number | null;
   drops?: {
     positions: string[];
     sampleName: string;
@@ -188,6 +189,7 @@ export async function createPlate(data: {
         screeningTemplateId: parsed.data.screeningTemplateId ?? null,
         notes: parsed.data.notes,
         setupDate: new Date(`${parsed.data.setupDate}T00:00:00Z`),
+        reminderDays: parsed.data.reminderDays,
         userId,
         wells: { create: wells },
       },
@@ -213,6 +215,7 @@ export async function updatePlate(
     name?: string;
     notes?: string | null;
     setupDate?: string;
+    reminderDays?: number | null;
     reservoirTemplateId?: number | null;
     screeningTemplateId?: number | null;
   }

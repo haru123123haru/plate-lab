@@ -7,6 +7,7 @@ import {
   Pencil,
   FlaskConical,
   Beaker,
+  Bell,
   Calendar,
   Clock,
 } from "lucide-react";
@@ -47,6 +48,7 @@ interface PlateDetailClientProps {
     };
     wells: WellData[];
     setupDate: string;
+    reminderDays: number | null;
     updatedAt: string;
     deletedAt: string | null;
   };
@@ -183,6 +185,15 @@ export function PlateDetailClient({
               icon={Calendar}
               title={t("setupDate")}
               description={plate.setupDate}
+            />
+            <ListRow
+              icon={Bell}
+              title={t("observationReminder")}
+              description={
+                plate.reminderDays === null
+                  ? t("reminderOff")
+                  : `${t("reminderDayPrefix")} ${plate.reminderDays} ${t("reminderDaySuffix")}`
+              }
             />
             <ListRow
               icon={Clock}

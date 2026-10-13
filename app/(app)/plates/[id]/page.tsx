@@ -95,6 +95,7 @@ export default async function PlateDetailPage({
     wells: uiWells,
     // setupDate は日付だけの列なので、UTC の日付として読む
     setupDate: plate.setupDate.toISOString().slice(0, 10),
+    reminderDays: plate.reminderDays,
     updatedAt: toTokyoDate(plate.updatedAt),
     deletedAt: plate.deletedAt?.toISOString() ?? null,
   };

@@ -74,14 +74,14 @@
 ## タスク
 
 - [x] 壁打ちで、上の「決めること」を決める
-- [ ] 1: VAPID の鍵を作り、Vercel とローカルの `.env` に置く
+- [x] 1: VAPID の鍵を作り、Vercel とローカルの `.env` に置く
 - [x] 1: `PushSubscription` のテーブルとマイグレーション
 - [x] 1: `public/sw.js` と、登録する部品。`proxy.ts` から `/sw.js` を外す
 - [x] 1: `lib/actions/notifications.ts` — 受け口の保存と削除、テスト通知
 - [x] 1: 設定画面の「通知」の欄、ヘルプ
-- [ ] 2: `reminderDays` の列、作成と編集の画面
-- [ ] 2: `lib/notifications.ts` — 知らせるプレートを選ぶ純粋関数と、そのテスト
-- [ ] 2: `app/api/cron/notifications/route.ts` と `vercel.json` の `crons`
+- [x] 2: `reminderDays` の列、作成と編集の画面
+- [x] 2: `lib/notifications.ts` — 知らせるプレートを選ぶ純粋関数と、そのテスト
+- [x] 2: `app/api/cron/notifications/route.ts` と `vercel.json` の `crons`
 - [ ] 3: `notesUpdatedAt`・放置を知らせた日の列、使っていない設定の列を消す
 - [ ] 4: バッジ
 - [ ] 結合テスト — 他人のプレートが自分の通知に入らないこと、ゴミ箱のプレートが入らないこと
@@ -93,4 +93,17 @@
 
 ## 結果
 
-（まだ）
+### 1: 通知を受ける設定（PR #47、2026-10-12）
+
+- 本番で、本人の iPhone（ホーム画面から開いたもの）にテスト通知が届いた
+- Chromium の受け口の endpoint は `fcm.googleapis.com` ではなく `jmt17.google.com` のような形だった。google.com の下をすべて許すと Apps Script など他人が使えるホストにも POST できてしまうので、`jmtNN.google.com` の形だけ許した
+- headless の Chromium は、FCM からの配信を受け取れない。`sw.js` の確認は、DevTools の `ServiceWorker.deliverPushMessage` で push を直接渡して行った
+- ローカルの `.env` の鍵は、本番とは別に作る（本番の秘密鍵は Vercel にだけある）
+
+### 2: 毎朝の Cron と観察のリマインド
+
+- プレートに `reminderDays`（既定 7、NULL なら送らない）を足し、作成・編集の画面で選べるようにした。今あるプレートにも 7 が入る
+- 設定の `notifReminder` を、リマインド全体のオン・オフとして画面に出した。既定をオンにし、今の行もオンにした（これまで画面に無く、誰も選んでいなかったため）
+- 朝9時に送るので「その日に観察したら送らない」はほとんど効かない。代わりに「リマインドの日以降に観察していれば送らない」にした
+- Cron が抜けた日の分は、リマインドの日から3日のうちなら遅れて送る。3日で区切るのは、今あるプレートに昔の分がまとめて届かないように。送った分は `Plate.reminderSentFor` に記録し、二度は送らない。1通も届かなければ記録を戻し、翌朝にまた送る
+- 観察したかは、ステップ2ではドロップの観察だけで見る。メモの更新はステップ3で足す

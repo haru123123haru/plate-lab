@@ -6,6 +6,11 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  ReminderDaysField,
+  parseReminderDraft,
+  toReminderDraft,
+} from "@/components/reminder-days-field";
 import { useTranslation } from "@/components/locale-provider";
 import { deletePlate, updatePlate } from "@/lib/actions/plates";
 import { cn } from "@/lib/utils";
@@ -15,6 +20,7 @@ interface PlateEditFormProps {
     id: string;
     name: string;
     setupDate: string;
+    reminderDays: number | null;
     reservoirTemplateId: number | null;
     screeningTemplateId: number | null;
   };
@@ -33,6 +39,10 @@ export function PlateEditForm({
   const { t } = useTranslation();
   const [editName, setEditName] = useState(plate.name);
   const [editSetupDate, setEditSetupDate] = useState(plate.setupDate);
+  const [editReminder, setEditReminder] = useState(() =>
+    toReminderDraft(plate.reminderDays)
+  );
+  const editReminderDays = parseReminderDraft(editReminder);
   const [editReservoirTemplateId, setEditReservoirTemplateId] = useState<
     number | null
   >(plate.reservoirTemplateId);
@@ -45,13 +55,14 @@ export function PlateEditForm({
   const [trashing, setTrashing] = useState(false);
 
   const handleSave = async () => {
-    if (saving) return;
+    if (saving || editReminderDays === undefined) return;
     setSaving(true);
     setError("");
     try {
       const result = await updatePlate(plate.id, {
         name: editName,
         setupDate: editSetupDate,
+        reminderDays: editReminderDays,
         reservoirTemplateId: editReservoirTemplateId,
         screeningTemplateId: editScreeningTemplateId,
       });
@@ -123,6 +134,14 @@ export function PlateEditForm({
         />
       </div>
 
+      <ReminderDaysField
+        id="edit-plate-reminder"
+        value={editReminder}
+        onChange={setEditReminder}
+        setupDate={editSetupDate}
+        inputClassName="bg-bg-primary"
+      />
+
       <TemplateRadioList
         label={t("reservoir")}
         templates={conditionTemplates}
@@ -147,7 +166,7 @@ export function PlateEditForm({
         <Button
           className="flex-1 h-11 rounded-xl"
           onClick={handleSave}
-          disabled={saving || !editSetupDate}
+          disabled={saving || !editSetupDate || editReminderDays === undefined}
         >
           {saving ? t("saving") : t("saveChanges")}
         </Button>
