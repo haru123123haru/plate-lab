@@ -190,3 +190,100 @@ describe("daily observation reminders", () => {
     });
   });
 });
+
+// 土台のプレートは 2026-10-02 に観察してある。その30日後、日本時間の 2026-11-01 9:30
+const MORNING_OF_DAY_30 = new Date("2026-11-01T00:30:00Z");
+
+describe("daily notifications for unobserved plates", () => {
+  it("tells each user only about their own plates", async () => {
+    const { alice, bob, alicePlate, bobPlate } = await createTwoUsers();
+    await subscribe(alice.id, "alice-phone");
+    await subscribe(bob.id, "bob-phone");
+
+    expect(await sendDailyNotifications(MORNING_OF_DAY_30)).toEqual({
+      notifiedUsers: 2,
+      deliveries: 2,
+    });
+    expect(sent()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          device: "alice-phone",
+          title: "Plates left unobserved",
+          body: expect.stringContaining("Alice lysozyme"),
+          url: `/plates/${alicePlate.plate.id}`,
+        }),
+        expect.objectContaining({
+          device: "bob-phone",
+          body: expect.stringContaining("Bob lysozyme"),
+          url: `/plates/${bobPlate.plate.id}`,
+        }),
+      ])
+    );
+  });
+
+  it("sends once, and again 30 days after the next observation", async () => {
+    const { alice, alicePlate } = await createTwoUsers();
+    await subscribe(alice.id, "alice-phone");
+
+    expect(await sendDailyNotifications(MORNING_OF_DAY_30)).toEqual({
+      notifiedUsers: 1,
+      deliveries: 1,
+    });
+    expect(
+      await sendDailyNotifications(new Date("2026-11-02T00:30:00Z"))
+    ).toEqual({ notifiedUsers: 0, deliveries: 0 });
+
+    await prisma.observation.create({
+      data: {
+        dropId: alicePlate.drop!.id,
+        observedAt: new Date("2026-11-05T00:00:00Z"),
+        notes: "still clear",
+      },
+    });
+    expect(
+      await sendDailyNotifications(new Date("2026-12-05T00:30:00Z"))
+    ).toEqual({ notifiedUsers: 1, deliveries: 1 });
+  });
+
+  it("skips plates in the trash or with recently edited notes", async () => {
+    const { alice, sharedType, alicePlate } = await createTwoUsers();
+    await subscribe(alice.id, "alice-phone");
+    await prisma.plate.update({
+      where: { id: alicePlate.plate.id },
+      data: { notesUpdatedAt: new Date("2026-10-20T00:00:00Z") },
+    });
+    // 観察が無いので、仕込み日（10-01）から30日目の 10-31 が知らせる日
+    await createPlate({
+      ownerId: alice.id,
+      plateTypeId: sharedType.id,
+      name: "Trashed",
+      trashed: true,
+    });
+
+    expect(await sendDailyNotifications(MORNING_OF_DAY_30)).toEqual({
+      notifiedUsers: 0,
+      deliveries: 0,
+    });
+  });
+
+  it("follows each kind's setting", async () => {
+    const { alice, bob } = await createTwoUsers();
+    await subscribe(alice.id, "alice-phone");
+    await subscribe(bob.id, "bob-phone");
+    await prisma.userSettings.createMany({
+      data: [
+        // リマインドを切っていても、放置の知らせは届く
+        { userId: alice.id, notifReminder: false },
+        { userId: bob.id, notifNeglect: false },
+      ],
+    });
+
+    expect(await sendDailyNotifications(MORNING_OF_DAY_30)).toEqual({
+      notifiedUsers: 1,
+      deliveries: 1,
+    });
+    expect(sent()).toEqual([
+      expect.objectContaining({ device: "alice-phone" }),
+    ]);
+  });
+});

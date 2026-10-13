@@ -87,8 +87,6 @@ async function main() {
         create: {
           language: "en",
           appearance: "light",
-          notifNewPlate: true,
-          notifStatus: true,
           notifReminder: false,
         },
       },

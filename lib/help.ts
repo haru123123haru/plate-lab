@@ -169,7 +169,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       id: "notifications",
       title: "通知を受け取る",
       intro:
-        "プレートを観察する時期を、スマホやパソコンに通知で知らせます。毎朝9時台に、仕込みからプレートごとに決めた日数（既定は7日目）になったプレートを、1通にまとめて知らせます。その日以降にもう観察を付けていれば知らせません。何かの都合で送れなかった日があっても、3日のうちなら翌朝以降に知らせます。通知は端末ごとにオンにします。",
+        "プレートを観察する時期を、スマホやパソコンに通知で知らせます。毎朝9時台に、仕込みからプレートごとに決めた日数（既定は7日目）になったプレートを、1通にまとめて知らせます。その日以降にもう観察を付けていれば知らせません。30日観察していないプレートも、1回だけ知らせます。プレートのメモを書き換えた日も、観察した日とみなします。何かの都合で送れなかった日があっても、3日のうちなら翌朝以降に知らせます。通知は端末ごとにオンにします。",
       steps: [
         {
           items: [
@@ -185,6 +185,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         "許可を断ったときは、端末かブラウザの設定で PLATE LAB の通知を許可すると、オンにできるようになります。",
         "何日目に知らせるかは、プレートを作るときの「観察のリマインド」で決めます。あとからプレートの編集でも変えられ、プレートごとに「知らせない」にもできます。",
         "設定の「観察のリマインド」をオフにすると、すべてのプレートのリマインドが止まります。",
+        "設定の「観察していないプレート」をオフにすると、30日観察していないプレートの知らせが止まります。",
       ],
     },
     {
@@ -347,7 +348,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
       id: "notifications",
       title: "Get notifications",
       intro:
-        "PLATE LAB can notify your phone or computer when it's time to observe your plates. Every morning (9–10 a.m. Japan time), it sends one notification listing the plates that reached the day you set for them (day 7 by default). Plates you have observed since that day are left out. If a reminder could not be sent, it follows on a later morning within 3 days. Turn notifications on for each device.",
+        "PLATE LAB can notify your phone or computer when it's time to observe your plates. Every morning (9–10 a.m. Japan time), it sends one notification listing the plates that reached the day you set for them (day 7 by default). Plates you have observed since that day are left out. It also tells you once about plates that have gone 30 days without an observation. Editing a plate's notes counts as observing it. If a notification could not be sent, it follows on a later morning within 3 days. Turn notifications on for each device.",
       steps: [
         {
           items: [
@@ -363,6 +364,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         "If you declined permission, allow notifications for PLATE LAB in your device or browser settings to turn them on.",
         'Choose the day under "Observation reminder" when you create a plate. You can change it, or turn it off for that plate, when you edit the plate later.',
         'Turning off "Observation reminder" in Settings stops reminders for all plates.',
+        'Turning off "Unobserved plates" in Settings stops notifications about plates left for 30 days.',
       ],
     },
     {

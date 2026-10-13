@@ -41,6 +41,7 @@ interface SettingsClientProps {
     language: string;
     appearance: string;
     notifReminder: boolean;
+    notifNeglect: boolean;
   };
 }
 
@@ -110,6 +111,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
           <SectionHeader label={t("notifications")} />
           <NotificationSettings
             initialReminder={initialSettings.notifReminder}
+            initialNeglect={initialSettings.notifNeglect}
           />
         </div>
 

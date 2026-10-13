@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildReminderPayload,
+  buildDailyPayload,
   daysSince,
+  selectNeglectedPlates,
   selectReminderPlates,
   tokyoToday,
 } from "../lib/notifications";
@@ -77,9 +78,83 @@ describe("selectReminderPlates", () => {
   });
 });
 
-describe("buildReminderPayload", () => {
+describe("selectNeglectedPlates", () => {
+  const plate = (
+    overrides: Partial<Parameters<typeof selectNeglectedPlates>[0][0]>
+  ) => ({
+    id: "p",
+    name: "Plate",
+    setupDate: date("2026-09-01"),
+    neglectSentFor: null,
+    lastObservedAt: null,
+    ...overrides,
+  });
+  const ids = (plates: { id: string }[]) => plates.map((p) => p.id);
+
+  it("counts 30 days from setup when the plate was never observed", () => {
+    expect(selectNeglectedPlates([plate({})], date("2026-10-01"))).toEqual([
+      expect.objectContaining({ id: "p", dueDate: date("2026-10-01") }),
+    ]);
+  });
+
+  it("counts from the last observation, catching up for 3 days only", () => {
+    const observed = plate({ lastObservedAt: date("2026-09-10") });
+    for (const [today, expected] of [
+      ["2026-10-01", []],
+      ["2026-10-09", []],
+      ["2026-10-10", ["p"]],
+      ["2026-10-13", ["p"]],
+      ["2026-10-14", []],
+    ] as const) {
+      expect(ids(selectNeglectedPlates([observed], date(today)))).toEqual(
+        expected
+      );
+    }
+  });
+
+  it("sends once until the plate is observed again", () => {
+    expect(
+      selectNeglectedPlates(
+        [plate({ neglectSentFor: date("2026-10-01") })],
+        date("2026-10-02")
+      )
+    ).toEqual([]);
+    // 前に知らせたあとで観察した
+    expect(
+      ids(
+        selectNeglectedPlates(
+          [
+            plate({
+              neglectSentFor: date("2026-10-01"),
+              lastObservedAt: date("2026-10-02"),
+            }),
+          ],
+          date("2026-11-01")
+        )
+      )
+    ).toEqual(["p"]);
+  });
+
+  it("ignores observations dated before setup", () => {
+    expect(
+      ids(
+        selectNeglectedPlates(
+          [plate({ lastObservedAt: date("2026-08-01") })],
+          date("2026-10-01")
+        )
+      )
+    ).toEqual(["p"]);
+  });
+});
+
+describe("buildDailyPayload", () => {
+  const buildReminderPayload = (
+    plates: Parameters<typeof buildDailyPayload>[0],
+    locale: "en" | "ja"
+  ) => buildDailyPayload(plates, [], locale);
+
   it("sends nothing without plates", () => {
-    expect(buildReminderPayload([], "ja")).toBeNull();
+    expect(buildDailyPayload([], [], "ja")).toBeNull();
   });
 
   it("opens the plate when there is only one", () => {
@@ -127,6 +202,55 @@ describe("buildReminderPayload", () => {
     expect(
       new TextEncoder().encode(JSON.stringify(payload)).length
     ).toBeLessThan(1000);
+  });
+});
+
+describe("buildDailyPayload for unobserved plates", () => {
+  it("tells how long one plate has gone unobserved", () => {
+    expect(buildDailyPayload([], [{ id: "p1", name: "A-001" }], "ja")).toEqual({
+      title: "しばらく観察していないプレート",
+      body: "「A-001」を 30 日以上観察していません。",
+      url: "/plates/p1",
+    });
+    expect(
+      buildDailyPayload(
+        [],
+        [
+          { id: "p1", name: "A" },
+          { id: "p2", name: "B" },
+        ],
+        "en"
+      )
+    ).toEqual({
+      title: "Plates left unobserved",
+      body: "2 plates have not been observed for 30 days or more: A, B",
+      url: "/",
+    });
+  });
+
+  it("uses the reminder text when both fall on the same morning", () => {
+    expect(
+      buildDailyPayload(
+        [{ id: "p1", name: "A", reminderDays: 30 }],
+        [{ id: "p1", name: "A" }],
+        "ja"
+      )
+    ).toEqual({
+      title: "観察の時期です",
+      body: "「A」が仕込みから 30 日目になりました。",
+      url: "/plates/p1",
+    });
+    expect(
+      buildDailyPayload(
+        [{ id: "p1", name: "A", reminderDays: 7 }],
+        [{ id: "p2", name: "B" }],
+        "ja"
+      )
+    ).toEqual({
+      title: "観察の時期です",
+      body: "2 枚のプレートが観察どきです: A、B",
+      url: "/",
+    });
   });
 });
 

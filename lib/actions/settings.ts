@@ -17,9 +17,8 @@ export async function getUserSettings() {
 export async function updateUserSettings(data: {
   language?: string;
   appearance?: string;
-  notifNewPlate?: boolean;
-  notifStatus?: boolean;
   notifReminder?: boolean;
+  notifNeglect?: boolean;
 }) {
   const userId = await getCurrentUserId();
   const parsed = updateUserSettingsSchema.safeParse(data);

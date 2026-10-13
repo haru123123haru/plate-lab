@@ -16,6 +16,7 @@ import {
   getAccessibleConditionTemplate,
   trashedPlateWhere,
 } from "@/lib/access-control";
+import { tokyoToday } from "@/lib/notifications";
 
 // 一覧で使うのはウェル数と使用中ウェル数（countUsedWells）だけなので、ドロップは件数だけ引く
 const wellDropCount = {
@@ -231,7 +232,7 @@ export async function updatePlate(
 
   const plate = await prisma.plate.findFirst({
     where: { id: parsedId.data, ...activePlateWhere(userId) },
-    select: { id: true },
+    select: { id: true, notes: true },
   });
 
   if (!plate) {
@@ -256,6 +257,10 @@ export async function updatePlate(
 
   // 仕込み日は "YYYY-MM-DD" のままでは DateTime の列に入らないので Date に直す
   const { setupDate, ...rest } = parsed.data;
+  // メモの書き換えも観察とみなす（毎朝の通知）。中身が変わったときだけ記録する
+  const notesChanged =
+    parsed.data.notes !== undefined &&
+    (parsed.data.notes || null) !== (plate.notes || null);
 
   // 確認と更新の間にゴミ箱へ移された場合は更新しない
   return prisma.plate.update({
@@ -263,6 +268,7 @@ export async function updatePlate(
     data: {
       ...rest,
       ...(setupDate && { setupDate: new Date(`${setupDate}T00:00:00Z`) }),
+      ...(notesChanged && { notesUpdatedAt: tokyoToday(new Date()) }),
     },
     include: {
       plateType: true,
