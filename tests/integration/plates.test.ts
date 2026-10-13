@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
   createPlate as createPlateAction,
@@ -329,5 +329,44 @@ describe("creating plates only uses accessible types and templates", () => {
       where: { name: "Imported" },
     });
     expect(imported.userId).toBe(alice.id);
+  });
+});
+
+describe("editing notes counts as an observation", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const notesUpdatedAt = async (id: string) =>
+    (
+      await prisma.plate.findUniqueOrThrow({
+        where: { id },
+        select: { notesUpdatedAt: true },
+      })
+    ).notesUpdatedAt;
+
+  it("records the day in Japan only when the notes change", async () => {
+    const { alice, bob, alicePlate, bobPlate } = await createTwoUsers();
+    signInAs(alice);
+    // 日本時間では 2026-10-20 の朝
+    vi.useFakeTimers({
+      now: new Date("2026-10-19T23:00:00Z"),
+      toFake: ["Date"],
+    });
+
+    await updatePlate(alicePlate.plate.id, { name: "Renamed", notes: null });
+    expect(await notesUpdatedAt(alicePlate.plate.id)).toBeNull();
+
+    await updatePlate(alicePlate.plate.id, { notes: "drops look clear" });
+    expect(await notesUpdatedAt(alicePlate.plate.id)).toEqual(
+      new Date("2026-10-20T00:00:00Z")
+    );
+
+    // 相手のプレートのメモは変えられず、記録も付かない
+    expect(await updatePlate(bobPlate.plate.id, { notes: "not mine" })).toEqual(
+      { error: "Not found" }
+    );
+    signInAs(bob);
+    expect(await notesUpdatedAt(bobPlate.plate.id)).toBeNull();
   });
 });

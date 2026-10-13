@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CalendarClock, Send } from "lucide-react";
+import { Bell, CalendarClock, Hourglass, Send } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/components/locale-provider";
 import { isStandalone } from "@/components/home-screen-guide";
@@ -36,34 +36,62 @@ const statusDescriptions: Record<Status, TranslationKey> = {
   on: "notificationsDescription",
 };
 
+// 何を知らせるか。アカウントごとの設定（UserSettings）の列
+type NotificationKind = "notifReminder" | "notifNeglect";
+
+const notificationKinds: {
+  kind: NotificationKind;
+  icon: typeof Bell;
+  label: TranslationKey;
+  description: TranslationKey;
+}[] = [
+  {
+    kind: "notifReminder",
+    icon: CalendarClock,
+    label: "observationReminder",
+    description: "reminderDescription",
+  },
+  {
+    kind: "notifNeglect",
+    icon: Hourglass,
+    label: "neglectNotification",
+    description: "neglectDescription",
+  },
+];
+
 // 設定画面の「通知」の欄。この端末で通知を受けるかの切り替えと、テスト通知、
 // 何を知らせるか（アカウントごと）
 export function NotificationSettings({
   initialReminder,
+  initialNeglect,
 }: {
   initialReminder: boolean;
+  initialNeglect: boolean;
 }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>("loading");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<TranslationKey | null>(null);
-  const [reminder, setReminder] = useState(initialReminder);
-  const [savingReminder, setSavingReminder] = useState(false);
+  const [kinds, setKinds] = useState<Record<NotificationKind, boolean>>({
+    notifReminder: initialReminder,
+    notifNeglect: initialNeglect,
+  });
+  const [savingKind, setSavingKind] = useState(false);
 
   // 保存し終わるまで切り替えさせない。続けて押すと、画面と保存した値がずれるため
-  const toggleReminder = async (checked: boolean) => {
-    setSavingReminder(true);
-    setReminder(checked);
+  const toggleKind = async (kind: NotificationKind, checked: boolean) => {
+    setSavingKind(true);
+    setKinds((current) => ({ ...current, [kind]: checked }));
     setMessage(null);
     try {
-      const result = await updateUserSettings({ notifReminder: checked });
+      const result = await updateUserSettings({ [kind]: checked });
       if ("error" in result) throw new Error(result.error);
     } catch (error) {
       console.error(error);
-      setReminder(!checked);
+      setKinds((current) => ({ ...current, [kind]: !checked }));
       setMessage("actionFailed");
     } finally {
-      setSavingReminder(false);
+      setSavingKind(false);
     }
   };
 
@@ -222,28 +250,33 @@ export function NotificationSettings({
         </button>
       )}
 
-      <div className="flex w-full items-center gap-3 border-b border-border-subtle py-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">
-          <CalendarClock className="size-5 text-text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <label
-            htmlFor="reminder-switch"
-            className="text-[15px] font-medium text-text-primary"
-          >
-            {t("observationReminder")}
-          </label>
-          <div className="text-[13px] text-text-secondary">
-            {t("reminderDescription")}
+      {notificationKinds.map(({ kind, icon: Icon, label, description }) => (
+        <div
+          key={kind}
+          className="flex w-full items-center gap-3 border-b border-border-subtle py-3"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-surface">
+            <Icon className="size-5 text-text-primary" />
           </div>
+          <div className="min-w-0 flex-1">
+            <label
+              htmlFor={`${kind}-switch`}
+              className="text-[15px] font-medium text-text-primary"
+            >
+              {t(label)}
+            </label>
+            <div className="text-[13px] text-text-secondary">
+              {t(description)}
+            </div>
+          </div>
+          <Switch
+            id={`${kind}-switch`}
+            checked={kinds[kind]}
+            disabled={savingKind}
+            onCheckedChange={(checked) => toggleKind(kind, checked)}
+          />
         </div>
-        <Switch
-          id="reminder-switch"
-          checked={reminder}
-          disabled={savingReminder}
-          onCheckedChange={toggleReminder}
-        />
-      </div>
+      ))}
 
       {message && (
         <p role="status" className="pt-3 text-[13px] text-text-secondary">

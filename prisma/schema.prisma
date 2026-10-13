@@ -34,10 +34,13 @@ model UserSettings {
   user          User    @relation(fields: [userId], references: [id])
   language      String  @default("en")
   appearance    String  @default("light")
+  // 使っていない。消すと、デプロイが切り替わるまで前の版が読みに行って失敗するので、次の変更で列を消す
   notifNewPlate Boolean @default(true)
   notifStatus   Boolean @default(true)
   // 観察のリマインド（Plate.reminderDays）を送るか
   notifReminder Boolean @default(true)
+  // 30日観察していないプレートを知らせるか
+  notifNeglect  Boolean @default(true)
 }
 
 // 通知を受ける端末ごとの受け口（Web Push の subscription）。
@@ -84,6 +87,10 @@ model Plate {
   reminderDays Int?     @default(7)
   // リマインドを送った「リマインドの日」。同じ日の分を二度送らない。日数や仕込み日を変えれば、また送る
   reminderSentFor DateTime? @db.Date
+  // メモを最後に書き換えた日（日本時間）。メモの書き換えも観察したとみなす
+  notesUpdatedAt DateTime? @db.Date
+  // 放置を知らせた「知らせる日」（最後に観察した日から30日目）。次に観察すれば日が変わり、また知らせる
+  neglectSentFor DateTime? @db.Date
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   // ゴミ箱に入れた日時。NULL なら通常のプレート

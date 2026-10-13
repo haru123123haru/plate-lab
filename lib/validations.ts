@@ -205,9 +205,8 @@ export const updateUserSettingsSchema = z
   .object({
     language: z.enum(["en", "ja"]).optional(),
     appearance: z.enum(["light", "dark", "system"]).optional(),
-    notifNewPlate: z.boolean().optional(),
-    notifStatus: z.boolean().optional(),
     notifReminder: z.boolean().optional(),
+    notifNeglect: z.boolean().optional(),
   })
   .strict();
 

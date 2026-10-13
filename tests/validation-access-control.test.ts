@@ -122,9 +122,13 @@ describe("validation schemas", () => {
       updateUserSettingsSchema.safeParse({
         language: "ja",
         appearance: "system",
-        notifStatus: false,
+        notifNeglect: false,
       }).success
     ).toBe(true);
+    // 使わなくなった設定は受け付けない
+    expect(
+      updateUserSettingsSchema.safeParse({ notifStatus: false }).success
+    ).toBe(false);
     expect(updateUserSettingsSchema.safeParse({ language: "fr" }).success).toBe(
       false
     );

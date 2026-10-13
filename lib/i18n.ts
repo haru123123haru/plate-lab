@@ -333,6 +333,13 @@ const translations = {
     reminderOff: "Off",
     reminderInvalid: "Enter a number from 1 to {max}.",
     reminderDescription: "Notifies you on the day you set for each plate.",
+    neglectTitle: "Plates left unobserved",
+    neglectBodyOne: '"{name}" has not been observed for {days} days or more.',
+    neglectBodyMany:
+      "{count} plates have not been observed for {days} days or more: {names}",
+    neglectNotification: "Unobserved plates",
+    neglectDescription:
+      "Notifies you once when a plate goes 30 days without an observation.",
     sendTestNotification: "Send a test notification",
     testNotificationSent: "Sent. It should arrive in a few seconds.",
     testNotificationFailed:
@@ -670,6 +677,12 @@ const translations = {
     reminderOff: "知らせない",
     reminderInvalid: "1〜{max} の数を入れてください。",
     reminderDescription: "プレートごとに決めた日に知らせます。",
+    neglectTitle: "しばらく観察していないプレート",
+    neglectBodyOne: "「{name}」を {days} 日以上観察していません。",
+    neglectBodyMany:
+      "{count} 枚のプレートを {days} 日以上観察していません: {names}",
+    neglectNotification: "観察していないプレート",
+    neglectDescription: "30日観察していないプレートを1回知らせます。",
     sendTestNotification: "テスト通知を送る",
     testNotificationSent: "送りました。数秒で届きます。",
     testNotificationFailed:
