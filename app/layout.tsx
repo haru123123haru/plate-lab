@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { getUserSettings } from "@/lib/actions/settings";
 import { LocaleProvider } from "@/components/locale-provider";
+import { AppBadgeClearer } from "@/components/app-badge-clearer";
 import { toLocale } from "@/lib/i18n";
 
 const inter = Inter({
@@ -50,6 +51,7 @@ export default async function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <LocaleProvider locale={locale}>
+          <AppBadgeClearer />
           <div className="mx-auto min-h-dvh max-w-[402px] bg-bg-primary">
             {children}
           </div>

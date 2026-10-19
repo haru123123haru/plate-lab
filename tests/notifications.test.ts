@@ -164,6 +164,7 @@ describe("buildDailyPayload", () => {
       title: "観察の時期です",
       body: "「A-001」が仕込みから 7 日目になりました。",
       url: "/plates/p1",
+      badge: 1,
     });
   });
 
@@ -186,10 +187,13 @@ describe("buildDailyPayload", () => {
       title: "Time to observe",
       body: "2 plates are due: A, B",
       url: "/",
+      badge: 2,
     });
     expect(buildReminderPayload(plates, "ja")?.body).toBe(
       "5 枚のプレートが観察どきです: A、B、C ほか 2 枚"
     );
+    // バッジには、名前を省いた分も含めた枚数を出す
+    expect(buildReminderPayload(plates, "ja")?.badge).toBe(5);
   });
 
   it("stays well under the Web Push size limit with long names", () => {
@@ -211,6 +215,7 @@ describe("buildDailyPayload for unobserved plates", () => {
       title: "しばらく観察していないプレート",
       body: "「A-001」を 30 日以上観察していません。",
       url: "/plates/p1",
+      badge: 1,
     });
     expect(
       buildDailyPayload(
@@ -225,6 +230,7 @@ describe("buildDailyPayload for unobserved plates", () => {
       title: "Plates left unobserved",
       body: "2 plates have not been observed for 30 days or more: A, B",
       url: "/",
+      badge: 2,
     });
   });
 
@@ -239,6 +245,7 @@ describe("buildDailyPayload for unobserved plates", () => {
       title: "観察の時期です",
       body: "「A」が仕込みから 30 日目になりました。",
       url: "/plates/p1",
+      badge: 1,
     });
     expect(
       buildDailyPayload(
@@ -250,6 +257,7 @@ describe("buildDailyPayload for unobserved plates", () => {
       title: "観察の時期です",
       body: "2 枚のプレートが観察どきです: A、B",
       url: "/",
+      badge: 2,
     });
   });
 });

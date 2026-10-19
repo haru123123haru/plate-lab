@@ -20,13 +20,30 @@ self.addEventListener("push", (event) => {
   if (!payload || typeof payload !== "object") payload = {};
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "PLATE LAB", {
-      body: payload.body || "",
-      icon: "/icon-192x192.png",
-      data: { url: payload.url || "/" },
-    })
+    Promise.all([
+      self.registration.showNotification(payload.title || "PLATE LAB", {
+        body: payload.body || "",
+        icon: "/icon-192x192.png",
+        data: { url: payload.url || "/" },
+      }),
+      setBadge(payload.badge),
+    ])
   );
 });
+
+// ホーム画面のアイコンに、知らせたプレートの枚数を出す。アプリを開くと消す（components/app-badge-clearer.tsx）。
+// アプリを前に出して見ている間は出さない。出せない端末では何もしない
+async function setBadge(count) {
+  if (typeof count !== "number" || count <= 0) return;
+  if (!("setAppBadge" in self.navigator)) return;
+  try {
+    const windows = await self.clients.matchAll({ type: "window" });
+    if (windows.some((client) => client.visibilityState === "visible")) return;
+    await self.navigator.setAppBadge(count);
+  } catch {
+    // バッジが出なくても、通知は出ているのでそのままにする
+  }
+}
 
 // 通知を押したら、開いている画面があればそこで、無ければ新しく開く
 self.addEventListener("notificationclick", (event) => {
