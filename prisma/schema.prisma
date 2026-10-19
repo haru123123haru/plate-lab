@@ -34,9 +34,6 @@ model UserSettings {
   user          User    @relation(fields: [userId], references: [id])
   language      String  @default("en")
   appearance    String  @default("light")
-  // 使っていない。消すと、デプロイが切り替わるまで前の版が読みに行って失敗するので、次の変更で列を消す
-  notifNewPlate Boolean @default(true)
-  notifStatus   Boolean @default(true)
   // 観察のリマインド（Plate.reminderDays）を送るか
   notifReminder Boolean @default(true)
   // 30日観察していないプレートを知らせるか
