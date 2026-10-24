@@ -104,7 +104,7 @@ function shorten(name: string) {
 }
 
 // 1人に1通。リマインドがあればリマインドの文面にし、放っておいたプレートも名前に並べる。
-// 1枚ならそのプレートを、複数ならホームを開く。
+// 1枚ならそのプレートを、複数ならホームを開く。バッジには知らせたプレートの枚数を出す。
 // 名前に "$&" や "{days}" があっても崩れないよう、置き換えは関数で渡す
 export function buildDailyPayload(
   reminders: { id: string; name: string; reminderDays: number | null }[],
@@ -132,6 +132,7 @@ export function buildDailyPayload(
         key === "name" ? shorten(plate.name) : String(days)
       ),
       url: `/plates/${plate.id}`,
+      badge: 1,
     };
   }
 
@@ -156,5 +157,6 @@ export function buildDailyPayload(
           : listed
     ),
     url: "/",
+    badge: plates.length,
   };
 }

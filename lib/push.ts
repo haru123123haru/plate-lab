@@ -7,6 +7,8 @@ export interface PushPayload {
   body: string;
   // 通知を押したときに開くページ
   url: string;
+  // ホーム画面のアイコンに出す数（public/sw.js）。無ければバッジを変えない
+  badge?: number;
 }
 
 interface StoredSubscription {

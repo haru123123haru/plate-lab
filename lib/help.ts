@@ -186,6 +186,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         "何日目に知らせるかは、プレートを作るときの「観察のリマインド」で決めます。あとからプレートの編集でも変えられ、プレートごとに「知らせない」にもできます。",
         "設定の「観察のリマインド」をオフにすると、すべてのプレートのリマインドが止まります。",
         "設定の「観察していないプレート」をオフにすると、30日観察していないプレートの知らせが止まります。",
+        "ホーム画面に追加したアイコンには、通知で知らせたプレートの枚数がバッジで出ます。PLATE LAB を開くと消えます。端末によっては出ません。",
       ],
     },
     {
@@ -365,6 +366,7 @@ const helpTopics: Record<Locale, HelpTopic[]> = {
         'Choose the day under "Observation reminder" when you create a plate. You can change it, or turn it off for that plate, when you edit the plate later.',
         'Turning off "Observation reminder" in Settings stops reminders for all plates.',
         'Turning off "Unobserved plates" in Settings stops notifications about plates left for 30 days.',
+        "The app icon on your home screen shows a badge with the number of plates in the notification. It goes away when you open PLATE LAB. Some devices do not show badges.",
       ],
     },
     {
